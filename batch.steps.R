@@ -6,18 +6,16 @@
 #
 ####################################################
 
-# Require a package or just source the code needed:
-
 require(Hmisc) # can this just be left outside this function or does it matter?
 
+# Require a package or just source the code needed:
 # THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
- # source('myfunctions.R') # can require(analyze.misc) later when it is a package
-source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >80th %ile, for example), for each of many rows of a data.frame
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
-source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
-#source('count.above.R')	      # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
+#source('count.above.R')        # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
+source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
+source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >80th %ile, for example), for each of many rows of a data.frame
 source('rowMaxs.R')     # returns Max of each row
 source('rowMins.R')     # returns Min of each row
 source('colMaxs.R')     # returns Max of each col
@@ -64,17 +62,49 @@ fulltable <- batch.read(file=mybatchfile)
 # check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
 fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
 
+ # source('batch.summarize.R')
+
 # create some basic summary row, with summary stats of distribution across people (not sites. population-weighted.)
 results.list <- batch.summarize(fulltable, wts=mywts, cols=mycolnames, threshnames=mythreshnames, threshold=mythreshold, probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
 
 ####################################################
-#
-# Display & allow download of results.list[[1]], 2, 3, 4
-#
-print(results.list[[1]])
-print(results.list[[2]])
-print(results.list[[3]])
-print(results.list[[4]])
+# Display & allow download of results
+rowsout=results.list$rows
+rownames(rowsout) <- results.list$rownames
+colnames(rowsout) <- colnames(fulltable)
+
+colsout= results.list$cols
+colnames(colsout) <- results.list$colnames
+#rownames(colsout) <- rownames(fulltable)
+rownames(colsout) <- fulltable$OBJECTID
+
+#   str(rowsout); str(colsout)
+colsout[1:5 , ]
+rowsout[ , 1:9]
+
+
+# round(  t( rowsout[c('Average site', 'Average person') , ] ),0)
+
+#[,1] [,2] [,3] [,4]
+# Sum                     903.00000   NA   NA   NA
+# Count of sites           42.00000   NA   NA   NA
+# Number of unique values  42.00000   NA   NA   NA
+# Average site             21.50000   NA   NA   NA
+# Average person           14.43750   NA   NA   NA
+# Minimum                   1.00000   NA   NA   NA
+# Maximum                  42.00000   NA   NA   NA
+# Standard Deviation       12.26784   NA   NA   NA
+
+# to view one or two of the rows of summary stats:
+#  rowsout[c('Average person', 'Average site'), 6:11]
+
+
+# > dim(fulltable)
+# [1]  42 179
+# > dim(rowsout)
+# [1]   8 179
+# > dim(colsout)
+# [1] 42  2
 
 
 ####################################################

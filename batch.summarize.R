@@ -10,7 +10,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   if (cols[1]=='all') {cols <- colnames(x)}
   if (any(!(cols %in% colnames(x)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(x)')}
   if (!is.vector(probs) | !is.numeric(probs) | any(probs > 1) | any(probs < 0)) {stop('probs must be a numeric vector of fractions for quantile function')}
-print(cols) ;print(threshnames)
+
   # Specify summary metrics to calculate.
   # Provide a default set of summary metrics.
   # A later version could allow user to select from a list of functions, and eventually even specify custom functions perhaps, 
@@ -23,12 +23,14 @@ print(cols) ;print(threshnames)
   
   rowfuname[1]='Are any indicators at/above threshold'
   rowfun[[1]]=function(x, ...) {
-    flagged(x[ , threshnames], cutoff=threshold)
+print(threshnames)
+    flagged(x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm)
   } 
   
   rowfuname[2]='Number of indicators at/above threshold'
   rowfun[[2]]=function(x, ...) {
-    count.cols.above( x[ , threshnames], threshold, na.rm=na.rm )
+    print(threshnames)
+    cols.above.count( x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm )
     }
   
   # rowfunames[3]='Ratio to US pop avg'
@@ -119,10 +121,16 @@ print(cols) ;print(threshnames)
   
   colfuns.count.picked <- sum(colfun.picked)
   rowfuns.count.picked <- sum(rowfun.picked)
-    
+  
   # preallocate space to store summary stats on only those picked
-  summary.rows <- matrix(nrow=colfuns.count.picked, ncol=ncol(x)) # rows with summary stats summarizing all the columns. This will hold 1 row per summary stat, and same # cols as original table of batch results
-  summary.cols <- matrix(nrow=nrow(x), ncol=rowfuns.count.picked ) # columns with summary stats summarizing all the rows
+  summary.rows <- matrix(NA, nrow=colfuns.count.picked, ncol=ncol(x)) # rows with summary stats summarizing all the columns. This will hold 1 row per summary stat, and same # cols as original table of batch results
+  summary.cols <- matrix(NA, nrow=nrow(x), ncol=rowfuns.count.picked ) # columns with summary stats summarizing all the rows
+
+cat('\n str(summary.rows) \n')
+print(str(summary.rows))
+cat('\n str(summary.cols)\n')
+print(str(summary.cols))
+cat('\n\n')
   summary.rows.names<- vector()
   summary.cols.names<- vector()
 
@@ -132,23 +140,42 @@ print(cols) ;print(threshnames)
 
   for (i in 1:colfuns.count.picked) {
     fnum <- which(colfun.picked)[i]
+    
+    cat('\n\n')
+    cat('fnum ', fnum, ' and colfuname[fnum] is ', colfuname[fnum],'\n' )
+    print('str(colfun[[fnum]](x[ , !charcol]) )'); str(colfun[[fnum]](x[ , !charcol]) )
+    print('class(colfun[[fnum]](x[ , !charcol]) )'); print( class(colfun[[fnum]](x[ , !charcol]) ))
+    cat('\n\n')
+    print('str(summary.rows[i, ][  !charcol])'); str(summary.rows[i, ][ !charcol])
+    cat('\n\n')
+    
+    summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](x[ , !charcol]) )  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
 
-    summary.rows[i][!charcol] <- colfun[[fnum]](x[ , !charcol])  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
+    # error/warning: number to replace is not multiple of replacement length
+    print('now summary.rows[i, ] all cols is '); print(summary.rows[i, ])
+
     summary.rows.names[i] <- colfuname[fnum]
 
     # do.call(f, list(x)) # was old code
     # could this have the wrong # of elements if na.rm=TRUE and it somehow doesn't return NA for one of the columns??
   }
 
+  print(rowfuns.count.picked)
+
   for (i in 1:rowfuns.count.picked) {
     fnum <- which(rowfun.picked)[i]
-
-    summary.cols[i] <- rowfun[[fnum]](x)  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
-    summary.cols.names[i] <- rowfuname[fnum]
+    
+    print('fnum ');print(fnum); print(' and rowfuname '); print(rowfuname[fnum])
+    print('str(rowfun[[fnum]](x) )'); str(rowfun[[fnum]](x) )
+    print('')
+    print('str(summary.cols[ , i])'); str(summary.cols[ , i])
+    
+    summary.cols[ , i] <- as.vector( rowfun[[fnum]](x) ) # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
+    summary.cols.names[ i] <- rowfuname[fnum]
 
   }
-  
-  return(list(summary.rows, summary.rows.names, summary.cols, summary.cols.names))
+  mylist <- list(rows=summary.rows, rownames=summary.rows.names, cols=summary.cols, colnames=summary.cols.names)
+  return(mylist)
 
 # str(fulltable)
 # 'data.frame':  42 obs. of  179 variables:
