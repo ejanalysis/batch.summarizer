@@ -14,7 +14,7 @@ require(Hmisc) # can this just be left outside this function or does it matter?
  # source('myfunctions.R') # can require(analyze.misc) later when it is a package
 source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >80th %ile, for example), for each of many rows of a data.frame
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
-#source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
+source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
 #source('count.above.R')	      # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
@@ -40,8 +40,16 @@ mybatchfile <- 'Export_Output1.txt'
 mynamesfile <- 'map batch to friendly fieldnames v1.csv'
 
 probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
-threshold=80
+mythreshold=80
 na.rm=TRUE
+mywts <- fulltable$pop
+mycolnames <- colnames(fulltable)
+mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
+# threshnames
+# [1] "pctile.EJ.DISPARITY.proximity.npl.eo"   "pctile.EJ.DISPARITY.pm.eo"              "pctile.EJ.DISPARITY.cancer.eo"         
+# [4] "pctile.EJ.DISPARITY.proximity.rmp.eo"   "pctile.EJ.DISPARITY.neuro.eo"           "pctile.EJ.DISPARITY.proximity.tsdf.eo" 
+# [7] "pctile.EJ.DISPARITY.pctpre1960.eo"      "pctile.EJ.DISPARITY.proximity.npdes.eo" "pctile.EJ.DISPARITY.o3.eo"             
+# [10] "pctile.EJ.DISPARITY.dpm.eo"             "pctile.EJ.DISPARITY.traffic.score.eo"   "pctile.EJ.DISPARITY.resp.eo"      
 
 colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
 rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
@@ -57,7 +65,7 @@ fulltable <- batch.read(file=mybatchfile)
 fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
 
 # create some basic summary row, with summary stats of distribution across people (not sites. population-weighted.)
-results.list <- batch.summarize(fulltable, wts=fulltable$pop, cols='all', probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
+results.list <- batch.summarize(fulltable, wts=mywts, cols=mycolnames, threshnames=mythreshnames, threshold=mythreshold, probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
 
 ####################################################
 #

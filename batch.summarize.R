@@ -3,14 +3,14 @@
 #' probs Vector of numeric values, fractions, to use as probabilities used in finding quantiles. Default is c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
 #' na.rm Logical TRUE by default, specifying if na.rm should be used for sum(), mean(), and other functions.
 #'
-batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=80, na.rm=TRUE, rowfun.picked, colfun.picked) {
+batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=80, threshnames='', na.rm=TRUE, rowfun.picked, colfun.picked) {
 
   # basic error checking
   if (missing(x)) {stop('x must be a matrix or data.frame to be analyzed')}
-  if (cols=='all') {cols <- names(x)}
+  if (cols[1]=='all') {cols <- colnames(x)}
   if (any(!(cols %in% colnames(x)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(x)')}
   if (!is.vector(probs) | !is.numeric(probs) | any(probs > 1) | any(probs < 0)) {stop('probs must be a numeric vector of fractions for quantile function')}
-  
+print(cols) ;print(threshnames)
   # Specify summary metrics to calculate.
   # Provide a default set of summary metrics.
   # A later version could allow user to select from a list of functions, and eventually even specify custom functions perhaps, 
@@ -21,16 +21,14 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   rowfuname <- vector()
   rowfun <- list()
   
-  
   rowfuname[1]='Are any indicators at/above threshold'
   rowfun[[1]]=function(x, ...) {
-    flagged(x[ , (names(x) %in% threshnames)], cutoff=threshold, na.rm=na.rm)
+    flagged(x[ , threshnames], cutoff=threshold)
   } 
   
   rowfuname[2]='Number of indicators at/above threshold'
   rowfun[[2]]=function(x, ...) {
-    threshnames <- grepl('pctile.EJ.DISPARITY.', names(x))
-    rowSums(flagged(x[ , (names(x) %in% threshnames)], cutoff=threshold, na.rm=na.rm), na.rm=na.rm)
+    count.cols.above( x[ , threshnames], threshold, na.rm=na.rm )
     }
   
   # rowfunames[3]='Ratio to US pop avg'
@@ -125,7 +123,10 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   # preallocate space to store summary stats on only those picked
   summary.rows <- matrix(nrow=colfuns.count.picked, ncol=ncol(x)) # rows with summary stats summarizing all the columns. This will hold 1 row per summary stat, and same # cols as original table of batch results
   summary.cols <- matrix(nrow=nrow(x), ncol=rowfuns.count.picked ) # columns with summary stats summarizing all the rows
-  
+  summary.rows.names<- vector()
+  summary.cols.names<- vector()
+
+
   # don't summarize character columns like name of site
   charcol <- sapply(x, class)=='character'
 
