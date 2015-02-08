@@ -23,13 +23,12 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   
   rowfuname[1]='Are any indicators at/above threshold'
   rowfun[[1]]=function(x, ...) {
-print(threshnames)
     flagged(x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm)
-  } 
+  }
   
   rowfuname[2]='Number of indicators at/above threshold'
   rowfun[[2]]=function(x, ...) {
-    print(threshnames)
+    #print(threshnames)
     cols.above.count( x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm )
     }
   
@@ -93,18 +92,24 @@ print(threshnames)
   ############################################
   # THESE FUNCTIONS RETURN MULTIPLE ROWS EACH:
   # THAT REQUIRES A DIFFERENT APPROACH TO POPULATING THE RESULTS VARIABLE
-  # like using rbind instead of [i] <- 
+  # like using rbind instead of [i] <-  ?
+  # or having function return value that specifies how many rows or cols it will output?
   ############################################
   
-# TESTING
-#  colfuname[9]='Percentiles of sites'
-#  colfun[[9]]=function(x, ...) {apply(x, 2, FUN=function(y) quantile(y , probs=probs, na.rm=na.rm))}
-#  
-#  colfuname[10]='Percentiles of people'
-#  colfun[[10]]=function(x, ...) {wtd.quantile(x, weights=wts, probs=probs, na.rm=na.rm)}
-  
-  # colfuname[11]=''
-  # colfun[[11]]=function(x, na.rm=TRUE) {}
+  if (1==0) {
+    if (length(probs) > 0) {
+      colfuname[9:(8+length(probs))]=paste('Percentile of sites', 100*probs)
+      colfun[[  9:(8+length(probs))  ]]=function(x, ...) {apply(x, 2, FUN=function(y) quantile(y , probs=probs, na.rm=na.rm))}
+      
+      colfuname[(9+length(probs)):(8+2*length(probs))]=paste('Percentile of people', 100*probs)
+      colfun[[  (9+length(probs)):(8+2*length(probs))]]=function(x, ...) {wtd.quantile(x, weights=wts, probs=probs, na.rm=na.rm)}
+      nextcol <- 1+(8+2*length(probs))
+      } else {
+        nextcol <- 9
+      }
+    # colfuname[ nextcol ]=' '
+    # colfun[[ nextcol  ]]=function(x, na.rm=TRUE) {  }
+  }
   
   ############################################
   
@@ -126,14 +131,8 @@ print(threshnames)
   summary.rows <- matrix(NA, nrow=colfuns.count.picked, ncol=ncol(x)) # rows with summary stats summarizing all the columns. This will hold 1 row per summary stat, and same # cols as original table of batch results
   summary.cols <- matrix(NA, nrow=nrow(x), ncol=rowfuns.count.picked ) # columns with summary stats summarizing all the rows
 
-cat('\n str(summary.rows) \n')
-print(str(summary.rows))
-cat('\n str(summary.cols)\n')
-print(str(summary.cols))
-cat('\n\n')
   summary.rows.names<- vector()
   summary.cols.names<- vector()
-
 
   # don't summarize character columns like name of site
   charcol <- sapply(x, class)=='character'
@@ -141,41 +140,40 @@ cat('\n\n')
   for (i in 1:colfuns.count.picked) {
     fnum <- which(colfun.picked)[i]
     
-    cat('\n\n')
-    cat('fnum ', fnum, ' and colfuname[fnum] is ', colfuname[fnum],'\n' )
-    print('str(colfun[[fnum]](x[ , !charcol]) )'); str(colfun[[fnum]](x[ , !charcol]) )
-    print('class(colfun[[fnum]](x[ , !charcol]) )'); print( class(colfun[[fnum]](x[ , !charcol]) ))
-    cat('\n\n')
-    print('str(summary.rows[i, ][  !charcol])'); str(summary.rows[i, ][ !charcol])
-    cat('\n\n')
+    #     cat('\n\n')
+    #     cat('fnum ', fnum, ' and colfuname[fnum] is ', colfuname[fnum],'\n' )
+    #     print('str(colfun[[fnum]](x[ , !charcol]) )'); str(colfun[[fnum]](x[ , !charcol]) )
+    #     print('class(colfun[[fnum]](x[ , !charcol]) )'); print( class(colfun[[fnum]](x[ , !charcol]) ))
+    #     cat('\n\n')
+    #     print('str(summary.rows[i, ][  !charcol])'); str(summary.rows[i, ][ !charcol])
+    #     cat('\n\n')
     
     summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](x[ , !charcol]) )  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
 
-    # error/warning: number to replace is not multiple of replacement length
-    print('now summary.rows[i, ] all cols is '); print(summary.rows[i, ])
+    # print('now summary.rows[i, ] all cols is '); print(summary.rows[i, ])
 
     summary.rows.names[i] <- colfuname[fnum]
 
-    # do.call(f, list(x)) # was old code
     # could this have the wrong # of elements if na.rm=TRUE and it somehow doesn't return NA for one of the columns??
   }
-
-  print(rowfuns.count.picked)
 
   for (i in 1:rowfuns.count.picked) {
     fnum <- which(rowfun.picked)[i]
     
-    print('fnum ');print(fnum); print(' and rowfuname '); print(rowfuname[fnum])
-    print('str(rowfun[[fnum]](x) )'); str(rowfun[[fnum]](x) )
-    print('')
-    print('str(summary.cols[ , i])'); str(summary.cols[ , i])
-    
     summary.cols[ , i] <- as.vector( rowfun[[fnum]](x) ) # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
     summary.cols.names[ i] <- rowfuname[fnum]
-
   }
-  mylist <- list(rows=summary.rows, rownames=summary.rows.names, cols=summary.cols, colnames=summary.cols.names)
-  return(mylist)
+  
+  # create useful rownames and colnames for the outputs
+  rownames(summary.rows) <- summary.rows.names
+  colnames(summary.rows) <- colnames(x)
+  
+  colnames(summary.cols) <- summary.cols.names
+  rownames(summary.cols) <- x[,1] # assumes you want the first column to be used as the rownames, which is OBJECTID as of 2/2015
+  # rownames(colsout) <- rownames(x)  # is another option
+  
+  return( list(rows=summary.rows, cols=summary.cols) )
+}
 
 # str(fulltable)
 # 'data.frame':  42 obs. of  179 variables:
@@ -279,6 +277,3 @@ cat('\n\n')
 # $ region.pctile.EJ.DISPARITY.neuro.eo          : chr  "92" "38" "68" "98" ...
 # $ state.avg.pctlingiso                         : chr  "9%" "2%" "2%" "6%" ...
 # [list output truncated]
-# > 
-}
-

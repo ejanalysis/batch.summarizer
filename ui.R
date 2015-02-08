@@ -4,27 +4,53 @@
 library(shiny)
 
 shinyUI(fluidPage(
-
+  
   # Application title
   titlePanel("Batch Results Summarizer"),
-
-  # Sidebar with a slider input for number of bins
+  
+  # Sidebar for selecting functions or columns
   sidebarLayout(
     sidebarPanel(
-
-      sliderInput("bins",
-                  "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30)
+      
+      fileInput('file1', 'Upload Batch Results',
+                accept=c('text/csv', 'text/txt', '.txt',
+                         'text/comma-separated-values, text/plain', 
+                         '.csv')),
+      tags$hr(),
+      checkboxInput('header', 'Header', TRUE),
+      radioButtons('sep', 'Separator',
+                   c(Comma=',',
+                     Semicolon=';',
+                     Tab='\t'),
+                   ','),
+      radioButtons('quote', 'Quote',
+                   c(None='',
+                     'Double Quote'='"',
+                     'Single Quote'="'"),
+                   '"'),
+      
+      downloadButton('downloadData', 'Download Summary of Batch')
       
     ),
-
-    # e.g. Show a plot
+    
+    # add another sidebarPanel here to select mapping file of names to newnames?
+    
+    # add a sidebarPanel to specify formulas, probs, mythreshold, na.rm, mywts, mycolnames, mythreshnames, etc.?
+    
+    
+    
     mainPanel(
-
-      plotOutput("distPlot")
       
+      #colsout <- outlist$cols
+      
+      verbatimTextOutput("Summary rows "),
+      
+      tableOutput(rowsout)
+      
+      #, tableOutput(outlist$cols)
     )
   )
-))
+)
+)
+
+

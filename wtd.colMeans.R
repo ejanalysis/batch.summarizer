@@ -1,6 +1,6 @@
 wtd.colMeans <- function(x, wts=1, na.rm = FALSE, dims = 1) {
   
-  warning(' **** THIS IS WORK IN PROGRESS AS IS wtd.rowMeans() !!! ****')
+  warning(' **** THIS IS WORK IN PROGRESS AS IS wtd.rowMeans() !!! Check how NA values are handled ****')
 
   return( colMeans(x * t(wts), na.rm=na.rm) * colSums(!is.na(x)) / sum(wts, na.rm=na.rm) )
   

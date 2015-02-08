@@ -65,39 +65,22 @@ fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
  # source('batch.summarize.R')
 
 # create some basic summary row, with summary stats of distribution across people (not sites. population-weighted.)
-results.list <- batch.summarize(fulltable, wts=mywts, cols=mycolnames, threshnames=mythreshnames, threshold=mythreshold, probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
+out <- batch.summarize(fulltable, wts=mywts, cols=mycolnames, threshnames=mythreshnames, threshold=mythreshold, probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
+colsout <- out$cols
+rowsout <- out$rows
 
 ####################################################
 # Display & allow download of results
-rowsout=results.list$rows
-rownames(rowsout) <- results.list$rownames
-colnames(rowsout) <- colnames(fulltable)
-
-colsout= results.list$cols
-colnames(colsout) <- results.list$colnames
-#rownames(colsout) <- rownames(fulltable)
-rownames(colsout) <- fulltable$OBJECTID
 
 #   str(rowsout); str(colsout)
-colsout[1:5 , ]
-rowsout[ , 1:9]
-
+#  colsout[1:5 , ]
+#  rowsout[ , 1:9]
+# t( rowsout )
+# t( fulltable[ 1:12 ,  grep('^pctile.EJ.DISPARITY', names(fulltable), value=TRUE)] )
 
 # round(  t( rowsout[c('Average site', 'Average person') , ] ),0)
 
-#[,1] [,2] [,3] [,4]
-# Sum                     903.00000   NA   NA   NA
-# Count of sites           42.00000   NA   NA   NA
-# Number of unique values  42.00000   NA   NA   NA
-# Average site             21.50000   NA   NA   NA
-# Average person           14.43750   NA   NA   NA
-# Minimum                   1.00000   NA   NA   NA
-# Maximum                  42.00000   NA   NA   NA
-# Standard Deviation       12.26784   NA   NA   NA
-
 # to view one or two of the rows of summary stats:
-#  rowsout[c('Average person', 'Average site'), 6:11]
-
 
 # > dim(fulltable)
 # [1]  42 179
