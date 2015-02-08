@@ -59,7 +59,8 @@ shinyServer(function(input, output) {
     
     # create some basic summary row, with summary stats of distribution across people (not sites. population-weighted.)
     outlist <- batch.summarize(fulltable, wts=mywts, cols=mycolnames, threshnames=mythreshnames, threshold=mythreshold, probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
-    outlist$rows
+    # this displays it transposed so browser can fit it easily, by showing all the summary stats for a single input column as one row on the screen instead of as one column.
+    output$rowsout <- renderTable( t( outlist$rows)  ) 
   })
   
   

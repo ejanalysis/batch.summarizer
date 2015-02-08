@@ -3,16 +3,31 @@
 # http://shiny.rstudio.com
 library(shiny)
 
+# notes:
+# Output function     reactive output created
+# htmlOutput	        raw HTML
+# imageOutput	        image
+# plotOutput	        plot
+# tableOutput	        table
+# textOutput	        text
+# uiOutput	          raw HTML
+# verbatimTextOutput	text
+#
+# You can add output to the user-interface in the same way that you added HTML elements and widgets. 
+# Place the output function inside sidebarPanel or mainPanel in the ui.R script.
+
 shinyUI(fluidPage(
   
   # Application title
-  titlePanel("Batch Results Summarizer"),
+  titlePanel(h1("Batch Results Summarizer")),
   
   # Sidebar for selecting functions or columns
   sidebarLayout(
+    
     sidebarPanel(
+      helpText(h3("Upload Batch")),
       
-      fileInput('file1', 'Upload Batch Results',
+      fileInput('file1', 'Select file of batch results to upload and summarize',
                 accept=c('text/csv', 'text/txt', '.txt',
                          'text/comma-separated-values, text/plain', 
                          '.csv')),
@@ -27,25 +42,21 @@ shinyUI(fluidPage(
                    c(None='',
                      'Double Quote'='"',
                      'Single Quote'="'"),
-                   '"'),
-      
-      downloadButton('downloadData', 'Download Summary of Batch')
-      
+                   '"')
     ),
     
-    # add another sidebarPanel here to select mapping file of names to newnames?
-    
-    # add a sidebarPanel to specify formulas, probs, mythreshold, na.rm, mywts, mycolnames, mythreshnames, etc.?
-    
-    
-    
-    mainPanel(
+#     sidebarPanel(
+#       # add another sidebarPanel here to select mapping file of names to newnames?
+#       # add a sidebarPanel to specify formulas, probs, mythreshold, na.rm, mywts, mycolnames, mythreshnames, etc.?
+#       helpText(h3("Download the Summary"))
+#     ),
+
+    mainPanel( h3("View Summary Statistics"),
       
-      #colsout <- outlist$cols
       
       verbatimTextOutput("Summary rows "),
       
-      tableOutput(rowsout)
+      tableOutput("rowsout")
       
       #, tableOutput(outlist$cols)
     )
