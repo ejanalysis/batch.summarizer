@@ -9,7 +9,6 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   #   3. within each cluster of fieldnames, sort on fieldname is alpha (that seems fine)
   ####################################################
   
-  
   if (!missing(namesfile)) {
     if (!missing(oldcolnames) | !missing(newcolnames)) {warning('ignoring oldcolnames and newcolnames because namesfile was specified')}
     if (namesfile=='keepnames') {
@@ -21,6 +20,10 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   
   if (missing(namesfile) & !missing(oldcolnames) & !missing(newcolnames) ) {
     names(x) <- change.fieldnames(names(x), oldnames=oldcolnames, newnames=newcolnames)
+
+    # IMPROVE COLUMN ORDER HERE
+    
+    
   }
   
   if (missing(namesfile) & 1==sum(missing(oldcolnames) + missing(newcolnames) )) {
@@ -36,6 +39,9 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
     myoldnames <- namechanges$batchoutputnames
     mynewnames <- namechanges$friendlynames
     names(x) <- change.fieldnames(names(x), oldnames=myoldnames, newnames=mynewnames)
+    
+    # IMPROVE COLUMN ORDER HERE
+    
   }
   
   # try to convert fields from character to text by removing percent sign, comma, miles, and treat N/A as NA:
@@ -44,35 +50,29 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   x[ , !charcol] <- makenum(x[ , !charcol])
   
   return(x)
-
-  
-    # ***** but if i do rename headers in that csv to be oldnames, newnames, then can just do this:
-    # names(x) <- change.fieldnames(names(x), file=namesfile)
-
-    # # default is to use the mapping in this file:  '~/Dropbox/EJSCREEN/batch summary/map batchtool to gdb to R fieldnames.csv'
-    # setwd('~/Dropbox/EJSCREEN/batch summary')
-    # y= names( read.csv('SAMPLE OUTPUT OF BATCH TOOL 2015.csv', stringsAsFactors = FALSE) )
-    # x=    read.csv('map batchtool to gdb to R fieldnames.csv', stringsAsFactors = FALSE)
-    # cbind(batchoutputnames=y, friendlynames=x$Rfieldname[match(y, x$batchname)]) 
-    #   batchoutputnames  friendlynames                                  
-    #   [1,] "OBJECTID"        "OBJECTID"                                     
-    #   [2,] "Registry_I"      "registryID"                                   
-    #   [3,] "OLDFACID"        "OLDFACID"                                     
-    #   [4,] "NAME"            "name"                                         
-    #   [5,] "LAT"             "lat"                                          
-    #   [6,] "LON"             "lon"                                          
-    #   [7,] "totpop"          "pop"                                          
-    #   [8,] "buff"            "radius.miles"                                 
-    #   [9,] "stabbr"          "ST"                                           
-    #   [10,] "statename"       "statename"                                    
-    #   [11,] "region"          "REGION"                                       
-    #   [12,] "S_E_TSDF_PER"    "state.pctile.proximity.tsdf"                  
-    #   [13,] "R_P_TRAFFIC"     "region.pctile.EJ.DISPARITY.traffic.score.eo"  
-    #   [14,] "S_E_PM25_PER"    "state.pctile.pm"                              
-        
-  
-  
 }
+
+# # default is to use the mapping in this file:  '~/Dropbox/EJSCREEN/batch summary/map batchtool to gdb to R fieldnames.csv'
+# setwd('~/Dropbox/EJSCREEN/batch summary')
+# y= names( read.csv('SAMPLE OUTPUT OF BATCH TOOL 2015.csv', stringsAsFactors = FALSE) )
+# x=    read.csv('map batchtool to gdb to R fieldnames.csv', stringsAsFactors = FALSE)
+# cbind(batchoutputnames=y, friendlynames=x$Rfieldname[match(y, x$batchname)]) 
+#   batchoutputnames  friendlynames                                  
+#   [1,] "OBJECTID"        "OBJECTID"                                     
+#   [2,] "Registry_I"      "registryID"                                   
+#   [3,] "OLDFACID"        "OLDFACID"                                     
+#   [4,] "NAME"            "name"                                         
+#   [5,] "LAT"             "lat"                                          
+#   [6,] "LON"             "lon"                                          
+#   [7,] "totpop"          "pop"                                          
+#   [8,] "buff"            "radius.miles"                                 
+#   [9,] "stabbr"          "ST"                                           
+#   [10,] "statename"       "statename"                                    
+#   [11,] "region"          "REGION"                                       
+#   [12,] "S_E_TSDF_PER"    "state.pctile.proximity.tsdf"                  
+#   [13,] "R_P_TRAFFIC"     "region.pctile.EJ.DISPARITY.traffic.score.eo"  
+#   [14,] "S_E_PM25_PER"    "state.pctile.pm"                             
+# ETC. ETC.
 
 #     oldcolnames <- c("OBJECTID", 
 #                      "Registry_I", "OLDFACID", "NAME", "LAT", "LON", 
@@ -113,29 +113,3 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
 #                      "R_E_CANCER", "S_E_CANCER", "S_P_CANCER", "N_D_INCOME_PER", "R_D_INCOME_PER", 
 #                      "S_E_NEURO", "R_D_INCOME", "R_E_PM25_PER", "R_D_UNDER5", "S_E_LEAD_PER", 
 #                      "S_P_LEAD")
-#     
-# Older format just for reference:
-#   mytable <- cbind(
-#     ID=myfile,
-#     lon=as.numeric(first.row[2]),
-#     lat=as.numeric(first.row[3]),
-#     miles=first.row[5],
-#     State=paste(first.row[7:(colcount-4)], collapse=" "),
-#     REGION=first.row[colcount-2],
-#     pop=as.numeric(first.row[colcount]),
-#     mytable, stringsAsFactors = FALSE)
-
-
-
-
-# old variables:
-# colcount, rowcount, radius.miles
-# OLD format:
-#
-# etc. (US %ile column is cutoff in this view here and not all lines of it shown)
-#
-#1   1 -92.828 33.585     1     1      1  356           NATA Cancer Risk (Env)       58     51.000         79          53.000              65   61.000
-#2   1 -92.828 33.585     1     1      1  356                  Diesel PM (Env)    0.171      0.245         61           0.734              30    0.825
-#names(fulltable)
-#[1] "ID"           "lon"          "lat"          "miles"        "State"        "REGION"       "pop"          "fieldname"    "raw"         
-#[10] "stateavg"     "statepctile"  "regionavg"    "regionpctile" "usavg"        "uspctile"

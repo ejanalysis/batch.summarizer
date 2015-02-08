@@ -5,7 +5,10 @@
 #'
 batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=80, threshnames='', na.rm=TRUE, rowfun.picked, colfun.picked) {
 
-  # basic error checking
+  ############################################
+  # Basic error checking
+  ############################################
+
   if (missing(x)) {stop('x must be a matrix or data.frame to be analyzed')}
   if (cols[1]=='all') {cols <- colnames(x)}
   if (any(!(cols %in% colnames(x)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(x)')}
@@ -16,7 +19,9 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   # A later version could allow user to select from a list of functions, and eventually even specify custom functions perhaps, 
   # but offline work in R or a spreadsheet could provide that capability easily.
   
+  ############################################
   # SUMMARY COLUMNS (a summary of each row):
+  ############################################
   
   rowfuname <- vector()
   rowfun <- list()
@@ -58,43 +63,49 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   #mean for flagged only?
   # note: Hmisc's describe() takes a df and returns printout of count, missing, length(unique), pctiles, and a table() of how many of each unique value there are.
 
-  ############################################
-  # THESE FUNCTIONS RETURN ONE ROW EACH:
-  ############################################
+  # THESE SUMMARY FUNCTIONS RETURN 1 ROW EACH:
   
   colfuname <- vector()
   colfun <- list()
-
-  colfuname[1]='Sum'
-  colfun[[1]]=function(x, ...) {colSums(x, na.rm=na.rm)}
+  # n specifies the order in which summary stat rows will appear
   
-  colfuname[2]='Count of sites'
-  colfun[[2]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
+  n=1
+  colfuname[n]='Average site'
+  colfun[[n]]=function(x, ...) {colMeans(x, na.rm=na.rm)}
   
-  colfuname[3]='Number of unique values'
-  colfun[[3]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
+  n=2
+  colfuname[n]='Average person'
+  colfun[[n]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)}
   
-  colfuname[4]='Average site'
-  colfun[[4]]=function(x, ...) {colMeans(x, na.rm=na.rm)}
+  n=3
+  colfuname[n]='Minimum'
+  colfun[[n]]=function(x, ...) {colMins(x, na.rm=na.rm)}
   
-  colfuname[5]='Average person'
-  colfun[[5]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)}
+  n=4
+  colfuname[n]='Maximum'
+  colfun[[n]]=function(x, ...) {colMaxs(x, na.rm=na.rm)}
   
-  colfuname[6]='Minimum'
-  colfun[[6]]=function(x, ...) {colMins(x, na.rm=na.rm)}
+  n=5
+  colfuname[n]='Sum'
+  colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
   
-  colfuname[7]='Maximum'
-  colfun[[7]]=function(x, ...) {colMaxs(x, na.rm=na.rm)}
+  n=6
+  colfuname[n]='Count of sites'
+  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
   
-  colfuname[8]='Standard Deviation'
-  colfun[[8]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
+  n=7
+  colfuname[n]='Number of unique values'
+  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
+  
+  n=8
+  colfuname[n]='Standard Deviation'
+  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
 
   ############################################
-  # THESE FUNCTIONS RETURN MULTIPLE ROWS EACH:
+  # THESE SUMMARY FUNCTIONS RETURN MULTIPLE ROWS EACH:
   # THAT REQUIRES A DIFFERENT APPROACH TO POPULATING THE RESULTS VARIABLE
   # like using rbind instead of [i] <-  ?
   # or having function return value that specifies how many rows or cols it will output?
-  ############################################
   
   if (1==0) {
     if (length(probs) > 0) {
@@ -109,10 +120,13 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
       }
     # colfuname[ nextcol ]=' '
     # colfun[[ nextcol  ]]=function(x, na.rm=TRUE) {  }
-  }
-  
+  }  
   ############################################
   
+  ############################################
+  # Use those functions to get summary stats
+  ############################################
+
   colfuns.count.all <- length(colfun)
   rowfuns.count.all <- length(rowfun)
 
@@ -136,17 +150,14 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
 
   # don't summarize character columns like name of site
   charcol <- sapply(x, class)=='character'
-
+  
+  ############################################
+  # Create summary rows
+  # where each element in a summary row summarizes 1 column (field) across all the rows of batch data
+  ############################################
+  
   for (i in 1:colfuns.count.picked) {
     fnum <- which(colfun.picked)[i]
-    
-    #     cat('\n\n')
-    #     cat('fnum ', fnum, ' and colfuname[fnum] is ', colfuname[fnum],'\n' )
-    #     print('str(colfun[[fnum]](x[ , !charcol]) )'); str(colfun[[fnum]](x[ , !charcol]) )
-    #     print('class(colfun[[fnum]](x[ , !charcol]) )'); print( class(colfun[[fnum]](x[ , !charcol]) ))
-    #     cat('\n\n')
-    #     print('str(summary.rows[i, ][  !charcol])'); str(summary.rows[i, ][ !charcol])
-    #     cat('\n\n')
     
     summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](x[ , !charcol]) )  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
 
@@ -156,7 +167,12 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
 
     # could this have the wrong # of elements if na.rm=TRUE and it somehow doesn't return NA for one of the columns??
   }
-
+  
+  ############################################
+  # Create summary cols
+  # where each element in a summary col summarizes 1 row (site) across all the RELEVANT cols of batch data (e.g., all US EJ Index percentiles)
+  ############################################
+  
   for (i in 1:rowfuns.count.picked) {
     fnum <- which(rowfun.picked)[i]
     
@@ -172,8 +188,12 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   rownames(summary.cols) <- x[,1] # assumes you want the first column to be used as the rownames, which is OBJECTID as of 2/2015
   # rownames(colsout) <- rownames(x)  # is another option
   
+  ############################################
+  
   return( list(rows=summary.rows, cols=summary.cols) )
 }
+
+############################################  ############################################
 
 # str(fulltable)
 # 'data.frame':  42 obs. of  179 variables:

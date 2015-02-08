@@ -38,7 +38,6 @@ shinyServer(function(input, output) {
   colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   
-  
   output$rowsout <- renderTable({
     
     # input$file1 will be NULL initially. After the user selects
@@ -51,31 +50,26 @@ shinyServer(function(input, output) {
     if (is.null(inFile))
       return(NULL)
     
-    # read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
+    # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     fulltable <- read.csv(inFile$datapath, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
     
-    # check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
+    # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     
-    # create some basic summary row, with summary stats of distribution across people (not sites. population-weighted.)
+    # Create summary stats from uploaded batch results. outlist is a list of 2 elements: rows (rows of summary stats), & cols (columns of summary stats)
     outlist <- batch.summarize(fulltable, wts=mywts, cols=mycolnames, threshnames=mythreshnames, threshold=mythreshold, probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
-    # this displays it transposed so browser can fit it easily, by showing all the summary stats for a single input column as one row on the screen instead of as one column.
+    
+    # Transpose summary stats rows so browser can fit it easily, by showing all the summary stats for a single input column as one row on the screen instead of as one column.
+    # This does not currently display the columns of summary stats like # of EJ indicator uspctiles at/above threshold at each site.
     output$rowsout <- renderTable( t( outlist$rows)  ) 
+    
   })
   
-  
-
   #   output$distPlot <- renderPlot({
   # 
-  #     # e.g., generate bins based on input$bins from ui.R
-  #     x    <- faithful[, 2]
-  #     bins <- seq(min(x), max(x), length.out = input$bins + 1)
-  # 
-  #     # draw the histogram with the specified number of bins
-  #     hist(x, breaks = bins, col = 'darkgray', border = 'white')
+  #     # e.g. draw histogram 
+  #     hist(fulltable[ , 'pop'], breaks = bins, col = 'darkgray', border = 'white')
   # 
   #   })
-  #   
-  
 
 })

@@ -45,16 +45,14 @@ shinyUI(fluidPage(
                    '"')
     ),
     
-#     sidebarPanel(
-#       # add another sidebarPanel here to select mapping file of names to newnames?
-#       # add a sidebarPanel to specify formulas, probs, mythreshold, na.rm, mywts, mycolnames, mythreshnames, etc.?
-#       helpText(h3("Download the Summary"))
-#     ),
-
+    #       # Possiby add another sidebarPanel here to select mapping file of names to newnames.
+    #       # add a sidebarPanel to specify formulas, probs, mythreshold, na.rm, mywts, mycolnames, mythreshnames, etc.?
+    
     mainPanel( h3("View Summary Statistics"),
       
+      # h3("Download the Summary")
       
-      verbatimTextOutput("Summary rows "),
+      #verbatimTextOutput("Summary rows "),
       
       tableOutput("rowsout")
       
