@@ -36,7 +36,7 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   if (missing(namesfile) & missing(oldcolnames) & missing(newcolnames) ) {
     
     # use default fieldname changes if nothing is specified for column names
-    namesfile <- '~/Dropbox/EJSCREEN/batch summary/map batchtool to gdb to R fieldnames.csv'
+    namesfile <- 'map batchtool to gdb to R fieldnames.csv'
 
     # ***** if i don't rename the headers in that csv, then must do this: (but I did rename them)
     # namechanges <- read.csv(file=namesfile, stringsAsFactors = FALSE)
