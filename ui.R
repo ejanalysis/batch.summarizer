@@ -3,54 +3,43 @@
 # http://shiny.rstudio.com
 library(shiny)
 
-# notes:
-# Output function     reactive output created
-# htmlOutput	        raw HTML
-# imageOutput	        image
-# plotOutput	        plot
-# tableOutput	        table
-# textOutput	        text
-# uiOutput	          raw HTML
-# verbatimTextOutput	text
-#
-# You can add output to the user-interface in the same way that you added HTML elements and widgets. 
-# Place the output function inside sidebarPanel or mainPanel in the ui.R script.
-
 shinyUI(fluidPage(
   
   # Application title
   titlePanel(h1("Batch Results Summarizer")),
   
   # Sidebar for selecting functions or columns
-  sidebarLayout(
-    
-    sidebarPanel(
-      helpText(h3("Upload Batch")),
-      
-      fileInput('file1', 'Select file of batch results to upload and summarize',
-                accept=c('text/csv', 'text/txt', '.txt',
-                         'text/comma-separated-values, text/plain', 
-                         '.csv')),
-      tags$hr(),
-      checkboxInput('header', 'Header', TRUE),
-      radioButtons('sep', 'Separator',
-                   c(Comma=',',
-                     Semicolon=';',
-                     Tab='\t'),
-                   ','),
-      radioButtons('quote', 'Quote',
-                   c(None='',
-                     'Double Quote'='"',
-                     'Single Quote'="'"),
-                   '"')
-    ),
-    
-    #       # Possiby add another sidebarPanel here to select mapping file of names to newnames.
-    #       # add a sidebarPanel to specify formulas, probs, mythreshold, na.rm, mywts, mycolnames, mythreshnames, etc.?
-    
-    mainPanel( 
-      #h3("View Summary Statistics"),
+#  sidebarLayout(
+#    
+#     sidebarPanel(
+#     ),
+#       # Possiby add another sidebarPanel here to select mapping file of names to newnames.
+#       # add a sidebarPanel to specify formulas, probs, mythreshold, na.rm, mywts, mycolnames, mythreshnames, etc.?
+
+#    mainPanel(
+#      h3("View Summary Statistics"),
       tabsetPanel(
+      
+       tabPanel( "Upload a batch",
+                  #helpText(h3("Upload Batch")),
+                  fileInput('file1', 'Select file of batch results to upload and summarize',
+                            accept=c('text/csv', 'text/txt', '.txt',
+                                     'text/comma-separated-values, text/plain', 
+                                     '.csv')),
+                  tags$hr(),
+                  checkboxInput('header', 'Header', TRUE),
+                  radioButtons('sep', 'Separator',
+                               c(Comma=',',
+                                 Semicolon=';',
+                                 Tab='\t'),
+                               ','),
+                  radioButtons('quote', 'Quote',
+                               c(None='',
+                                 'Double Quote'='"',
+                                 'Single Quote'="'"),
+                               '"'), 
+                  tableOutput("fulltableout")),
+        
         tabPanel("Summary rows", tableOutput("rowsout")),
         tabPanel("Summary cols", tableOutput("colsout")), 
         tabPanel("Barplots", 
@@ -58,45 +47,48 @@ shinyUI(fluidPage(
                  ), 
         tabPanel("Histograms", 
                  plotOutput('histograms'),
-                 # insert checkboxes code here for selection of type of histogram
-#                  sites.or.people <- 'Sites' # or 'People'
-#                  refzone <- 'us' # or 'region' or 'state' # this presumes new variable names are as in default file
-#                  refzone.friendly <- 'US' # or 'Region' or 'State' 
-#                  refstat <- 'pctile'  # or 'avg' # this presumes new variable names are as in default file
-#                  refstat.friendly='Percentile'  # or 'Average' 
+
+#                 checkboxes for selection of type of histogram
+#                 # this presumes new variable names are as in default file
+
 #                  myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist$rows not in fulltable
-#                  myvar.friendly.base <- 'Demographic Index'
 
                  fluidRow(
+                   h4("Histogram settings"),
+                   
+                   # *** WILL EXPLAND THIS TO THE FULL GENERIC LIST OF INDICATORS THAT COULD BE PLOTTED HERE:
+                   selectInput('myvar.base', h5('Indicator'), c('VSI.eo','pctmin','pctlowinc','traffic.score','EJ.DISPARITY.traffic.score.eo'), selected=1),
+                   
                    column(3,
-                          h4("Histogram settings"),
-                          selectInput('sites.or.people', 'Distribution across sites or people (pop.wtd.)', c('Sites','People-notyetworking') ),
-                          br(),
-                          selectInput('refzone', 'Zone', c('us','region','state')),
-                          selectInput('refzone.friendly', 'Zone label', c('US','Region','State')),
-                          selectInput('refstat', 'Benchmark: %ile or avg. person', c('pctile','avg')),
-                          selectInput('refstat.friendly', 'Benchmark label', c('Percentile','Average'))
+                          radioButtons('sites.or.people', label=h5('Distribution across sites or people (pop.wtd.)'), list('Sites'='Sites','People'='People') ),
+                          br()
                    ),
-                   column(4, offset = 1,
-                          selectInput('myvar.base', 'Indicator', c('VSI.eo','pctmin','pctlowinc','traffic.score','EJ.DISPARITY.traffic.score.eo'))
+                   column(2,
+                          radioButtons('refzone', label=h5('Percentile Zone'), list('US'='us', 'Region'='region', 'State'='state'), select='us')
                    ),
-                   column(4,
-                          selectInput('myvar.friendly.base', 'Indicator label', c('VSI.eo','pctmin','pctlowinc','traffic.score','EJ.DISPARITY.traffic.score.eo'))
+                   column(2, 
+                          radioButtons('refstat', label=h5('Data type'), list('Percentile of population'='pctile', 'Raw data'='raw'))
+                   ),
+                   column(2,
+                          sliderInput('bincount', label=h5('Bins'), 5, 100, step=5, value=10)
                    )
                  )
-                 
-                 
-                 ) 
+        ) 
       )
     )
-    #h3("Download the Summary")
-    
-    #verbatimTextOutput("Summary rows "),
-    
-    
-    #tableOutput("rowsout")
-    
+
+#h3("Download the Summary")
+
     #, tableOutput(outlist$cols)
   )
-)
-)
+
+
+# notes:
+# Output function     reactive output created
+# htmlOutput          raw HTML
+# imageOutput          image
+# plotOutput	        plot
+# tableOutput	        table
+# textOutput	        text
+# uiOutput	          raw HTML
+# verbatimTextOutput	text

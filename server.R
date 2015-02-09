@@ -4,6 +4,7 @@
 library(shiny)
 
 require(Hmisc) 
+require(plotrix) # for weighted.hist() # or use ggplot2:  library(ggplot2); ggplot( fulltable, aes(pm, weight=pop) ) + geom_histogram()
 
 # Require a package or just source the code needed:
 # THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
@@ -52,15 +53,19 @@ shinyServer(function(input, output) {
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     
-    # SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
+    output$fulltableout <- renderTable(  fulltable )
+    
+    # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
     mywtsname <- 'pop'
     mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
     mycolnames <- colnames(fulltable)
     colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
     rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
     
+    ##################################################################################################
     # Create summary stats from uploaded batch results. outlist is a list of 2 elements: 
     #   rows (rows of summary stats), & cols (columns of summary stats)
+    
     outlist <- batch.summarize(fulltable, 
       wts=fulltable[ , mywtsname], cols=mycolnames, 
       threshnames=mythreshnames, threshold=mythreshold, 
@@ -71,19 +76,30 @@ shinyServer(function(input, output) {
     # Transpose summary stats rows for dispaly so browser can fit it easily, by showing all the summary stats for a single input column as one row on the screen instead of as one column.
     # This does not currently display the columns of summary stats like # of EJ indicator uspctiles at/above threshold at each site.
     output$colsout <- renderTable(  outlist$cols)
+    ##################################################################################################
+    
       
+    ##################################################################################################
+    # BARPLOTS
+    
     output$barplots <- renderPlot({
       # One set of bars per each of the myvars
-      myvars <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
-      myvars.sumstat <- c('Average person', 'Average site')
-      myvars.refzone <- c('us.avg.VSI.eo', 'us.avg.pctlowinc', 'us.avg.pctmin', 'us.avg.pctlths','us.avg.pctlingiso', 'us.avg.pctunder5', 'us.avg.pctover64' )
-      myvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-      plotdata <- rbind( outlist$rows[ myvars.sumstat, myvars ], 
-                         outlist$rows[ myvars.refzone.row, myvars.refzone] ) 
+      # *** possibly allow these to be set by user instead of hard-coded names:
+      mybarvars          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
+      mybarvars.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
+      mybarvars.refzone  <- c('us.avg.VSI.eo', 'us.avg.pctlowinc', 'us.avg.pctmin', 'us.avg.pctlths','us.avg.pctlingiso', 'us.avg.pctunder5', 'us.avg.pctover64' )
+
+      mybarvars.sumstat <- c('Average person', 'Average site')
+      mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+      plotdata <- rbind( outlist$rows[ mybarvars.sumstat, mybarvars ], 
+                         outlist$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
       barplot( plotdata, beside=TRUE,
                legend.text=c('Average person', 'Average site', 'US Overall'),
-               names.arg=c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64'))
+               names.arg=mybarvars.friendly )
     })
+    
+    ##################################################################################################
+    # HISTOGRAMS
     
     output$histograms <- renderPlot({
       # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
@@ -104,22 +120,58 @@ shinyServer(function(input, output) {
 #       myvar.friendly.base <- 'Demographic Index'
 #       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
       
-      myvar.full <- paste(input$refzone, input$refstat, input$myvar.base, sep='.')  # this presumes new variable names are as in default file
-      myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
-      myvar.friendly.full <- paste(input$myvar.friendly.base, ', as ', input$refzone.friendly, ' ', input$refstat.friendly, ' across ', input$sites.or.people, sep='')
+      refzone.friendly <- switch(input$refzone, 
+                                 'us'='US',
+                                 'region'='Region',
+                                 'state'='State')
+      refstat.friendly <- switch(input$refstat,
+                                 'pctile'='Percentile',
+                                 'raw'='Indicator Value (not percentile)')
+
+      # *** Should make this more generic/ flexible, not hard-coded names:
+      myvar.friendly.base <- switch(input$myvar.base,
+                                    'VSI.eo'='Demographic Indicator', 
+                                    'pctmin'='% Minority', 
+                                    'pctlowinc'='% Low-Income', 
+                                    'traffic.score'='Traffic Proximity', 
+                                    'EJ.DISPARITY.traffic.score.eo'='EJ Index for Traffic' )
+
+      if (input$refstat=='raw') {
+        myvar.full <- input$myvar.base
+        myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refstat.friendly, ' across ', input$sites.or.people, sep='')
+      } else {
+        myvar.full <- paste(input$refzone, input$refstat, input$myvar.base, sep='.')  # this presumes new variable names are as in default file
+        myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
+        myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', input$sites.or.people, sep='')
+      }
       
       sitecount <- length( fulltable[ , myvar.full] ) # but for popwtd hist, use popcount!
-      mybreaks <- (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
-      expected=sitecount / 10 # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount!
+      #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now
+      popcount <- outlist$rows[ 'Sum','pop' ]
+
+      mybincount <- input$bincount # (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
+      expected.sites.per.bin=sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount!
+      expected.pop.per.bin=popcount / mybincount
       
-      hist(fulltable[ , myvar.full], breaks = mybreaks, col = 'darkgray', border = 'white', 
-           main=paste(myvar.friendly.full,':
+      if (input$sites.or.people=='Sites') {
+        hist(fulltable[ , myvar.full], breaks = mybincount, col = 'darkgray', border = 'white', 
+             main=paste(myvar.friendly.full,':
                       Distribution across ', input$sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
-      abline(h=expected)
+        abline(h=expected.sites.per.bin)
+      } else {
+        # hard coded to use 'pop' as weights for now:
+        weighted.hist(fulltable[ , myvar.full], w= fulltable[ , mywtsname], breaks = mybincount, col = 'darkgray', border = 'white', 
+             main=paste(myvar.friendly.full,':
+                      Distribution across ', input$sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
+        abline(h=expected.pop.per.bin)
+      }
     })
-    
-    t( outlist$rows)
-    
-    })
+
+    ##################################################################################################
+    # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
+
+    t( outlist$rows )
+
+  })
 })
 
