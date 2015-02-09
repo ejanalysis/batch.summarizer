@@ -33,6 +33,15 @@ shinyServer(function(input, output) {
   mythreshold=80
   na.rm=TRUE
   
+  output$download.batchdata <- downloadHandler(
+    filename = function() { 
+      'batchdata.csv'
+    },
+    content = function(file) {
+      write.csv( datasetInput.batchdata(), file)
+    }
+  )
+  
   output$rowsout <- renderTable({
     
     # input$file1 will be NULL initially. 
@@ -46,7 +55,7 @@ shinyServer(function(input, output) {
       #output$rowsout <- NULL
       return(NULL)
     }
-    
+        
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     fulltable <- read.csv(inFile$datapath, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
     
@@ -54,6 +63,11 @@ shinyServer(function(input, output) {
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     
     output$fulltableout <- renderTable(  fulltable )
+    
+#     datasetInput.batchname() <- reactive <- ({
+#       input$dataset <- fulltable
+#     })
+#     # download.batchdata
     
     # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
     mywtsname <- 'pop'
@@ -160,7 +174,7 @@ shinyServer(function(input, output) {
         abline(h=expected.sites.per.bin)
       } else {
         # hard coded to use 'pop' as weights for now:
-        weighted.hist(fulltable[ , myvar.full], w= fulltable[ , mywtsname], breaks = mybincount, col = 'darkgray', border = 'white', 
+        weighted.hist(fulltable[ , myvar.full], w=fulltable[ , mywtsname],  breaks = mybincount, col = 'darkgray', border = 'white', 
              main=paste(myvar.friendly.full,':
                       Distribution across ', input$sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
         abline(h=expected.pop.per.bin)

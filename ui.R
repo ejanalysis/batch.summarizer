@@ -38,6 +38,9 @@ shinyUI(fluidPage(
                                  'Double Quote'='"',
                                  'Single Quote'="'"),
                                '"'), 
+                 
+                  # downloadButton('download.batchdata', 'Download'),
+                 
                   tableOutput("fulltableout")),
         
         tabPanel("Summary rows", tableOutput("rowsout")),
