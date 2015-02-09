@@ -1,5 +1,7 @@
 batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   
+  # namesfile='keepnames' is one way to specify user wants to keep same names.
+  
   ####################################################
   # *** somehow add Env, EJ, Demog as varcategory at the end of this
   ####################################################
@@ -9,43 +11,46 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   #   3. within each cluster of fieldnames, sort on fieldname is alpha (that seems fine)
   ####################################################
   
+  if (missing(namesfile) & 1==sum(missing(oldcolnames) + missing(newcolnames) )) {
+    stop('must specify either namesfile, or both oldcolnames and newcolnames')
+  }
+  
   if (!missing(namesfile)) {
     if (!missing(oldcolnames) | !missing(newcolnames)) {warning('ignoring oldcolnames and newcolnames because namesfile was specified')}
     if (namesfile=='keepnames') {
       # that is how user can specify they want no changes made to the names
     } else {
+      x <- x[ , change.fieldnames(names(x), file=namesfile, sort=TRUE)]
       names(x) <- change.fieldnames(names(x), file=namesfile)
     }
   }
   
   if (missing(namesfile) & !missing(oldcolnames) & !missing(newcolnames) ) {
+    
+    # IMPROVE COLUMN ORDER
+    x <- x[ , change.fieldnames(names(x), oldnames=oldcolnames, sort=TRUE)]
+    # RENAME FIELDS TO FRIENDLIUER NEW NAMES
     names(x) <- change.fieldnames(names(x), oldnames=oldcolnames, newnames=newcolnames)
-
-    # IMPROVE COLUMN ORDER HERE
-    
-    
-  }
-  
-  if (missing(namesfile) & 1==sum(missing(oldcolnames) + missing(newcolnames) )) {
-    stop('must specify either namesfile, or both oldcolnames and newcolnames')
   }
   
   if (missing(namesfile) & missing(oldcolnames) & missing(newcolnames) ) {
     
     # use default fieldname changes if nothing is specified for column names
     namesfile <- '~/Dropbox/EJSCREEN/batch summary/map batchtool to gdb to R fieldnames.csv'
-    # ***** if i don't rename the headers in that csv, then must do this:
-    namechanges <- read.csv(file=namesfile, stringsAsFactors = FALSE)
-    myoldnames <- namechanges$batchoutputnames
-    mynewnames <- namechanges$friendlynames
-    names(x) <- change.fieldnames(names(x), oldnames=myoldnames, newnames=mynewnames)
+
+    # ***** if i don't rename the headers in that csv, then must do this: (but I did rename them)
+    # namechanges <- read.csv(file=namesfile, stringsAsFactors = FALSE)
+    # myoldnames <- namechanges$batchoutputnames
+    # mynewnames <- namechanges$friendlynames
     
-    # IMPROVE COLUMN ORDER HERE
-    
+    # IMPROVE COLUMN ORDER
+    x <- x[ , change.fieldnames(names(x), file=namesfile, sort=TRUE)]
+    names(x) <- change.fieldnames(names(x), file=namesfile)
+    # names(x) <- change.fieldnames(names(x), oldnames=myoldnames, newnames=mynewnames)    
   }
   
   # try to convert fields from character to text by removing percent sign, comma, miles, and treat N/A as NA:
-  makenum <- function(x) {as.data.frame( lapply(x, function(y) as.numeric(gsub(' miles', '', gsub('N/A','',gsub('%','',gsub(',','',y)) )))) , stringsAsFactors=FALSE)}
+  makenum <- function(x) {as.data.frame( lapply(x, function(y) as.numeric(gsub('th', '', gsub('<', '', gsub(' miles', '', gsub('N/A','',gsub('%','', gsub(',','',y)) )))))) , stringsAsFactors=FALSE)}
   charcol <- names(x) %in% c('OBJECTID', 'FACID', 'name', 'ST', 'statename')
   x[ , !charcol] <- makenum(x[ , !charcol])
   

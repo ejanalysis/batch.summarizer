@@ -18,37 +18,33 @@ source('rowMins.R')     # returns Min of each row
 source('colMaxs.R')     # returns Max of each col
 source('colMins.R')     # returns Min of each col
 source('wtd.colMeans.R')     # returns wtd.mean of each col
-source('change.fieldnames.R')  # helps change fieldnames using a map file mapping old to new names
+source('change.fieldnames.R')  # updated function that helps change or resort fieldnames using a map file mapping old to new names
 
 source('batch.read.R')
 source('batch.clean.R')
 source('batch.summarize.R')
 
-
 shinyServer(function(input, output) {
   
-  # DEFAULT VALUES: 
+  # DEFAULT VALUES, possibly could recode to allow user to change them: 
   mynamesfile <- 'map batch to friendly fieldnames v1.csv'
   probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
   mythreshold=80
   na.rm=TRUE
-  mywts <- fulltable$pop
-  mycolnames <- colnames(fulltable)
-  mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
-  colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
-  rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   
   output$rowsout <- renderTable({
     
-    # input$file1 will be NULL initially. After the user selects
-    # and uploads a file, it will be a data frame with 
+    # input$file1 will be NULL initially. 
+    # After the user selects and uploads a file, it will be a data frame with 
     # 'name', 'size', 'type', and 'datapath' columns. 
     # The 'datapath' column will contain the local filenames where the data can be found.
     
     inFile <- input$file1
     
-    if (is.null(inFile))
+    if (is.null(inFile)) {
+      #output$rowsout <- NULL
       return(NULL)
+    }
     
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     fulltable <- read.csv(inFile$datapath, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
@@ -56,20 +52,44 @@ shinyServer(function(input, output) {
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     
-    # Create summary stats from uploaded batch results. outlist is a list of 2 elements: rows (rows of summary stats), & cols (columns of summary stats)
-    outlist <- batch.summarize(fulltable, wts=mywts, cols=mycolnames, threshnames=mythreshnames, threshold=mythreshold, probs=probs, na.rm=na.rm, colfun.picked=colfun.picked, rowfun.picked=rowfun.picked)
+    # SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
+    mywtsname <- 'pop'
+    mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
+    mycolnames <- colnames(fulltable)
+    colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
+    rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
     
-    # Transpose summary stats rows so browser can fit it easily, by showing all the summary stats for a single input column as one row on the screen instead of as one column.
+    # Create summary stats from uploaded batch results. outlist is a list of 2 elements: 
+    #   rows (rows of summary stats), & cols (columns of summary stats)
+    outlist <- batch.summarize(fulltable, 
+      wts=fulltable[ , mywtsname], cols=mycolnames, 
+      threshnames=mythreshnames, threshold=mythreshold, 
+      colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
+      probs=probs, na.rm=na.rm
+      )
+    
+    # Transpose summary stats rows for dispaly so browser can fit it easily, by showing all the summary stats for a single input column as one row on the screen instead of as one column.
     # This does not currently display the columns of summary stats like # of EJ indicator uspctiles at/above threshold at each site.
-    output$rowsout <- renderTable( t( outlist$rows)  ) 
+    output$colsout <- renderTable(  outlist$cols)
     
-  })
-  
-  #   output$distPlot <- renderPlot({
-  # 
-  #     # e.g. draw histogram 
-  #     hist(fulltable[ , 'pop'], breaks = bins, col = 'darkgray', border = 'white')
-  # 
-  #   })
-
+#     output$histdemog <- renderPlot({
+#       # e.g. draw histogram or barplot
+#       hist(fulltable[ , 'VSI.eo'], breaks = (0:10)*10, col = 'darkgray', border = 'white')
+#     })
+#     
+    output$barplotdemog <- renderPlot({
+      plotdata <- rbind( outlist$rows[ c('Average person', 'Average site'), 
+                                       c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64') ], 
+                         
+                         outlist$row[ 'Average person',
+                                      c('us.avg.VSI.eo', 'us.avg.pctlowinc', 'us.avg.pctmin', 'us.avg.pctlths','us.avg.pctlingiso', 'us.avg.pctunder5', 'us.avg.pctover64' )  ] )
+      barplot( plotdata, beside=TRUE,
+               legend.text=c('Average person', 'Average site', 'US Overall'),
+               names.arg=c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64'))
+    })
+    
+    t( outlist$rows)
+    
+    })
 })
+

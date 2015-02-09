@@ -26,12 +26,12 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   rowfuname <- vector()
   rowfun <- list()
   
-  rowfuname[1]='Are any indicators at/above threshold'
+  rowfuname[1]='Are any EJ Index US percentiles at/above threshold'
   rowfun[[1]]=function(x, ...) {
-    flagged(x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm)
+     flagged(x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm) 
   }
   
-  rowfuname[2]='Number of indicators at/above threshold'
+  rowfuname[2]='Number of EJ Index US percentiles at/above threshold'
   rowfun[[2]]=function(x, ...) {
     #print(threshnames)
     cols.above.count( x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm )
@@ -104,23 +104,41 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   ############################################
   # THESE SUMMARY FUNCTIONS RETURN MULTIPLE ROWS EACH:
   # THAT REQUIRES A DIFFERENT APPROACH TO POPULATING THE RESULTS VARIABLE
-  # like using rbind instead of [i] <-  ?
-  # or having function return value that specifies how many rows or cols it will output?
+  # 1) could append the group of quantiles to summarycols (use probs) outside the loop over functions, using rbind instead of [i] <-  
+  # 2) could write each quantile as a single function - time consuming to write out & hard to accomodate probs. 
+  # 3) could have each function also have a value that specifies how many rows or cols it will output & account for that (seems complicated)
   
+  n=n+1
+  # while not yet working:
   if (1==0) {
-    if (length(probs) > 0) {
-      colfuname[9:(8+length(probs))]=paste('Percentile of sites', 100*probs)
-      colfun[[  9:(8+length(probs))  ]]=function(x, ...) {apply(x, 2, FUN=function(y) quantile(y , probs=probs, na.rm=na.rm))}
-      
-      colfuname[(9+length(probs)):(8+2*length(probs))]=paste('Percentile of people', 100*probs)
-      colfun[[  (9+length(probs)):(8+2*length(probs))]]=function(x, ...) {wtd.quantile(x, weights=wts, probs=probs, na.rm=na.rm)}
-      nextcol <- 1+(8+2*length(probs))
-      } else {
-        nextcol <- 9
-      }
-    # colfuname[ nextcol ]=' '
-    # colfun[[ nextcol  ]]=function(x, na.rm=TRUE) {  }
-  }  
+  if (length(probs) > 0) {
+    myfunlist <- list()
+    for (z in 1:length(probs)) {
+      myfunlist[[z]] <- function(x, ...) {  }
+      f <- (parse( " function (x) ", as.symbol("{"), paste('quantile(x,probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
+      body(myfunlist[[z]]) <- f
+    }
+    colfuname[n:(n-1+length(probs))]    <- paste('Percentile of sites', 100*probs)
+    colfun[[  n:(n-1+length(probs))  ]] <- myfunlist
+    
+    myfunlist <- list()
+    for (z in 1:length(probs)) {
+      myfunlist[[z]] <- function(x, ...) {  }
+      f <- (parse( " function (x) ", as.symbol("{"), paste('wtd.quantile(x, weights=wts, probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
+      body(myfunlist[[z]]) <- f
+    }
+    colfuname[(n+length(probs)):((n-1)+2*length(probs))]  <- paste('Percentile of people', 100*probs)
+    colfun[[  (n+length(probs)):((n-1)+2*length(probs))]] <- myfunlist
+
+    nextcol <- 1+((n-1)+2*length(probs))
+  } else {
+    nextcol <- n
+  }
+  } # while not working
+  
+  # colfuname[ nextcol ]=' '
+  # colfun[[ nextcol  ]]=function(x, na.rm=TRUE) {  }
+  
   ############################################
   
   ############################################
@@ -176,7 +194,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   for (i in 1:rowfuns.count.picked) {
     fnum <- which(rowfun.picked)[i]
     
-    summary.cols[ , i] <- as.vector( rowfun[[fnum]](x) ) # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
+    summary.cols[ , i] <- round( as.vector( rowfun[[fnum]](x) ),0) # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
     summary.cols.names[ i] <- rowfuname[fnum]
   }
   
