@@ -57,10 +57,33 @@ shinyUI(fluidPage(
                  plotOutput('barplots')
                  ), 
         tabPanel("Histograms", 
-                 plotOutput('histograms')
-
+                 plotOutput('histograms'),
                  # insert checkboxes code here for selection of type of histogram
-                 
+#                  sites.or.people <- 'Sites' # or 'People'
+#                  refzone <- 'us' # or 'region' or 'state' # this presumes new variable names are as in default file
+#                  refzone.friendly <- 'US' # or 'Region' or 'State' 
+#                  refstat <- 'pctile'  # or 'avg' # this presumes new variable names are as in default file
+#                  refstat.friendly='Percentile'  # or 'Average' 
+#                  myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist$rows not in fulltable
+#                  myvar.friendly.base <- 'Demographic Index'
+
+                 fluidRow(
+                   column(3,
+                          h4("Histogram settings"),
+                          selectInput('sites.or.people', 'Distribution across sites or people (pop.wtd.)', c('Sites','People-notyetworking') ),
+                          br(),
+                          selectInput('refzone', 'Zone', c('us','region','state')),
+                          selectInput('refzone.friendly', 'Zone label', c('US','Region','State')),
+                          selectInput('refstat', 'Benchmark: %ile or avg. person', c('pctile','avg')),
+                          selectInput('refstat.friendly', 'Benchmark label', c('Percentile','Average'))
+                   ),
+                   column(4, offset = 1,
+                          selectInput('myvar.base', 'Indicator', c('VSI.eo','pctmin','pctlowinc','traffic.score','EJ.DISPARITY.traffic.score.eo'))
+                   ),
+                   column(4,
+                          selectInput('myvar.friendly.base', 'Indicator label', c('VSI.eo','pctmin','pctlowinc','traffic.score','EJ.DISPARITY.traffic.score.eo'))
+                   )
+                 )
                  
                  
                  ) 

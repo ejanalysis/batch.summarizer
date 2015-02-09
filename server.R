@@ -93,23 +93,28 @@ shinyServer(function(input, output) {
       
       # insert checkboxes code here?
       
-      sites.or.people='Sites' # or 'People'
-      refzone<- 'us' # or 'region' or 'state' # this presumes new variable names are as in default file
-      refzone.friendly='US' # or 'Region' or 'State' 
-      refstat <- 'pctile'  # or 'avg' # this presumes new variable names are as in default file
-      refstat.friendly='Percentile'  # or 'Average' 
-      myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist$rows not in fulltable
-      myvar.full <- paste(refzone, refstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
+#       sites.or.people='Sites' # or 'People'
+#       refzone<- 'us' # or 'region' or 'state' # this presumes new variable names are as in default file
+#       refzone.friendly='US' # or 'Region' or 'State' 
+#       refstat <- 'pctile'  # or 'avg' # this presumes new variable names are as in default file
+#       refstat.friendly='Percentile'  # or 'Average' 
+#       myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist$rows not in fulltable
+#       myvar.full <- paste(refzone, refstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
+#       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
+#       myvar.friendly.base <- 'Demographic Index'
+#       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
+      
+      myvar.full <- paste(input$refzone, input$refstat, input$myvar.base, sep='.')  # this presumes new variable names are as in default file
       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
-      myvar.friendly.base <- 'Demographic Index'
-      myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
+      myvar.friendly.full <- paste(input$myvar.friendly.base, ', as ', input$refzone.friendly, ' ', input$refstat.friendly, ' across ', input$sites.or.people, sep='')
       
       sitecount <- length( fulltable[ , myvar.full] ) # but for popwtd hist, use popcount!
       mybreaks <- (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
       expected=sitecount / 10 # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount!
+      
       hist(fulltable[ , myvar.full], breaks = mybreaks, col = 'darkgray', border = 'white', 
            main=paste(myvar.friendly.full,':
-                      Distribution across ', sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=sites.or.people)
+                      Distribution across ', input$sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
       abline(h=expected)
     })
     
