@@ -53,7 +53,17 @@ shinyUI(fluidPage(
       tabsetPanel(
         tabPanel("Summary rows", tableOutput("rowsout")),
         tabPanel("Summary cols", tableOutput("colsout")), 
-        tabPanel("Plot", plotOutput('barplotdemog')) 
+        tabPanel("Barplots", 
+                 plotOutput('barplots')
+                 ), 
+        tabPanel("Histograms", 
+                 plotOutput('histograms')
+
+                 # insert checkboxes code here for selection of type of histogram
+                 
+                 
+                 
+                 ) 
       )
     )
     #h3("Download the Summary")

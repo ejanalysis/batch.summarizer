@@ -71,21 +71,46 @@ shinyServer(function(input, output) {
     # Transpose summary stats rows for dispaly so browser can fit it easily, by showing all the summary stats for a single input column as one row on the screen instead of as one column.
     # This does not currently display the columns of summary stats like # of EJ indicator uspctiles at/above threshold at each site.
     output$colsout <- renderTable(  outlist$cols)
-    
-#     output$histdemog <- renderPlot({
-#       # e.g. draw histogram or barplot
-#       hist(fulltable[ , 'VSI.eo'], breaks = (0:10)*10, col = 'darkgray', border = 'white')
-#     })
-#     
-    output$barplotdemog <- renderPlot({
-      plotdata <- rbind( outlist$rows[ c('Average person', 'Average site'), 
-                                       c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64') ], 
-                         
-                         outlist$row[ 'Average person',
-                                      c('us.avg.VSI.eo', 'us.avg.pctlowinc', 'us.avg.pctmin', 'us.avg.pctlths','us.avg.pctlingiso', 'us.avg.pctunder5', 'us.avg.pctover64' )  ] )
+      
+    output$barplots <- renderPlot({
+      # One set of bars per each of the myvars
+      myvars <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
+      myvars.sumstat <- c('Average person', 'Average site')
+      myvars.refzone <- c('us.avg.VSI.eo', 'us.avg.pctlowinc', 'us.avg.pctmin', 'us.avg.pctlths','us.avg.pctlingiso', 'us.avg.pctunder5', 'us.avg.pctover64' )
+      myvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+      plotdata <- rbind( outlist$rows[ myvars.sumstat, myvars ], 
+                         outlist$rows[ myvars.refzone.row, myvars.refzone] ) 
       barplot( plotdata, beside=TRUE,
                legend.text=c('Average person', 'Average site', 'US Overall'),
                names.arg=c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64'))
+    })
+    
+    output$histograms <- renderPlot({
+      # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
+      
+      # User will be able to define these using checkboxes:
+      # (this code presumes new variable names are as in default file)
+      
+      # insert checkboxes code here?
+      
+      sites.or.people='Sites' # or 'People'
+      refzone<- 'us' # or 'region' or 'state' # this presumes new variable names are as in default file
+      refzone.friendly='US' # or 'Region' or 'State' 
+      refstat <- 'pctile'  # or 'avg' # this presumes new variable names are as in default file
+      refstat.friendly='Percentile'  # or 'Average' 
+      myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist$rows not in fulltable
+      myvar.full <- paste(refzone, refstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
+      myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
+      myvar.friendly.base <- 'Demographic Index'
+      myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
+      
+      sitecount <- length( fulltable[ , myvar.full] ) # but for popwtd hist, use popcount!
+      mybreaks <- (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
+      expected=sitecount / 10 # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount!
+      hist(fulltable[ , myvar.full], breaks = mybreaks, col = 'darkgray', border = 'white', 
+           main=paste(myvar.friendly.full,':
+                      Distribution across ', sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=sites.or.people)
+      abline(h=expected)
     })
     
     t( outlist$rows)
