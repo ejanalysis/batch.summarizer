@@ -46,7 +46,8 @@ shinyUI(fluidPage(
         tabPanel("Summary rows", tableOutput("rowsout")),
         tabPanel("Summary cols", tableOutput("colsout")), 
         tabPanel("Barplots", 
-                 plotOutput('barplots')
+                 plotOutput('barplots'),
+                 radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))
                  ), 
         tabPanel("Histograms", 
                  plotOutput('histograms'),

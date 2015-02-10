@@ -4,7 +4,8 @@
 library(shiny)
 
 require(Hmisc) 
-require(plotrix) # for weighted.hist() # or use ggplot2:  library(ggplot2); ggplot( fulltable, aes(pm, weight=pop) ) + geom_histogram()
+require(ggplot2) #   
+# require(plotrix) # for weighted.hist() # or use ggplot2:  library(ggplot2); ggplot( fulltable, aes(pm, weight=pop) ) + geom_histogram()
 
 # Require a package or just source the code needed:
 # THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
@@ -32,7 +33,24 @@ shinyServer(function(input, output) {
   probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
   mythreshold=80
   na.rm=TRUE
-  
+  # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
+  mywtsname <- 'pop'
+  names.d <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
+  names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
+  names.e <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
+               "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
+               "proximity.npdes")
+  names.e.friendly <- c("PM2.5", "Ozone", "NATA Cancer risk", "NATA Neuro", "NATA Respiratory", "NATA Diesel PM", "% built pre-1960", 
+                        "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
+                        "NPDES proximity")
+  names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", 
+                "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
+                "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
+                "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
+                "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo"
+  )
+  names.ej.friendly <- paste('EJ Index for',names.e.friendly)
+    
   output$download.batchdata <- downloadHandler(
     filename = function() { 
       'batchdata.csv'
@@ -64,13 +82,12 @@ shinyServer(function(input, output) {
     
     output$fulltableout <- renderTable(  fulltable )
     
-#     datasetInput.batchname() <- reactive <- ({
-#       input$dataset <- fulltable
-#     })
-#     # download.batchdata
+    #     datasetInput.batchname() <- reactive <- ({
+    #       input$dataset <- fulltable
+    #     })
+    #     # download.batchdata
     
-    # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
-    mywtsname <- 'pop'
+    # SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable     
     mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
     mycolnames <- colnames(fulltable)
     colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
@@ -98,11 +115,28 @@ shinyServer(function(input, output) {
     
     output$barplots <- renderPlot({
       # One set of bars per each of the myvars
+      
       # *** possibly allow these to be set by user instead of hard-coded names:
-      mybarvars          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
-      mybarvars.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
-      mybarvars.refzone  <- c('us.avg.VSI.eo', 'us.avg.pctlowinc', 'us.avg.pctmin', 'us.avg.pctlths','us.avg.pctlingiso', 'us.avg.pctunder5', 'us.avg.pctover64' )
+      mybarvars <- switch(input$bartype,
+             'Demographic' = names.d,
+             'Environmental' = names.e,
+             'EJ' = names.ej
+             )
+      mybarvars.friendly <- switch(input$bartype,
+                          'Demographic' = names.d.friendly,
+                          'Environmental' = names.e.friendly,
+                          'EJ' = names.ej.friendly
+      )
+      mybarvars.refzone <- switch(input$bartype,
+                          'Demographic' = paste('us.avg.',names.d,sep=''),
+                          'Environmental' = paste('us.avg.',names.e,sep=''),
+                          'EJ' = paste('us.avg.',names.ej,sep='')
+      )
 
+      #mybarvars          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
+      #mybarvars.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
+      #mybarvars.refzone  <- c('us.avg.VSI.eo', 'us.avg.pctlowinc', 'us.avg.pctmin', 'us.avg.pctlths','us.avg.pctlingiso', 'us.avg.pctunder5', 'us.avg.pctover64' )
+            
       mybarvars.sumstat <- c('Average person', 'Average site')
       mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
       plotdata <- rbind( outlist$rows[ mybarvars.sumstat, mybarvars ], 
@@ -148,7 +182,11 @@ shinyServer(function(input, output) {
                                     'pctmin'='% Minority', 
                                     'pctlowinc'='% Low-Income', 
                                     'traffic.score'='Traffic Proximity', 
-                                    'EJ.DISPARITY.traffic.score.eo'='EJ Index for Traffic' )
+                                    'proximity.tsdf'='Proximity to TSDF',
+                                    'cancer'='NATA Cancer risk',
+                                    'EJ.DISPARITY.traffic.score.eo'='EJ Index for Traffic',
+                                    'EJ.DISPARITY.proximity.tsdf.eo'='EJ Index for TSDF proximity',
+                                    'EJ.DISPARITY.cancer.eo'='EJ Index for NATA cancer risk')
 
       if (input$refstat=='raw') {
         myvar.full <- input$myvar.base
@@ -160,24 +198,43 @@ shinyServer(function(input, output) {
       }
       
       sitecount <- length( fulltable[ , myvar.full] ) # but for popwtd hist, use popcount!
-      #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now
+      #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now. fails.
       popcount <- outlist$rows[ 'Sum','pop' ]
 
       mybincount <- input$bincount # (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
-      expected.sites.per.bin=sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount!
-      expected.pop.per.bin=popcount / mybincount
+      expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount!
+      expected.pop.per.bin=   popcount  / mybincount  # but the horizontal line from this doesn't look right ****** 
       
+      # HISTOGRAM plotted here
+
       if (input$sites.or.people=='Sites') {
-        hist(fulltable[ , myvar.full], breaks = mybincount, col = 'darkgray', border = 'white', 
-             main=paste(myvar.friendly.full,':
-                      Distribution across ', input$sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
-        abline(h=expected.sites.per.bin)
+        # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
+        
+        ggplot( fulltable, aes_string( myvar.full) ) + 
+          geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltable[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+          geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
+          xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+          ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep='')) 
+        
+        #hist(fulltable[ , myvar.full], breaks = mybincount, col = 'darkgray', border = 'white', 
+        #     main=paste(myvar.friendly.full,':
+        #              Distribution across ', input$sites.or.people, sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
+        #abline(h=expected.sites.per.bin)
+        
       } else {
+        
         # hard coded to use 'pop' as weights for now:
-        weighted.hist(fulltable[ , myvar.full], w=fulltable[ , mywtsname],  breaks = mybincount, col = 'darkgray', border = 'white', 
-             main=paste(myvar.friendly.full,':
-                      Distribution across ', input$sites.or.people,sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
-        abline(h=expected.pop.per.bin)
+        
+        ggplot( fulltable, aes_string( myvar.full, weight=fulltable[ , mywtsname] ) ) + 
+          geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltable[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+          #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
+          xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+          ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep='')) 
+
+        #         weighted.hist(fulltable[ , myvar.full], w=fulltable[ , mywtsname],  breaks = mybincount, col = 'darkgray', border = 'white', 
+        #              main=paste(myvar.friendly.full,':
+        #                       Distribution across ', input$sites.or.people, sep=''), xlab=myvar.friendly.full, ylab=input$sites.or.people)
+        #         abline(h=expected.pop.per.bin)
       }
     })
 
