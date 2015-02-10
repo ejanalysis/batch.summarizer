@@ -45,8 +45,7 @@ names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.e
               "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
               "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
               "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
-              "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo"
-)
+              "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
 names.ej.friendly <- paste('EJ Index for',names.e.friendly)
 
 
@@ -138,7 +137,7 @@ shinyServer(function(input, output) {
       mybarvars <- switch(input$bartype,
              'Demographic' = names.d,
              'Environmental' = names.e,
-             'EJ' = names.ej
+             'EJ (US %ile)' = paste('pctile.',names.ej,sep='')
              )
       mybarvars.friendly <- switch(input$bartype,
                           'Demographic' = names.d.friendly,
@@ -157,8 +156,15 @@ shinyServer(function(input, output) {
             
       mybarvars.sumstat <- c('Average person', 'Average site')
       mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-      plotdata <- rbind( outlist$rows[ mybarvars.sumstat, mybarvars ], 
-                         outlist$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
+      if (input$bartype=='EJ (US %ile)' ) {
+        # use 50th percentile as US overall benchmark
+        plotdata <- rbind( outlist$rows[ mybarvars.sumstat, mybarvars ], 
+                           rep(50, length(mybarvars.refzone)) ) 
+      } else {
+        # use actual US avg person's indicator score as US overall benchmark
+        plotdata <- rbind( outlist$rows[ mybarvars.sumstat, mybarvars ], 
+                           outlist$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
+      }
       barplot( plotdata, beside=TRUE,
                legend.text=c('Average person', 'Average site', 'US Overall'),
                names.arg=mybarvars.friendly )

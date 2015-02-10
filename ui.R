@@ -2,6 +2,22 @@
 # You can find out more about building applications with Shiny here:
 # http://shiny.rstudio.com
 library(shiny)
+names.d <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
+names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
+names.e <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
+             "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
+             "proximity.npdes")
+names.e.friendly <- c("PM2.5", "Ozone", "NATA Cancer risk", "NATA Neuro", "NATA Respiratory", "NATA Diesel PM", "% built pre-1960", 
+                      "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
+                      "NPDES proximity")
+names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", 
+              "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
+              "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
+              "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
+              "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
+names.ej.friendly <- paste('EJ Index for',names.e.friendly)
+
+
 
 shinyUI(fluidPage(
   
