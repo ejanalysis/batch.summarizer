@@ -39,15 +39,19 @@ shinyUI(fluidPage(
                                  'Single Quote'="'"),
                                '"'), 
                  
-                  # downloadButton('download.batchdata', 'Download'),
+                  downloadButton('download.batchdata', 'Download'),
                  
                   tableOutput("fulltableout")),
         
-        tabPanel("Summary rows", tableOutput("rowsout")),
-        tabPanel("Summary cols", tableOutput("colsout")), 
+        tabPanel("Summary rows", 
+                 downloadButton('download.rowsout', 'Download'),
+                 tableOutput("rowsout")),
+        tabPanel("Summary cols", 
+                 downloadButton('download.calsout', 'Download'),
+                 tableOutput("colsout")), 
         tabPanel("Barplots", 
                  plotOutput('barplots'),
-                 radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))
+                 radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ (US %ile)'='EJ (US %ile)'))
                  ), 
         tabPanel("Histograms", 
                  plotOutput('histograms'),
@@ -61,7 +65,10 @@ shinyUI(fluidPage(
                    h4("Histogram settings"),
                    
                    # *** WILL EXPLAND THIS TO THE FULL GENERIC LIST OF INDICATORS THAT COULD BE PLOTTED HERE:
-                   selectInput('myvar.base', h5('Indicator'), c('VSI.eo','pctmin','pctlowinc','traffic.score','EJ.DISPARITY.traffic.score.eo'), selected=1),
+                   selectInput('myvar.base', h5('Indicator'), 
+                               c(names.d, names.e, names.ej),
+                               #c('VSI.eo','pctmin','pctlowinc','traffic.score','EJ.DISPARITY.traffic.score.eo'), 
+                               selected=1),
                    
                    column(3,
                           radioButtons('sites.or.people', label=h5('Distribution across sites or people (pop.wtd.)'), list('Sites'='Sites','People'='People') ),

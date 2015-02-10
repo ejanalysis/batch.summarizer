@@ -60,6 +60,16 @@ shinyServer(function(input, output) {
     }
   )
   
+  output$download.rowsout <- downloadHandler(
+    filename = function() { 
+      'rowsout.csv'
+    },
+    content = function(file) {
+      write.csv( datasetInput.rowsout(), file)
+    }
+  )
+
+  
   output$rowsout <- renderTable({
     
     # input$file1 will be NULL initially. 
@@ -82,10 +92,17 @@ shinyServer(function(input, output) {
     
     output$fulltableout <- renderTable(  fulltable )
     
-    #     datasetInput.batchname() <- reactive <- ({
-    #       input$dataset <- fulltable
-    #     })
-    #     # download.batchdata
+    
+#     NOT CORRECT - NOT WORKING YET:
+#     datasetInput.batchname() <- reactive <- ({
+#       input$dataset <- fulltable
+#     })
+#     # download.batchdata
+#     
+#     datasetInput.rowsout() <- reactive <- ({
+#       input$dataset <- outlist$rows
+#     })
+    
     
     # SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable     
     mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
@@ -125,12 +142,12 @@ shinyServer(function(input, output) {
       mybarvars.friendly <- switch(input$bartype,
                           'Demographic' = names.d.friendly,
                           'Environmental' = names.e.friendly,
-                          'EJ' = names.ej.friendly
+                          'EJ (US %ile)' = names.ej.friendly
       )
       mybarvars.refzone <- switch(input$bartype,
                           'Demographic' = paste('us.avg.',names.d,sep=''),
                           'Environmental' = paste('us.avg.',names.e,sep=''),
-                          'EJ' = paste('us.avg.',names.ej,sep='')
+                          'EJ (US %ile)' = paste('pctile.',names.ej,sep='')
       )
 
       #mybarvars          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
