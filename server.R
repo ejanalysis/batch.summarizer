@@ -26,31 +26,32 @@ source('batch.read.R')
 source('batch.clean.R')
 source('batch.summarize.R')
 
+# DEFAULT VALUES, possibly could recode to allow user to change them: 
+mynamesfile <- 'map batch to friendly fieldnames v1.csv'
+probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
+mythreshold=80
+na.rm=TRUE
+# *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
+mywtsname <- 'pop'
+names.d <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
+names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
+names.e <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
+             "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
+             "proximity.npdes")
+names.e.friendly <- c("PM2.5", "Ozone", "NATA Cancer risk", "NATA Neuro", "NATA Respiratory", "NATA Diesel PM", "% built pre-1960", 
+                      "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
+                      "NPDES proximity")
+names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", 
+              "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
+              "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
+              "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
+              "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo"
+)
+names.ej.friendly <- paste('EJ Index for',names.e.friendly)
+
+
 shinyServer(function(input, output) {
   
-  # DEFAULT VALUES, possibly could recode to allow user to change them: 
-  mynamesfile <- 'map batch to friendly fieldnames v1.csv'
-  probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
-  mythreshold=80
-  na.rm=TRUE
-  # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
-  mywtsname <- 'pop'
-  names.d <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
-  names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
-  names.e <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
-               "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
-               "proximity.npdes")
-  names.e.friendly <- c("PM2.5", "Ozone", "NATA Cancer risk", "NATA Neuro", "NATA Respiratory", "NATA Diesel PM", "% built pre-1960", 
-                        "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
-                        "NPDES proximity")
-  names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", 
-                "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
-                "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
-                "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
-                "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo"
-  )
-  names.ej.friendly <- paste('EJ Index for',names.e.friendly)
-    
   output$download.batchdata <- downloadHandler(
     filename = function() { 
       'batchdata.csv'
