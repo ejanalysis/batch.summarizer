@@ -201,6 +201,10 @@ shinyServer(function(input, output) {
                                  'raw'='Indicator Value (not percentile)')
 
       # *** Should make this more generic/ flexible, not hard-coded names:
+      # *** SHOULD USE FRIENDLY NAMES IN UI LIST AND PASS myvar.friendly.base 
+      # and then HERE IN SERVER SHOULD fix to use that to get non friendly base for plot
+      
+      
       myvar.friendly.base <- switch(input$myvar.base,
                                     'VSI.eo'='Demographic Indicator', 
                                     'pctmin'='% Minority', 
