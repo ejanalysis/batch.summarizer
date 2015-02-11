@@ -1,8 +1,14 @@
-#' x A matrix or data.frame to summarize, one row per site, one column per variable.
-#' cols Specifies which colums of x should be summarized or used during summarization. A single string value 'all' as default to specify all, or a vector of colnames.
-#' probs Vector of numeric values, fractions, to use as probabilities used in finding quantiles. Default is c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
-#' na.rm Logical TRUE by default, specifying if na.rm should be used for sum(), mean(), and other functions.
-#'
+#' @param x A matrix or data.frame to summarize, one row per site, one column per variable.
+#' @param cols NOT USED YET. Specifies which colums of x should be summarized or used during summarization. A single string value 'all' as default to specify all, or a vector of colnames.
+#' @param probs Vector of numeric values, fractions, to use as probabilities used in finding quantiles. Default is c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
+#' @param na.rm Logical TRUE by default, specifying if na.rm should be used for sum(), mean(), and other functions.
+#' @param wts weights vector for wtd.mean or weighted.quantile etc.
+#' @param threshold cutoff number used to count find sites where 1+ of given indicators are at/above the threshold & how many of the indicators are
+#' @param threshnames vector of character colnames defining fields in x that get compared to threshold
+#' @param rowfun.picked logical vector specifying which of the pre-defined functions (like at/above threshold) are needed and will be applied
+#' @param colfun.picked  logical vector specifying which of the pre-defined functions (like colSums) are needed and will be applied
+#' @author ejanalyst info@ejanalysis.com
+#' @export
 batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=80, threshnames='', na.rm=TRUE, rowfun.picked, colfun.picked) {
 
   ############################################
@@ -100,6 +106,8 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   n=8
   colfuname[n]='Standard Deviation'
   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
+  
+  # *** NOTE: CANNOT HAVE n=9 etc. here while quantiles are appended the way they currently are done
 
   ############################################
   # THESE SUMMARY FUNCTIONS RETURN MULTIPLE ROWS EACH:
@@ -109,32 +117,35 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   # 3) could have each function also have a value that specifies how many rows or cols it will output & account for that (seems complicated)
   
   n=n+1
-  # while not yet working:
+  # while not yet working, use other approach via rbind, later in this code:
   if (1==0) {
-  if (length(probs) > 0) {
-    myfunlist <- list()
-    for (z in 1:length(probs)) {
-      myfunlist[[z]] <- function(x, ...) {  }
-      f <- (parse( " function (x) ", as.symbol("{"), paste('quantile(x,probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
-      body(myfunlist[[z]]) <- f
-    }
-    colfuname[n:(n-1+length(probs))]    <- paste('Percentile of sites', 100*probs)
-    colfun[[  n:(n-1+length(probs))  ]] <- myfunlist
-    
-    myfunlist <- list()
-    for (z in 1:length(probs)) {
-      myfunlist[[z]] <- function(x, ...) {  }
-      f <- (parse( " function (x) ", as.symbol("{"), paste('wtd.quantile(x, weights=wts, probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
-      body(myfunlist[[z]]) <- f
-    }
-    colfuname[(n+length(probs)):((n-1)+2*length(probs))]  <- paste('Percentile of people', 100*probs)
-    colfun[[  (n+length(probs)):((n-1)+2*length(probs))]] <- myfunlist
-
-    nextcol <- 1+((n-1)+2*length(probs))
+    just.rbind.quantiles <- FALSE
+    if (length(probs) > 0) {
+      myfunlist <- list()
+      for (z in 1:length(probs)) {
+        myfunlist[[z]] <- function(x, ...) {  }
+        f <- (parse( " function (x) ", as.symbol("{"), paste('quantile(x,probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
+        body(myfunlist[[z]]) <- f
+      }
+      colfuname[n:(n-1+length(probs))]    <- paste('Percentile of sites', 100*probs)
+      colfun[[  n:(n-1+length(probs))  ]] <- myfunlist
+      
+      myfunlist <- list()
+      for (z in 1:length(probs)) {
+        myfunlist[[z]] <- function(x, ...) {  }
+        f <- (parse( " function (x) ", as.symbol("{"), paste('wtd.quantile(x, weights=wts, probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
+        body(myfunlist[[z]]) <- f
+      }
+      
+      colfuname[(n+length(probs)):((n-1)+2*length(probs))]  <- paste('Percentile of people', 100*probs)
+      colfun[[  (n+length(probs)):((n-1)+2*length(probs))]] <- myfunlist
+      
+      nextcol <- 1+((n-1)+2*length(probs))
+    } 
   } else {
-    nextcol <- n
+    just.rbind.quantiles <- TRUE  
+    # while not working
   }
-  } # while not working
   
   # colfuname[ nextcol ]=' '
   # colfun[[ nextcol  ]]=function(x, na.rm=TRUE) {  }
@@ -207,6 +218,17 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   # rownames(colsout) <- rownames(x)  # is another option
   
   ############################################
+  # CRUDE WAY TO ADD QUANTILE SUMMARY ROWS:
+  
+  if (just.rbind.quantiles) {
+    quantile.rows     <- matrix(NA, nrow=length(probs), ncol=ncol(x)); rownames(quantile.rows)     <- paste('Percentile of sites', 100*probs)
+    wtd.quantile.rows <- matrix(NA, nrow=length(probs), ncol=ncol(x)); rownames(wtd.quantile.rows) <- paste('Percentile of people', 100*probs)
+    colnames(quantile.rows) <- colnames(x); colnames(wtd.quantile.rows) <- colnames(x)
+    quantile.rows[     , !charcol] <- sapply(x[ , !charcol], function(y) quantile(y,     probs=probs, na.rm=na.rm) )
+    wtd.quantile.rows[ , !charcol] <- sapply(x[ , !charcol], function(y) wtd.quantile(y, probs=probs, na.rm=na.rm,  weights=wts) )
+    summary.rows <- rbind(summary.rows, quantile.rows, wtd.quantile.rows)
+  }
+  ############################################
   
   return( list(rows=summary.rows, cols=summary.cols) )
 }
@@ -216,10 +238,10 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
 # str(fulltable)
 # 'data.frame':  42 obs. of  179 variables:
 # $ OBJECTID                                     : int  1 2 3 4 5 6 7 8 9 10 ...
-# $ FACID                                        : chr  "110,000,743,704.000000000000000" "110,000,597,729.000000000000000" "110,000,521,221.000000000000000" "110,000,432,489.000000000000000" ...
-# $ name                                         : chr  "EASTMAN CHEMICAL CO TEXAS OPERATIONS" "Ash Grove Cement Company" "Clean Harbors El Dorado LLC" "Safety-Kleen Systems Inc. - Dolton Recycle Center" ...
-# $ lat                                          : num  32.4 33.7 33.2 41.6 41.8 ...
-# $ lon                                          : num  -94.7 -94.4 -92.6 -87.6 -87.7 ...
+# $ FACID                                        : chr  "999" ...
+# $ name                                         : chr  "xyz facil" ...
+# $ lat                                          : num  32.3 ...
+# $ lon                                          : num  -94.5 ...
 # $ pop                                         *: chr  "7,946" "1,487" "14,003" "106,245" ...
 # $ radius.miles                                *: chr  "3 miles" "3 miles" "3 miles" "3 miles" ...
 # $ ST                                           : chr  "TX" "AR" "AR" "IL" ...

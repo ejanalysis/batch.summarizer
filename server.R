@@ -27,27 +27,31 @@ source('batch.clean.R')
 source('batch.summarize.R')
 
 # DEFAULT VALUES, possibly could recode to allow user to change them: 
-mynamesfile <- 'map batch to friendly fieldnames v1.csv'
-probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
-mythreshold=80
-na.rm=TRUE
+mysamplefile <- 'Export_Output_Example.txt' # example of export of batch results, for use in testing/demonstrating summarizer
+mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames
+probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
+mythreshold=80  # default for cutoff in at/above threshold stat summarizing the EJ Index US percentiles
+na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
 # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
-mywtsname <- 'pop'
-names.d <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64')
+# default Demog vars for now:
+mywtsname <- 'pop'  # used for weighted means to get stats on the average person in all these zones (e.g. avg person nearby any site)
+names.d <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64') 
 names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
+# default Envt vars for now:
 names.e <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
              "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
              "proximity.npdes")
 names.e.friendly <- c("PM2.5", "Ozone", "NATA Cancer risk", "NATA Neuro", "NATA Respiratory", "NATA Diesel PM", "% built pre-1960", 
                       "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
                       "NPDES proximity")
+# default EJ vars for now:
 names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", 
               "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
               "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
               "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
               "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
 names.ej.friendly <- paste('EJ Index for',names.e.friendly)
-
+###############################################################################################
 
 shinyServer(function(input, output) {
   
@@ -55,8 +59,9 @@ shinyServer(function(input, output) {
     filename = function() { 
       'batchdata.csv'
     },
+    contentType='text/csv',
     content = function(file) {
-      write.csv( datasetInput.batchdata(), file)
+      write.csv( download.batchdata(), file)
     }
   )
   
@@ -64,12 +69,43 @@ shinyServer(function(input, output) {
     filename = function() { 
       'rowsout.csv'
     },
+    contentType='text/csv',
     content = function(file) {
-      write.csv( datasetInput.rowsout(), file)
+      write.csv( download.rowsout(), file)
     }
   )
 
+  output$download.colsout <- downloadHandler(
+    filename = function() { 
+      'colsout.csv'
+    },
+    contentType='text/csv',
+    content = function(file) {
+      write.csv( download.colsout(), file)
+    }
+  )
+
+  output$download.barplot <- downloadHandler(
+    filename = function() { 
+      'barplot.jpg'
+    },
+    contentType='image/png',
+    content = function(file) {
+      #***** print/save plot ( download.barplot(), file)
+    }
+  )
   
+  output$download.histogram <- downloadHandler(
+    filename = function() { 
+      'histogram.jpg'
+    },
+    contentType='image/png',
+    content = function(file) {
+      #**** print/save plot ( download.histogram(), file)
+    }
+  )
+  
+  # *** fix this using reactives to have just the relevant code inside this renderTable function:
   output$rowsout <- renderTable({
     
     # input$file1 will be NULL initially. 
@@ -83,7 +119,7 @@ shinyServer(function(input, output) {
       #output$rowsout <- NULL
       return(NULL)
     }
-        
+    
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     fulltable <- read.csv(inFile$datapath, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
     
@@ -91,7 +127,6 @@ shinyServer(function(input, output) {
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     
     output$fulltableout <- renderTable(  fulltable )
-    
     
 #     NOT CORRECT - NOT WORKING YET:
 #     datasetInput.batchname() <- reactive <- ({
@@ -102,7 +137,6 @@ shinyServer(function(input, output) {
 #     datasetInput.rowsout() <- reactive <- ({
 #       input$dataset <- outlist$rows
 #     })
-    
     
     # SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable     
     mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
