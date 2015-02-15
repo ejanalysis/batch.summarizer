@@ -1,8 +1,11 @@
+# options(error=browser)
+# options(shiny.error=browser)
+
 library(shiny) # http://shiny.rstudio.com
 
 require(Hmisc) 
-require(ggplot2) #   
-# require(plotrix) # for weighted.hist() # or use ggplot2:  library(ggplot2); ggplot( fulltable, aes(pm, weight=pop) ) + geom_histogram()
+require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist
+# ggplot2:  library(ggplot2); ggplot( fulltable, aes(pm, weight=pop) ) + geom_histogram()
 
 # Require a package or just source the code needed:
 # THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
@@ -23,7 +26,9 @@ source('batch.read.R')
 source('batch.clean.R')
 source('batch.summarize.R')
 
+#############################
 # DEFAULT VALUES, possibly could recode to allow user to change them: 
+#############################
 mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
 mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames
 probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
@@ -50,62 +55,71 @@ names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.e
 names.ej.friendly <- paste('EJ Ind.-', names.e.friendly)
 names.all <- c(names.d, names.e, names.ej)
 names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
-###############################################################################################
+
+#######################################################################################
 
 shinyServer(function(input, output) {
   
+  mybatchname <- renderText(input$batchname)
+  output$name1 <- renderText(input$batchname)
+  output$name2 <- renderText(input$batchname)
+  output$name3 <- renderText(input$batchname)
+  output$name4 <- renderText(input$batchname)
+  output$name5 <- renderText(input$batchname)
+
   output$download.batchdata <- downloadHandler(
     filename = function() { 
-      'batchdata.csv'
+      paste(mybatchname(), 'batchdata.csv')
     },
     contentType='text/csv',
     content = function(file) {
-      write.csv( download.batchdata(), file)
+      write.csv( fulltabler(), file)
     }
   )
   
   output$download.rowsout <- downloadHandler(
     filename = function() { 
-      'rowsout.csv'
+      paste(mybatchname(), 'rowsout.csv')
     },
     contentType='text/csv',
     content = function(file) {
-      write.csv( download.rowsout(), file)
+      write.csv( rbind( outlist()$rows, fulltabler()), file)
     }
   )
-
+  
   output$download.colsout <- downloadHandler(
     filename = function() { 
-      'colsout.csv'
+      paste(mybatchname(), 'colsout.csv')
     },
     contentType='text/csv',
     content = function(file) {
-      write.csv( download.colsout(), file)
+      write.csv( cbind( outlist()$cols, fulltabler()), file)
     }
   )
-
+  
   output$download.barplot <- downloadHandler(
     filename = function() { 
-      'barplot.jpg'
+      paste(mybatchname(), 'barplot.png')
     },
     contentType='image/png',
     content = function(file) {
-      #***** print/save plot ( download.barplot(), file)
+#      png(filename=file,width = 480, height = 480, units = "px", pointsize = 12); barplots.reactive()  ; dev.off()
     }
   )
   
   output$download.histogram <- downloadHandler(
     filename = function() { 
-      'histogram.jpg'
+      paste(mybatchname(), 'histogram.png')
     },
     contentType='image/png',
     content = function(file) {
-      #**** print/save plot ( download.histogram(), file)
+#      png(file=file,width = 480, height = 480, units = "px", pointsize = 12); histograms.reactive()  ; dev.off()
     }
   )
   
-  # *** fix this using reactives to have just the relevant code inside this renderTable function:
-  output$rowsout <- renderTable({
+  #############################
+  
+  fulltabler <- reactive({
     
     # input$file1 will be NULL initially, or can use the example file and preload it?
     # After the user selects and uploads a file, it will be a data frame with 
@@ -126,7 +140,27 @@ shinyServer(function(input, output) {
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     
-    output$fulltableout <- renderTable(  fulltable )
+    fulltable
+  })
+  
+  # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable     
+  mythreshnames <- reactive({ grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) })
+  mycolnames <- reactive({ colnames(fulltabler()) })
+  colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
+  rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
+  
+  output$fulltableout <- renderTable(  fulltabler() )
+  
+  outlist <- reactive({ 
+    batch.summarize(fulltabler(), 
+                    wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
+                    threshnames=mythreshnames(), threshold=mythreshold, 
+                    colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
+                    probs=probs, na.rm=na.rm
+    )
+  })
+  
+  output$rowsout <- renderTable({
     
     #     NOT CORRECT - NOT WORKING YET:
     #     datasetInput.batchname() <- reactive <- ({
@@ -135,165 +169,150 @@ shinyServer(function(input, output) {
     #     # download.batchdata
     #     
     #     datasetInput.rowsout() <- reactive <- ({
-    #       input$dataset <- outlist$rows
+    #       input$dataset <- outlist()$rows
     #     })
     
-    # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable     
-    mythreshnames <- grep('^pctile.EJ.DISPARITY.', colnames(fulltable), value=TRUE)
-    mycolnames <- colnames(fulltable)
-    colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
-    rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
-    
     ##################################################################################################
-    # Create summary stats from uploaded batch results. outlist is a list of 2 elements: 
+    # Create summary stats from uploaded batch results. outlist() is a list of 2 elements: 
     #   rows (rows of summary stats), & cols (columns of summary stats)
     
-    outlist <- batch.summarize(fulltable, 
-      wts=fulltable[ , mywtsname], cols=mycolnames, 
-      threshnames=mythreshnames, threshold=mythreshold, 
-      colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
-      probs=probs, na.rm=na.rm
-      )
-    
-    output$colsout <- renderTable(  outlist$cols)
-    
-    ##################################################################################################
-    
-    
-    ##################################################################################################
-    # BARPLOTS
-    
-    output$barplots <- renderPlot({
-      # One set of bars per each of the myvars
-      
-      # *** possibly allow these to be set by user instead of hard-coded names:
-      mybarvars <- switch(input$bartype,
-                          'Demographic' = names.d,
-                          'Environmental' = names.e,
-                          'EJ' = names.ej
-      )
-      mybarvars.friendly <- switch(input$bartype,
-                                   'Demographic' = names.d.friendly,
-                                   'Environmental' = names.e.friendly,
-                                   'EJ' = names.ej.friendly
-      )
-      mybarvars.refzone <- switch(input$bartype,
-                                  'Demographic' = paste('us.avg.',names.d,sep=''),
-                                  'Environmental' = paste('us.avg.',names.e,sep=''),
-                                  'EJ' = names.ej
-      )
-      
-      if (input$barvartype=='pctile' | input$bartype=='EJ') {
-        mybarvars <- paste('pctile.', mybarvars, sep='')
-        mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='')
-        mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
-      }
-    
-      mybarvars.sumstat <- c('Average person', 'Average site')
-      mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-      if (input$barvartype=='pctile' | input$bartype=='EJ') {
-        # use 50th percentile person as US overall benchmark
-        plotdata <- rbind( outlist$rows[ mybarvars.sumstat, mybarvars ], 
-                           rep(50, length(mybarvars.refzone)) ) 
-      } else {
-        # use actual US avg person's indicator score as US overall benchmark
-        plotdata <- rbind( outlist$rows[ mybarvars.sumstat, mybarvars ], 
-                           outlist$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
-      }
-      barplot( plotdata, beside=TRUE, legend.text=c('Average person', 'Average site', 'US Overall'),
-               names.arg=mybarvars.friendly, ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
-      })
-    
-    ##################################################################################################
-    # HISTOGRAMS
-    
-    output$histograms <- renderPlot({
-      # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
-      
-      # *** User will be able to define these using checkboxes:
-      # (this code presumes new variable names are as in default file)
-      #       myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist$rows not in fulltable
-      #       myvar.full <- paste(refzone, refstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
-      #       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
-      #       myvar.friendly.base <- 'Demographic Index'
-      #       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
-      
-      refzone.friendly <- switch(input$refzone, 
-                                 'us'='US',
-                                 'region'='Region',
-                                 'state'='State')
-      refstat.friendly <- switch(input$refstat,
-                                 'pctile'='Percentile',
-                                 'raw'='Indicator Value (not percentile)')
-
-      # *** Should make this more generic/ flexible, not hard-coded names:
-      # *** SHOULD USE FRIENDLY NAMES IN UI LIST AND PASS myvar.friendly.base 
-      # and then HERE IN SERVER SHOULD fix to use that to get non friendly base for plot
-      
-      # get long name of field selected to plot, then convert to short name
-      myvar.friendly.base <- input$myvar.friendly.base
-      myvar.base <- names.all[match(myvar.friendly.base, names.all.friendly)]
-cat(myvar.base,' 0 \n')
-      if (substr(myvar.base,1,2)!='EJ') {
-        myrefstat <- 'pctile'
-        refstat.friendly <- 'Percentile'
-      } else {
-        myrefstat <- input$refstat
-      }
-      if (myrefstat=='raw' ) {
-        myvar.full <- myvar.base
-        myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refstat.friendly, ' across ', input$sites.or.people, sep='')
-      } else {
-        myvar.full <- paste(input$refzone, myrefstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
-
-cat(myvar.full,' 1 \n') #  **** fails to reach here when EJ moved from pctile to raw selection !!!
-        
-        myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
-cat(myvar.full,' 2 \n')
-        myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, sep='')
-      }
-cat(myvar.full,' 3 \n')
-      if (myrefstat=='raw' ) {
-        sitecount <- 0 # suppress horizontal line benchmark when viewing raw data- it only applies to percentiles. Correct histo benchmark for raw would be the US overall histogram of that raw value in the selected # of bins, which is hard to provide here.
-        popcount <- 0
-      } else {
-        sitecount <- length( fulltable[ , myvar.full] ) # but for popwtd hist, use popcount!
-        #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now. fails.
-        popcount <- outlist$rows[ 'Sum','pop' ]
-      }
-      
-      mybincount <- input$bincount # (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
-      expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount?!
-      expected.pop.per.bin=   popcount  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
-      
-      # HISTOGRAM plotted here
-
-      if (input$sites.or.people=='Sites') {
-        # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
-        
-        ggplot( fulltable, aes_string( myvar.full) ) + 
-          geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltable[ , myvar.full] ,na.rm=TRUE))/mybincount) +
-          geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
-          xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-          ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
-        
-      } else {
-        
-        # *** hard coded to use mywtsname as weights for now:
-        
-        ggplot( fulltable, aes_string( myvar.full, weight=fulltable[ , mywtsname] ) ) + 
-          geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltable[ , myvar.full] ,na.rm=TRUE))/mybincount) +
-          #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
-          xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-          ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep='')) 
-      }
-    })
-    
-    ##################################################################################################
     # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
+    output$colsout <- renderTable(  outlist()$cols)
+    t( outlist()$rows )
     
-    t( outlist$rows )
+  })
+  
+  ##################################################################################################
+  
+  
+  ##################################################################################################
+  # BARPLOTS
+  
+  output$barplots <- renderPlot({
+    # One set of bars per each of the myvars
     
+    # *** possibly allow these to be set by user instead of hard-coded names:
+    mybarvars <- switch(input$bartype,
+                        'Demographic' = names.d,
+                        'Environmental' = names.e,
+                        'EJ' = names.ej
+    )
+    mybarvars.friendly <- switch(input$bartype,
+                                 'Demographic' = names.d.friendly,
+                                 'Environmental' = names.e.friendly,
+                                 'EJ' = names.ej.friendly
+    )
+    mybarvars.refzone <- switch(input$bartype,
+                                'Demographic' = paste('us.avg.',names.d,sep=''),
+                                'Environmental' = paste('us.avg.',names.e,sep=''),
+                                'EJ' = names.ej
+    )
+    
+    if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      mybarvars <- paste('pctile.', mybarvars, sep='')
+      mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='')
+      mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
+    }
+    
+    mybarvars.sumstat <- c('Average person', 'Average site')
+    mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+    if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      # use 50th percentile person as US overall benchmark
+      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
+                         rep(50, length(mybarvars.refzone)) ) 
+    } else {
+      # use actual US avg person's indicator score as US overall benchmark
+      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
+                         outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
+    }
+    barplot( plotdata, beside=TRUE, legend.text=c('Average person', 'Average site', 'US Overall'),
+             names.arg=mybarvars.friendly, ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
+  })
+  
+  
+  ##################################################################################################
+  # HISTOGRAMS
+  
+  output$histograms <- renderPlot({
+    # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
+    
+    # *** User will be able to define these using checkboxes:
+    # (this code presumes new variable names are as in default file)
+    #       myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist()$rows not in fulltable
+    #       myvar.full <- paste(refzone, refstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
+    #       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
+    #       myvar.friendly.base <- 'Demographic Index'
+    #       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
+    
+    refzone.friendly <- switch(input$refzone, 
+                               'us'='US',
+                               'region'='Region',
+                               'state'='State')
+    refstat.friendly <- switch(input$refstat,
+                               'pctile'='Percentile',
+                               'raw'='Indicator Value (not percentile)')
+    
+    # *** Should make this more generic/ flexible, not hard-coded names:
+    # *** SHOULD USE FRIENDLY NAMES IN UI LIST AND PASS myvar.friendly.base 
+    # and then HERE IN SERVER SHOULD fix to use that to get non friendly base for plot
+    
+    # get long name of field selected to plot, then convert to short name
+    myvar.friendly.base <- input$myvar.friendly.base
+    myvar.base <- names.all[match(myvar.friendly.base, names.all.friendly)]
+    cat(myvar.base,' 0 \n')
+    if (substr(myvar.base,1,2)!='EJ') {
+      myrefstat <- 'pctile'
+      refstat.friendly <- 'Percentile'
+    } else {
+      myrefstat <- input$refstat
+    }
+    if (myrefstat=='raw' ) {
+      myvar.full <- myvar.base
+      myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refstat.friendly, ' across ', input$sites.or.people, sep='')
+    } else {
+      myvar.full <- paste(input$refzone, myrefstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
+      
+      cat(myvar.full,' 1 \n') #  **** fails to reach here when EJ moved from pctile to raw selection !!!
+      
+      myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
+      cat(myvar.full,' 2 \n')
+      myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, sep='')
+    }
+    cat(myvar.full,' 3 \n')
+    if (myrefstat=='raw' ) {
+      sitecount <- 0 # suppress horizontal line benchmark when viewing raw data- it only applies to percentiles. Correct histo benchmark for raw would be the US overall histogram of that raw value in the selected # of bins, which is hard to provide here.
+      popcount <- 0
+    } else {
+      sitecount <- length( fulltabler()[ , myvar.full] ) # but for popwtd hist, use popcount!
+      #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now. fails.
+      popcount <- outlist()$rows[ 'Sum','pop' ]
+    }
+    
+    mybincount <- input$bincount # (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
+    expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount?!
+    expected.pop.per.bin=   popcount  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
+    
+    # HISTOGRAM plotted here
+    
+    if (input$sites.or.people=='Sites') {
+      # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
+      
+      ggplot( fulltabler(), aes_string( myvar.full) ) + 
+        geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+        geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
+        xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+        ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+      
+    } else {
+      
+      # *** hard coded to use mywtsname as weights for now:
+      
+      ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
+        geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+        #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
+        xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+        ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep='')) 
+    }
   })
 })
 
