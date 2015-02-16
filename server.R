@@ -170,9 +170,11 @@ shinyServer(function(input, output) {
     # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
     output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ))
     if (input$transpose.rowsout) {
-      cbind(VariableSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))), t(  rbind(  Variable=mycolnames(), outlist()$rows, fulltabler())))  
+      cbind(IndicatorSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))), 
+            t(  rbind(  Indicator=mycolnames(), outlist()$rows, fulltabler())))  
     } else {
-         rbind( outlist()$rows, fulltabler()) 
+         cbind( Stat_or_Site=c(rownames(outlist()$rows), fulltabler()[ , 1] )   , 
+                rbind( outlist()$rows, fulltabler()) )
     }
   })
   

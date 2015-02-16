@@ -78,7 +78,8 @@ shinyUI(
         "Summary rows", 
         #h4(textOutput("name2", container = span)),
         downloadButton('download.rowsout', 'Download'),
-        checkboxInput('transpose.rowsout', "One site per row, one stat per column?", TRUE),
+        radioButtons('transpose.rowsout', "Display transposed:", 
+                     c("One indicator per row, one stat or site per column?" =  TRUE, "One indicator per column, one stat or site per row" = FALSE)),
         dataTableOutput("rowsout")
       ),
       
