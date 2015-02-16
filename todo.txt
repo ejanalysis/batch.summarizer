@@ -1,11 +1,24 @@
 To do / issues
 
-summary cols doesn't appear until summary rows is viewed once
+Create an executive summary text tab
+
+Create text tables of results like AZ's
+
+Fix the bar and hist plot downloads.
+
+Not sure I really need to display uploaded file on first tab. It is also on the other 2 tabs with more useful info.
+
+Maybe allow download of table as sorted and transposed, not just in default format for download.
+
+summary cols doesn't appear until summary rows is viewed once?
 
 barplot legend blocks view of some bars at right
 
-remove "US%ile " from pctile version of xlab names.arg on barplots since text too long and can't see full labels
-
 barplot and histo download buttons at left are crowding the settings heading .move to upper left ? or move settings a bit right?
 
-histogram - possibly change selection of indicator from very long pulldown list of all into separate radiobuttons picking E/D/Ej and then pulldown that dynamically selects which of that category you want.
+histogram - possibly change selection of indicator from very long pulldown list of all into separate radiobuttons picking E/D/Ej and then pulldown that dynamically selects which of that category you want. At least use selectInput( selectize=FALSE) to view more rows in pulldown
+
+
+x- # of unique values and std dev aren't useful, so suppress
+
+x- remove "US%ile " from pctile version of xlab names.arg on barplots since text too long and can't see full labels

@@ -9,7 +9,8 @@
 #' @param colfun.picked  logical vector specifying which of the pre-defined functions (like colSums) are needed and will be applied
 #' @author ejanalyst info@ejanalysis.com
 #' @export
-batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=80, threshnames='', na.rm=TRUE, rowfun.picked, colfun.picked) {
+batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=80, threshnames='', na.rm=TRUE, 
+                            rowfun.picked='all', colfun.picked='all') {
 
   ############################################
   # Basic error checking
@@ -98,14 +99,15 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   n=6
   colfuname[n]='Count of sites'
   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
-  
-  n=7
-  colfuname[n]='Number of unique values'
-  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
-  
-  n=8
-  colfuname[n]='Standard Deviation'
-  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
+
+  # manually removed this stat because colfun.picked is hard to use as currently written
+  #   n=7
+  #   colfuname[n]='Number of unique values'
+  #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
+  #   
+  #  n=8
+  #  colfuname[n]='Standard Deviation'
+  #  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
   
   # *** NOTE: CANNOT HAVE n=9 etc. here while quantiles are appended the way they currently are done
 

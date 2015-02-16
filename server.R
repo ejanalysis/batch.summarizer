@@ -206,7 +206,7 @@ shinyServer(function(input, output) {
     
     if (input$barvartype=='pctile' | input$bartype=='EJ') {
       mybarvars <- paste('pctile.', mybarvars, sep='')
-      mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='')
+      # mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='') # removed since takes up space and already in header
       mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
     }
     
