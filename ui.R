@@ -1,12 +1,15 @@
 library(shiny) # http://shiny.rstudio.com
 
-# Default fieldnames for dataset after renamed
-
-mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
-mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames
-probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
-mythreshold=80  # default for cutoff in at/above threshold stat summarizing the EJ Index US percentiles
+#############################
+# DEFAULT VALUES, possibly could recode to allow user to change them, and/or read fieldnames from the csv file: 
+#############################
+probs.default <-         c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
+probs.default.choices <- c('0','0.25','0.50','0.75','0.80','0.90','0.95','0.99','1.00')  # defaults for quantiles summary stats
+#mythreshold=80  # default for cutoff in at/above threshold stat summarizing the EJ Index US percentiles
 na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
+#
+mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
+mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames & var type & var category
 # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
 # default Demog vars for now:
 mywtsname <- 'pop'  # used for weighted means to get stats on the average person in all these zones (e.g. avg person nearby any site)
@@ -28,28 +31,44 @@ names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.e
 names.ej.friendly <- paste('EJ Ind.-', names.e.friendly)
 names.all <- c(names.d, names.e, names.ej)
 names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
-
+#######################################################################################
 
 shinyUI(
   fluidPage(
     titlePanel(
-      h1("Batch Results Summarizer")
+      h2(textOutput('titletext'))
       ),
     
     tabsetPanel(
       
       tabPanel(
         "Upload a batch",
-        fileInput('file1', 'Select file of batch results to upload and summarize',
-                  accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')),
-        textInput('batchname', "Name this analysis", "Batch Example"),
-        h4(textOutput("name1", container = span)),
+        br(),
+        #h4(textOutput("name1", container = span)),
+        fluidRow(
+          column(
+            4,
+            h4(fileInput('file1', 'Select file of batch results to upload and summarize',
+                         accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')))
+          ),
+          column(
+            4,
+            h4(textInput('batchname', "Rename this analysis", "Example Dataset"))
+          ),
+          column(
+            4,
+            h4('Analysis settings'),
+            numericInput('threshold', label='Threshold %ile:', value=80, min=1, max=100),
+            checkboxGroupInput('probs','Percentiles of sites & residents to calculate:', choices=probs.default.choices, selected = probs.default.choices)
+            #         checkboxInput('header', 'Header', TRUE),
+            #         radioButtons('sep', 'Separator',
+            #                      c(Comma=',', Semicolon=';', Tab='\t'), ','),
+            #         radioButtons('quote', 'Quote',
+            #                      c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"'), 
+            
+          )
+        ),
         tags$hr(),
-#         checkboxInput('header', 'Header', TRUE),
-#         radioButtons('sep', 'Separator',
-#                      c(Comma=',', Semicolon=';', Tab='\t'), ','),
-#         radioButtons('quote', 'Quote',
-#                      c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"'), 
         downloadButton('download.batchdata', 'Download'),
         
         dataTableOutput("fulltableout")
@@ -57,34 +76,46 @@ shinyUI(
       
       tabPanel(
         "Summary rows", 
-        h4(textOutput("name2", container = span)),
+        #h4(textOutput("name2", container = span)),
         downloadButton('download.rowsout', 'Download'),
+        checkboxInput('transpose.rowsout', "One site per row, one stat per column?", TRUE),
         dataTableOutput("rowsout")
       ),
       
       tabPanel(
         "Summary cols", 
-        h4(textOutput("name3", container = span)),
+        #h4(textOutput("name3", container = span)),
         downloadButton('download.colsout', 'Download'),
         dataTableOutput("colsout")
       ), 
       
       tabPanel(
         "Barplots", 
-        h4(textOutput("name4", container = span)),
+        #h4(textOutput("name4", container = span)),
         plotOutput('barplots'),
         downloadButton('download.barplot', 'Download'),
         fluidRow(
           h4('Barplot settings'),
-          radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ')), 
+          column(4, radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))),
           column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw'))) 
         )
       ),
       
       tabPanel(
         "Histograms", 
-        h4(textOutput("name5", container = span)),
-        plotOutput('histograms'),
+        #h4(textOutput("name5", container = span)),
+        fluidRow(
+          column(
+            3,
+            selectInput('myvar.friendly.base', h5('Indicator'), 
+                        c(names.d.friendly, names.e.friendly, names.ej.friendly),
+                        selected=1)
+          ),
+          column(
+            9,
+            plotOutput('histograms')
+          )
+        ),
         downloadButton('download.histogram', 'Download'),
         
         # this presumes new variable names are as in default file
@@ -92,15 +123,9 @@ shinyUI(
         
         fluidRow(
           h4("Histogram settings"),
-          
-          # pick what variable to plot
-          selectInput('myvar.friendly.base', h5('Indicator'), 
-                      c(names.d.friendly, names.e.friendly, names.ej.friendly),
-                      selected=1),
           column(
-            3,
-            radioButtons('sites.or.people', label=h5('Distribution across sites or people (pop.wtd.)'), list('Sites'='Sites','People'='People') ),
-            br()
+            2,
+            radioButtons('sites.or.people', label=h5('Distribution across sites or people (pop.wtd.)'), list('Sites'='Sites','People'='People') )
           ),
           column(
             2,

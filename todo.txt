@@ -1,0 +1,11 @@
+To do / issues
+
+summary cols doesn't appear until summary rows is viewed once
+
+barplot legend blocks view of some bars at right
+
+remove "US%ile " from pctile version of xlab names.arg on barplots since text too long and can't see full labels
+
+barplot and histo download buttons at left are crowding the settings heading .move to upper left ? or move settings a bit right?
+
+histogram - possibly change selection of indicator from very long pulldown list of all into separate radiobuttons picking E/D/Ej and then pulldown that dynamically selects which of that category you want.

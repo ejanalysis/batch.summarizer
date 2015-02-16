@@ -28,13 +28,14 @@ source('batch.clean.R')
 source('batch.summarize.R')
 
 #############################
-# DEFAULT VALUES, possibly could recode to allow user to change them: 
+# DEFAULT VALUES, possibly could recode to allow user to change them, and/or read fieldnames from the csv file: 
 #############################
-mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
-mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames
-probs <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
-mythreshold=80  # default for cutoff in at/above threshold stat summarizing the EJ Index US percentiles
+probs.default <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
+#mythreshold=80  # default for cutoff in at/above threshold stat summarizing the EJ Index US percentiles
 na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
+#
+mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
+mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames & var type & var category
 # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
 # default Demog vars for now:
 mywtsname <- 'pop'  # used for weighted means to get stats on the average person in all these zones (e.g. avg person nearby any site)
@@ -67,6 +68,7 @@ shinyServer(function(input, output) {
   output$name3 <- renderText(input$batchname)
   output$name4 <- renderText(input$batchname)
   output$name5 <- renderText(input$batchname)
+  output$titletext <- renderText(paste("Batch Results Summarizer:", as.character(input$batchname)))
 
   output$download.batchdata <- downloadHandler(
     filename = function() { 
@@ -135,7 +137,7 @@ shinyServer(function(input, output) {
     
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     # To allow user to specify parameters of upload file format:
-    # fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
+    #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
     fulltable <- read.csv(myfile, stringsAsFactors = FALSE)
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
@@ -155,9 +157,9 @@ shinyServer(function(input, output) {
     batch.summarize(
       fulltabler(), 
       wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
-      threshnames=mythreshnames(), threshold=mythreshold, 
+      threshnames=mythreshnames(), threshold=input$threshold, 
       colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
-      probs=probs, na.rm=na.rm
+      probs=as.numeric( input$probs ), na.rm=na.rm
     )
   })
   
@@ -167,7 +169,11 @@ shinyServer(function(input, output) {
     #   rows (rows of summary stats), & cols (columns of summary stats)
     # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
     output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ))
-    cbind(order=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))), t(  rbind(  Variable=mycolnames(), outlist()$rows, fulltabler())))  
+    if (input$transpose.rowsout) {
+      cbind(VariableSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))), t(  rbind(  Variable=mycolnames(), outlist()$rows, fulltabler())))  
+    } else {
+         rbind( outlist()$rows, fulltabler()) 
+    }
   })
   
   ##################################################################################################
@@ -178,7 +184,7 @@ shinyServer(function(input, output) {
   
   output$barplots <- renderPlot({
     # One set of bars per each of the myvars
-    
+    print('done again')
     # *** possibly allow these to be set by user instead of hard-coded names:
     mybarvars <- switch(input$bartype,
                         'Demographic' = names.d,
@@ -202,7 +208,7 @@ shinyServer(function(input, output) {
       mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
     }
     
-    mybarvars.sumstat <- c('Average person', 'Average site')
+    mybarvars.sumstat <- c( 'Average site','Average person')
     mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
     if (input$barvartype=='pctile' | input$bartype=='EJ') {
       # use 50th percentile person as US overall benchmark
@@ -213,7 +219,7 @@ shinyServer(function(input, output) {
       plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
                          outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
     }
-    barplot( plotdata, beside=TRUE, legend.text=c('Average person', 'Average site', 'US Overall'),
+    barplot( plotdata, beside=TRUE, legend.text=c(  'Average site here', 'Average person here', 'Avg. person in US'), col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
   })
   
