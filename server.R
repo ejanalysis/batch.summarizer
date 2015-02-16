@@ -19,6 +19,7 @@ source('rowMaxs.R')     # returns Max of each row
 source('rowMins.R')     # returns Min of each row
 source('colMaxs.R')     # returns Max of each col
 source('colMins.R')     # returns Min of each col
+source('lead.zeroes.R')
 source('wtd.colMeans.R')     # returns wtd.mean of each col
 source('change.fieldnames.R')  # updated function that helps change or resort fieldnames using a map file mapping old to new names
 
@@ -125,9 +126,7 @@ shinyServer(function(input, output) {
     # After the user selects and uploads a file, it will be a data frame with 
     # 'name', 'size', 'type', and 'datapath' columns. 
     # The 'datapath' column will contain the local filenames where the data can be found.
-    
     inFile <- input$file1
-    
     if (is.null(inFile)) {
       myfile <- mydemofile
     } else {
@@ -135,51 +134,40 @@ shinyServer(function(input, output) {
     }
     
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
-    fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
-    
+    # To allow user to specify parameters of upload file format:
+    # fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
+    fulltable <- read.csv(myfile, stringsAsFactors = FALSE)
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
-    
     fulltable
   })
   
-  # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable     
+  # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable
   mythreshnames <- reactive({ grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) })
   mycolnames <- reactive({ colnames(fulltabler()) })
+  # could replace mycolnames with friendly names at some point.
   colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   
-  output$fulltableout <- renderTable(  fulltabler() )
+  output$fulltableout <- renderDataTable({fulltabler()} )
   
   outlist <- reactive({ 
-    batch.summarize(fulltabler(), 
-                    wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
-                    threshnames=mythreshnames(), threshold=mythreshold, 
-                    colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
-                    probs=probs, na.rm=na.rm
+    batch.summarize(
+      fulltabler(), 
+      wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
+      threshnames=mythreshnames(), threshold=mythreshold, 
+      colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
+      probs=probs, na.rm=na.rm
     )
   })
   
-  output$rowsout <- renderTable({
+  output$rowsout <- renderDataTable({
     
-    #     NOT CORRECT - NOT WORKING YET:
-    #     datasetInput.batchname() <- reactive <- ({
-    #       input$dataset <- fulltable
-    #     })
-    #     # download.batchdata
-    #     
-    #     datasetInput.rowsout() <- reactive <- ({
-    #       input$dataset <- outlist()$rows
-    #     })
-    
-    ##################################################################################################
     # Create summary stats from uploaded batch results. outlist() is a list of 2 elements: 
     #   rows (rows of summary stats), & cols (columns of summary stats)
-    
     # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
-    output$colsout <- renderTable(  outlist()$cols)
-    t( outlist()$rows )
-    
+    output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ))
+    cbind(order=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))), t(  rbind(  Variable=mycolnames(), outlist()$rows, fulltabler())))  
   })
   
   ##################################################################################################
@@ -260,7 +248,7 @@ shinyServer(function(input, output) {
     myvar.friendly.base <- input$myvar.friendly.base
     myvar.base <- names.all[match(myvar.friendly.base, names.all.friendly)]
     cat(myvar.base,' 0 \n')
-    if (substr(myvar.base,1,2)!='EJ') {
+    if (substr(myvar.base,1,2)=='EJ') {
       myrefstat <- 'pctile'
       refstat.friendly <- 'Percentile'
     } else {

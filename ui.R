@@ -40,36 +40,33 @@ shinyUI(
       
       tabPanel(
         "Upload a batch",
-        
         fileInput('file1', 'Select file of batch results to upload and summarize',
                   accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')),
-        #actionButton("demofile", "Demo/example file"),
-        
         textInput('batchname', "Name this analysis", "Batch Example"),
         h4(textOutput("name1", container = span)),
         tags$hr(),
-        checkboxInput('header', 'Header', TRUE),
-        radioButtons('sep', 'Separator',
-                     c(Comma=',', Semicolon=';', Tab='\t'), ','),
-        radioButtons('quote', 'Quote',
-                     c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"'), 
+#         checkboxInput('header', 'Header', TRUE),
+#         radioButtons('sep', 'Separator',
+#                      c(Comma=',', Semicolon=';', Tab='\t'), ','),
+#         radioButtons('quote', 'Quote',
+#                      c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"'), 
         downloadButton('download.batchdata', 'Download'),
         
-        tableOutput("fulltableout")
+        dataTableOutput("fulltableout")
       ),
       
       tabPanel(
         "Summary rows", 
         h4(textOutput("name2", container = span)),
         downloadButton('download.rowsout', 'Download'),
-        tableOutput("rowsout")
+        dataTableOutput("rowsout")
       ),
       
       tabPanel(
         "Summary cols", 
         h4(textOutput("name3", container = span)),
         downloadButton('download.colsout', 'Download'),
-        tableOutput("colsout")
+        dataTableOutput("colsout")
       ), 
       
       tabPanel(
