@@ -1,14 +1,26 @@
 To do / issues
 
-** Not sure I really need to display uploaded file on first tab. It is also on the other 2 tabs with more useful info.
+*summary rows tab: indicatorsort field is nice when 1st transpose option picked, but if 2d picked, then Stat_or_Site field needs to be fixed so it sorts sites using lead.zeroes() and the stat rows need some prefix like stat001: , stat002: , etc. that appears before the first site 001 does.
 
 Create an executive summary text tab
 
-Create text tables of results like AZ's
+Create text tables of results like AZ's:
+- Demog Tables: 
+    * table 1. Pop and 6 D's as count nearby, %D nearby (but not for pop), count in US, %D in US. 
+    * table 2. And stat test that avg site's D is > US avg D. 
+    * table 3. And stat test of # of sites whose D stat is >USavg.
+ - ***aggregated stat summary: 7 rows=pop and 6 Ds, cols= US % (count for pop), nearby %, % diff in those %s near vs US, stat sig for table 1, & 2.
+- Text a few paragraphs on each demog variable, explaining stats and significance results.
+- Region & State tally tables: Table of states in rows, with total pop nearby & # of sites, table of regions w same, & grand total row on each.
+- Sites tables: 1 row per site, 1 col each for name, id, region, state, pop, & 6Ds
 
 Fix the bar and hist plot downloads.
 
 maybe download a whole standard report of several plots.
+
+Provide a way to reset to go back to use the default fieldname mappings after user has loaded their own custom fieldname mappings.
+
+Check when fieldnames are renamed - when custom mappings file is uploaded, when new batch data is uploaded, etc.
 
 long list of percentiles takes up too much room on 1st tab - make it dropdown like multiple selectize widget, or just cut it.
 

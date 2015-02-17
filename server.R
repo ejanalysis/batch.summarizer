@@ -35,7 +35,7 @@ probs.default <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quant
 na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
 #
 mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
-mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames & var type & var category
+mynamesfile.default <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames & var type & var category
 # *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
 # default Demog vars for now:
 mywtsname <- 'pop'  # used for weighted means to get stats on the average person in all these zones (e.g. avg person nearby any site)
@@ -62,12 +62,12 @@ names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
 
 shinyServer(function(input, output) {
   
-  mybatchname <- renderText(input$batchname)
-  output$name1 <- renderText(input$batchname)
-  output$name2 <- renderText(input$batchname)
-  output$name3 <- renderText(input$batchname)
-  output$name4 <- renderText(input$batchname)
-  output$name5 <- renderText(input$batchname)
+  mybatchname  <-  renderText(input$batchname)
+  output$name1 <-  renderText(input$batchname)
+  output$name2 <-  renderText(input$batchname)
+  output$name3 <-  renderText(input$batchname)
+  output$name4 <-  renderText(input$batchname)
+  output$name5 <-  renderText(input$batchname)
   output$titletext <- renderText(paste("Batch Results Summarizer:", as.character(input$batchname)))
 
   output$download.batchdata <- downloadHandler(
@@ -122,6 +122,27 @@ shinyServer(function(input, output) {
   
   #############################
   
+  lookup.fieldnames <- reactive({
+    # THIS LETS USER UPLOAD CUSTOM MAP OF FIELDNAMES TO RENAME THEM AND CATEGORIZED THEM, 
+    # BUT THE UPLOADED BATCH DATA WILL NOT BE RENAMED UNLESS IT IS UPLOADED AGAIN.
+    # input$file2 will be NULL initially, or can use the example file and preload it
+    # After the user selects and uploads a file, it will be a data frame with 
+    # 'name', 'size', 'type', and 'datapath' columns. 
+    # The 'datapath' column will contain the local filenames where the data can be found.
+    inFile2 <- input$file2
+    if (is.null(inFile2)) {
+      myfile <- mynamesfile.default
+    } else {
+      myfile <- inFile2$datapath
+    }
+    #    mynamesfile <- renderText()
+    output$infilename2 <- renderText(inFile2$name)
+    fieldnamesmap <- read.csv(myfile, stringsAsFactors = FALSE)
+    fieldnamesmap
+  })
+  
+  #  mynamesfile <-  renderText(input$file2)
+  
   fulltabler <- reactive({
     
     # input$file1 will be NULL initially, or can use the example file and preload it?
@@ -135,12 +156,15 @@ shinyServer(function(input, output) {
       myfile <- inFile$datapath
     }
     
+    output$infilename <- renderText(inFile$name)
+    
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     # To allow user to specify parameters of upload file format:
     #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
     fulltable <- read.csv(myfile, stringsAsFactors = FALSE)
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
-    fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
+    # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
+    fulltable <- batch.clean(fulltable, oldcolnames=lookup.fieldnames()$oldnames, newcolnames=lookup.fieldnames()$newnames )
     fulltable
   })
   
@@ -186,7 +210,6 @@ shinyServer(function(input, output) {
   
   output$barplots <- renderPlot({
     # One set of bars per each of the myvars
-    print('done again')
     # *** possibly allow these to be set by user instead of hard-coded names:
     mybarvars <- switch(input$bartype,
                         'Demographic' = names.d,
@@ -255,7 +278,6 @@ shinyServer(function(input, output) {
     # get long name of field selected to plot, then convert to short name
     myvar.friendly.base <- input$myvar.friendly.base
     myvar.base <- names.all[match(myvar.friendly.base, names.all.friendly)]
-    cat(myvar.base,' 0 \n')
     if (substr(myvar.base,1,2)=='EJ') {
       myrefstat <- 'pctile'
       refstat.friendly <- 'Percentile'
@@ -267,14 +289,9 @@ shinyServer(function(input, output) {
       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refstat.friendly, ' across ', input$sites.or.people, sep='')
     } else {
       myvar.full <- paste(input$refzone, myrefstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
-      
-      cat(myvar.full,' 1 \n') #  **** fails to reach here when EJ moved from pctile to raw selection !!!
-      
       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
-      cat(myvar.full,' 2 \n')
       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, sep='')
     }
-    cat(myvar.full,' 3 \n')
     if (myrefstat=='raw' ) {
       sitecount <- 0 # suppress horizontal line benchmark when viewing raw data- it only applies to percentiles. Correct histo benchmark for raw would be the US overall histogram of that raw value in the selected # of bins, which is hard to provide here.
       popcount <- 0

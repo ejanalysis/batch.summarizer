@@ -49,6 +49,8 @@ shinyUI(
           column(
             4,
             h4(fileInput('file1', 'Select file of batch results to upload and summarize',
+                         accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))),
+            h5(fileInput('file2', 'Select file of fieldname mapping to rename fields to other than defaults',
                          accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')))
           ),
           column(
@@ -69,7 +71,7 @@ shinyUI(
           )
         ),
         tags$hr(),
-        downloadButton('download.batchdata', 'Download') #,
+        downloadButton('download.batchdata', 'Download the uploaded batch data with renamed fields but not summarized') #,
         
         #dataTableOutput("fulltableout")
       ),
@@ -79,7 +81,7 @@ shinyUI(
         #h4(textOutput("name2", container = span)),
         downloadButton('download.rowsout', 'Download'),
         radioButtons('transpose.rowsout', "Display transposed:", 
-                     c("One indicator per row, and one summary stat or site per column (useful for using search box to filter/view only cancer-related indicators for example" =  TRUE,
+                     c("One indicator per row, and one summary stat or site per column (useful for using search box to filter/view only cancer-related indicators for example)" =  TRUE,
                        "One indicator per column,  one summary stat or site per row (useful for sorting sites by State, demographics, or any other indicator)" = FALSE)),
         dataTableOutput("rowsout")
       ),

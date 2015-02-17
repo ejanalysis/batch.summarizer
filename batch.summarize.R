@@ -60,16 +60,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   ############################################
   # SUMMARY ROWS (a summary of each column):
   ############################################
-
-  #varname.batch (exactly as output by the batch tool)
-  #varname.friendly (e.g., maybe 3 to 15 characters long)
-  #varname.description (e.g., a complete phrase including units)
-  #vartype (e.g. raw, uspctile, regionavg, pop, calculated, etc.)
-  #varcategory (e.g., E, D, EJ)
-  #quantiles including median- multiple rows at once for multiple cols at once
-  #mean for flagged only?
-  # note: Hmisc's describe() takes a df and returns printout of count, missing, length(unique), pctiles, and a table() of how many of each unique value there are.
-
+  
   # THESE SUMMARY FUNCTIONS RETURN 1 ROW EACH:
   
   colfuname <- vector()
@@ -99,7 +90,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   n=6
   colfuname[n]='Count of sites'
   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
-
+  
   # manually removed this stat because colfun.picked is hard to use as currently written
   #   n=7
   #   colfuname[n]='Number of unique values'
@@ -110,7 +101,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   #  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
   
   # *** NOTE: CANNOT HAVE n=9 etc. here while quantiles are appended the way they currently are done
-
+  
   ############################################
   # THESE SUMMARY FUNCTIONS RETURN MULTIPLE ROWS EACH:
   # THAT REQUIRES A DIFFERENT APPROACH TO POPULATING THE RESULTS VARIABLE
