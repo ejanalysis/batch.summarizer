@@ -69,9 +69,9 @@ shinyUI(
           )
         ),
         tags$hr(),
-        downloadButton('download.batchdata', 'Download'),
+        downloadButton('download.batchdata', 'Download') #,
         
-        dataTableOutput("fulltableout")
+        #dataTableOutput("fulltableout")
       ),
       
       tabPanel(

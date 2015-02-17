@@ -1,12 +1,16 @@
 To do / issues
 
+** Not sure I really need to display uploaded file on first tab. It is also on the other 2 tabs with more useful info.
+
 Create an executive summary text tab
 
 Create text tables of results like AZ's
 
 Fix the bar and hist plot downloads.
 
-Not sure I really need to display uploaded file on first tab. It is also on the other 2 tabs with more useful info.
+maybe download a whole standard report of several plots.
+
+long list of percentiles takes up too much room on 1st tab - make it dropdown like multiple selectize widget, or just cut it.
 
 Maybe allow download of table as sorted and transposed, not just in default format for download.
 
@@ -19,6 +23,3 @@ barplot and histo download buttons at left are crowding the settings heading .mo
 histogram - possibly change selection of indicator from very long pulldown list of all into separate radiobuttons picking E/D/Ej and then pulldown that dynamically selects which of that category you want. At least use selectInput( selectize=FALSE) to view more rows in pulldown
 
 
-x- # of unique values and std dev aren't useful, so suppress
-
-x- remove "US%ile " from pctile version of xlab names.arg on barplots since text too long and can't see full labels
