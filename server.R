@@ -10,9 +10,9 @@ require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix 
 # Require a package or just source the code needed:
 # THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
-#source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
+source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
-#source('count.above.R')        # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
+source('count.above.R')        # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
 source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
 source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >80th %ile, for example), for each of many rows of a data.frame
 source('rowMaxs.R')     # returns Max of each row
@@ -58,7 +58,15 @@ names.ej.friendly <- paste('EJ Ind.-', names.e.friendly)
 names.all <- c(names.d, names.e, names.ej)
 names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
 
-#######################################################################################
+##########################################################################################
+popus <-  309138711 # 309,138,711 is from http://factfinder2.census.gov/bkmk/table/1.0/en/ACS/12_5YR/B01001/0100000US 
+# 307727594 was in sample reports # MUST BE UPDATED WHEN NEW ACS DATA IS USED ! 307727594 is from ???  
+us.percents <- 100 * c(0.35015068301904, 0.337245110039133, 0.363056255998945, 
+  0.147948736834136, 0.0514480674233393, 0.0651419032409694, 0.131563727067491)
+us.counts <- us.percents * popus
+names(us.percents) <- names.d
+names(us.counts) <- names.d
+##########################################################################################
 
 shinyServer(function(input, output) {
   
@@ -202,6 +210,47 @@ shinyServer(function(input, output) {
     }
   })
   
+  
+  output$table1 <- renderTable({
+    # table summarizing demog stats nearby and in US overall
+    popnear = outlist()$rows[ 'Sum', mywtsname]
+    mytable <- cbind(Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall'), 
+          Pop= format( c(popnear,  popus, popnear, popus), big.mark=',')
+          )
+    othercols <- rbind( format(outlist()$rows['Sum', names.d ], big.mark = ','), 
+                        format(us.counts[names.d], big.mark=','),
+                        paste( round(outlist()$rows['Average person' , names.d], 0), '%',sep=''),
+                        paste( round(us.percents[names.d], 0), '%',sep='') )
+    colnames(othercols) <- names.d.friendly
+    mytable <- cbind(mytable, othercols)
+  })
+  
+  output$table2 <- renderTable({
+    # table of significance tests for avg site's D being above US avg
+    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value'))
+    othercols <- rbind( paste( round(outlist()$rows['Average site', names.d ], 0), '%',sep = ''), 
+                        round(sapply(fulltabler()[ , names.d], FUN=function(x) sd(x,na.rm=TRUE)), 2),
+                        0, # t stat ***
+                        0 ) # p value ***
+    colnames(othercols) <- names.d.friendly
+    mytable <- cbind(mytable, othercols)
+  })
+
+  output$table3 <- renderTable({
+    # table of significance tests for # of sites with D above US avg
+    pct.above.usavg <- pct.above(fulltabler()[ , names.d ], benchmarks=us.percents[names.d], benchnames='cutoff', na.rm=TRUE, or.tied=FALSE, below=FALSE, wts=1, of.what='all')
+    count.above.usavg <- count.above(fulltabler()[ , names.d ], benchmarks=us.percents[names.d], benchnames='cutoff', or.tied=FALSE, below=FALSE, wts=1)
+    # sum( fulltabler()[ , names.d ] > us.percents[names.d]) / length(fulltablr()[,1]
+    mytable <- cbind(Statistic=c(paste('% (#) of sites where demog. > US avg. (of ',length(outlist()$cols[,1] ),'sites)'), 'standard deviation', 't-statistic',  'p-value'))
+    othercols <- rbind( paste( round( 100*  pct.above.usavg   , 0), '% (', count.above.usavg,')',sep = ''), 
+                        #round(sapply( fulltabler()[ , names.d], FUN=function(x) sd(x,na.rm=TRUE)), 2),
+                        0, # need standard deviation that is relevant to this statistic...
+                        0, # t stat ***
+                        0 ) # p value ***
+    colnames(othercols) <- names.d.friendly
+    mytable <- cbind(mytable, othercols)
+  })
+
   ##################################################################################################
   
   

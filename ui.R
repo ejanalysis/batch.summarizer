@@ -94,6 +94,23 @@ shinyUI(
       ), 
       
       tabPanel(
+        "Stat Tests", 
+        #h4(textOutput("name3", container = span)),
+        br(),
+        h4('Table 1. Does the population near these sites as a whole have demographics above the US average?'),
+        tableOutput("table1"),
+        downloadButton('download.table1', 'Download Table 1'),
+        tags$hr(),
+        h4('Table 2. Does the average site have demographics above the US average?'),
+        tableOutput("table2"),
+        downloadButton('download.table2', 'Download Table 2'),
+        tags$hr(),
+        h4('Table 3. Do most of these sites have demographics above the US average?'),
+        tableOutput("table3"),
+        downloadButton('download.table3', 'Download Table 3')
+      ), 
+      
+      tabPanel(
         "Barplots", 
         #h4(textOutput("name4", container = span)),
         plotOutput('barplots'),
