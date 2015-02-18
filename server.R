@@ -66,6 +66,7 @@ us.percents <- 100 * c(0.35015068301904, 0.337245110039133, 0.363056255998945,
 us.counts <- us.percents * popus
 names(us.percents) <- names.d
 names(us.counts) <- names.d
+bar.cex <- 1.10
 ##########################################################################################
 
 shinyServer(function(input, output) {
@@ -109,12 +110,17 @@ shinyServer(function(input, output) {
   )
   
   output$download.barplot <- downloadHandler(
+    
     filename = function() { 
       paste(mybatchname(), 'barplot.png')
     },
     contentType='image/png',
     content = function(file) {
-#      png(filename=file,width = 480, height = 480, units = "px", pointsize = 12); barplots.reactive()  ; dev.off()
+      png(filename=file, width = 1200, height = 750, units = "px", pointsize = 12)
+      barplots.NONreactive() # non-reactive is workaround to handle apparent bug in shiny?
+      # see https://groups.google.com/forum/#!msg/shiny-discuss/u7gwXc8_vyY/IZK_o7b7I8gJ 
+      # and see http://stackoverflow.com/questions/26764481/downloading-png-from-shiny-r
+      dev.off()
     }
   )
   
@@ -293,11 +299,65 @@ shinyServer(function(input, output) {
       plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
                          outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
     }
-    barplot( plotdata, beside=TRUE, legend.text=c(  'Average site here', 'Average person here', 'Avg. person in US'), col=c('yellow', 'green', 'blue'),
-             names.arg=mybarvars.friendly, ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
+######################
+    if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
+    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=bar.cex, 
+             col=c('yellow', 'green', 'blue'),
+             names.arg=mybarvars.friendly, 
+             ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
+    legend(x='topright', legend=c(  'Average site here', 'Average person here', 'Avg. person in US'), fill=c('yellow', 'green', 'blue'), 
+           cex=bar.cex)
+    
   })
   
+  # COPY OF above renderPlot function , but not reactive, to address apparent bug in downloading png:  
+  barplots.NONreactive <- function(){
+    # One set of bars per each of the myvars
+    # *** possibly allow these to be set by user instead of hard-coded names:
+    mybarvars <- switch(input$bartype,
+                        'Demographic' = names.d,
+                        'Environmental' = names.e,
+                        'EJ' = names.ej
+    )
+    mybarvars.friendly <- switch(input$bartype,
+                                 'Demographic' = names.d.friendly,
+                                 'Environmental' = names.e.friendly,
+                                 'EJ' = names.ej.friendly
+    )
+    mybarvars.refzone <- switch(input$bartype,
+                                'Demographic' = paste('us.avg.',names.d,sep=''),
+                                'Environmental' = paste('us.avg.',names.e,sep=''),
+                                'EJ' = names.ej
+    )
+    
+    if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      mybarvars <- paste('pctile.', mybarvars, sep='')
+      # mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='') # removed since takes up space and already in header
+      mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
+    }
+    
+    mybarvars.sumstat <- c( 'Average site','Average person')
+    mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+    if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      # use 50th percentile person as US overall benchmark
+      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
+                         rep(50, length(mybarvars.refzone)) ) 
+    } else {
+      # use actual US avg person's indicator score as US overall benchmark
+      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
+                         outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
+    }
+######################
+    if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
+    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=bar.cex, 
+             col=c('yellow', 'green', 'blue'),
+             names.arg=mybarvars.friendly, 
+             ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
+    legend(x='topright', legend=c(  'Average site here', 'Average person here', 'Avg. person in US'), fill=c('yellow', 'green', 'blue'), 
+           cex=bar.cex)
+    }
   
+
   ##################################################################################################
   # HISTOGRAMS
   
