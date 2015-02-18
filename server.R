@@ -45,7 +45,7 @@ names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School'
 names.e          <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
              "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
              "proximity.npdes")
-names.e.friendly <- c("PM2.5", "Ozone", "NATA Cancer risk", "NATA Neuro", "NATA Respiratory", "NATA Diesel PM", "% built pre-1960", 
+names.e.friendly <- c("PM2.5", "Ozone", "Cancer risk", "Neuro.", "Respiratory", "Diesel PM", "% built pre-1960", 
                       "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
                       "NPDES proximity")
 # default EJ vars for now:
@@ -54,7 +54,7 @@ names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.e
               "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
               "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
               "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
-names.ej.friendly <- paste('EJ Ind.-', names.e.friendly)
+names.ej.friendly <- paste('EJ:', names.e.friendly)
 names.all <- c(names.d, names.e, names.ej)
 names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
 
@@ -301,7 +301,8 @@ shinyServer(function(input, output) {
     }
 ######################
     if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
-    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=bar.cex, 
+    if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
+    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
              col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, 
              ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
@@ -349,13 +350,15 @@ shinyServer(function(input, output) {
     }
 ######################
     if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
-    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=bar.cex, 
+    if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
+    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
              col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, 
              ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
     legend(x='topright', legend=c(  'Average site here', 'Average person here', 'Avg. person in US'), fill=c('yellow', 'green', 'blue'), 
            cex=bar.cex)
-    }
+    
+  }
   
 
   ##################################################################################################

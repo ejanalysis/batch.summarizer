@@ -19,7 +19,7 @@ names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School'
 names.e          <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
                       "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
                       "proximity.npdes")
-names.e.friendly <- c("PM2.5", "Ozone", "NATA Cancer risk", "NATA Neuro", "NATA Respiratory", "NATA Diesel PM", "% built pre-1960", 
+names.e.friendly <- c("PM2.5", "Ozone", "Cancer risk", "Neuro.", "Respiratory", "Diesel PM", "% built pre-1960", 
                       "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
                       "NPDES proximity")
 # default EJ vars for now:
@@ -28,7 +28,7 @@ names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.e
               "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
               "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
               "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
-names.ej.friendly <- paste('EJ Ind.-', names.e.friendly)
+names.ej.friendly <- paste('EJ:', names.e.friendly)
 names.all <- c(names.d, names.e, names.ej)
 names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
 #######################################################################################
