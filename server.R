@@ -289,11 +289,11 @@ shinyServer(function(input, output) {
   
   table2 <- reactive({
     # table of significance tests for avg site's D being above US avg
-    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value', 'Avg site, ratio to US'))
+    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value from Wilcoxon test', 'Avg site, ratio to US'))
     othercols <- rbind( paste( round(row1<- outlist()$rows['Average site', names.d ], 0), '%',sep = ''), 
                         round(sapply(fulltabler()[ , names.d], FUN=function(x) sd(x,na.rm=TRUE)), 2),
                         0, # t stat ***
-                        0 , # p value ***
+                        0, #  wilcoxon.test(x= , n=length(fulltabler()[,1]) ) , # p value ***
                         round( row1 / us.percents[names.d],2))
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
