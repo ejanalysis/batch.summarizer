@@ -109,28 +109,47 @@ shinyServer(function(input, output) {
     }
   )
   
+  # TO DRAW AND/OR DOWNLOAD PLOTS, NOTE:
+  # must say myplot <- reactive(  ....   p <- barplot(); return(p)   ); then in download handler, do 
+  #       content = function(file) {
+  #       ggsave(file, plot=PLOT1(), device=png, width=800, height=800, limitsize=FALSE)
+  #     }
+  #
+  #    In general, plot rendering is not something you want to do in a reactive expression; 
+  #    the reason is because reactive expressions cache their calculated values and 
+  #    only actually re-execute when one of the reactive inputs they depend on change.
+  #    So if you are calling the same reactive that does a plot from two places in your code,
+  #    then only one of those will have the behavior you want and the other will not get a plot rendered.
+  #       The changes that Stéphane recommended ensure that the "side effect free" calculations happen inside the reactive, while the operations that have side effects (printing a ggplot object) only occurs in the output and content functions where they always belong.
+  # see https://groups.google.com/forum/#!searchin/shiny-discuss/Error$20opening$20file/shiny-discuss/79fiwAp80S4/SVibuhZTO4oJ
+  # and see https://groups.google.com/forum/#!msg/shiny-discuss/u7gwXc8_vyY/IZK_o7b7I8gJ 
+  # and see http://stackoverflow.com/questions/26764481/downloading-png-from-shiny-r
+  
+  
   output$download.barplot <- downloadHandler(
-    
     filename = function() { 
-      paste(mybatchname(), 'barplot.png')
+      paste(mybatchname(), barplotkind(), 'barplot.png')
     },
     contentType='image/png',
     content = function(file) {
-      png(filename=file, width = 1200, height = 750, units = "px", pointsize = 12)
-      barplots.NONreactive() # non-reactive is workaround to handle apparent bug in shiny?
-      # see https://groups.google.com/forum/#!msg/shiny-discuss/u7gwXc8_vyY/IZK_o7b7I8gJ 
-      # and see http://stackoverflow.com/questions/26764481/downloading-png-from-shiny-r
+      #ggsave(file, plot=barplots(), device=png, width = 1200, height = 768, units = "px", pointsize = 12)
+      png(filename=file, width = 1400, height = 768, units = "px", pointsize = 12)
+      # THIS WORKAROUND DOES WORK FOR NOW:
+      barplots.NONreactive()
       dev.off()
     }
   )
   
   output$download.histogram <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'histogram.png')
+      paste(mybatchname(), histogramkind(), 'histogram.png')
     },
     contentType='image/png',
     content = function(file) {
-#      png(file=file,width = 480, height = 480, units = "px", pointsize = 12); histograms.reactive()  ; dev.off()
+      #ggsave(file, plot=histograms.react(), device=png, width = 12.00, height = 7.68, units = "cm") # width = 1200, height = 768, units = "mm",
+      png(filename=file, width = 1200, height = 768, units = "px", pointsize = 12)
+      print(histograms.react())
+      dev.off()
     }
   )
   
@@ -263,6 +282,12 @@ shinyServer(function(input, output) {
   ##################################################################################################
   # BARPLOTS
   
+  # for use in name of file when saving plot
+  barplotkind <- reactive({
+    paste(input$bartype, input$barvartype, sep='_' )
+  })
+  #as.character(input$barplot.title)
+  
   output$barplots <- renderPlot({
     # One set of bars per each of the myvars
     # *** possibly allow these to be set by user instead of hard-coded names:
@@ -299,10 +324,13 @@ shinyServer(function(input, output) {
       plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
                          outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
     }
-######################
+    
     if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
     if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
+    # as.character(input$barplot.title)  # was a way to just let user specify title
+    
     barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
+             main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for avg site, for avg resident near any site, and in US overall',sep=' ' ) ,
              col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, 
              ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
@@ -311,7 +339,11 @@ shinyServer(function(input, output) {
     
   })
   
+  
+  
   # COPY OF above renderPlot function , but not reactive, to address apparent bug in downloading png:  
+  # see https://groups.google.com/forum/#!searchin/shiny-discuss/Error$20opening$20file/shiny-discuss/79fiwAp80S4/SVibuhZTO4oJ
+  
   barplots.NONreactive <- function(){
     # One set of bars per each of the myvars
     # *** possibly allow these to be set by user instead of hard-coded names:
@@ -348,13 +380,17 @@ shinyServer(function(input, output) {
       plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
                          outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
     }
-######################
+    
     if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
     if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
-    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
+    # as.character(input$barplot.title)  # was a way to just let user specify title
+    
+    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex,  
+             main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for avg site, for avg resident near any site, and in US overall',sep=' ' ) ,
              col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, 
              ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
+    
     legend(x='topright', legend=c(  'Average site here', 'Average person here', 'Avg. person in US'), fill=c('yellow', 'green', 'blue'), 
            cex=bar.cex)
     
@@ -364,7 +400,13 @@ shinyServer(function(input, output) {
   ##################################################################################################
   # HISTOGRAMS
   
-  output$histograms <- renderPlot({
+  # for use in name of file when saving plot
+  histogramkind <- reactive({
+    paste(input$myvar.friendly.base, input$refstat, input$refzone, input$sites.or.people, sep='_' )
+  })
+  
+  
+  histograms.react <- reactive({
     # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
     
     # *** User will be able to define these using checkboxes:
@@ -422,22 +464,105 @@ shinyServer(function(input, output) {
     if (input$sites.or.people=='Sites') {
       # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
       
-      ggplot( fulltabler(), aes_string( myvar.full) ) + 
+      myplot <- ggplot( fulltabler(), aes_string( myvar.full) ) + 
         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
         geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-        ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+        ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
       
     } else {
       
       # *** hard coded to use mywtsname as weights for now:
       
-      ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
+      myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
         #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-        ggtitle( paste(myvar.friendly.full,': Distribution across ', input$sites.or.people, sep='')) 
+        ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
     }
+    return(myplot)
   })
+  
+  output$histograms <- renderPlot( histograms.react() )
+  
+#   # EXACT COPY OF above renderPlot function , but not reactive, to address apparent bug in downloading png:  
+#   
+#   histograms.NONreactive <- function(){
+#     # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
+#     
+#     # *** User will be able to define these using checkboxes:
+#     # (this code presumes new variable names are as in default file)
+#     #       myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist()$rows not in fulltable
+#     #       myvar.full <- paste(refzone, refstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
+#     #       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
+#     #       myvar.friendly.base <- 'Demographic Index'
+#     #       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
+#     
+#     refzone.friendly <- switch(input$refzone, 
+#                                'us'='US',
+#                                'region'='Region',
+#                                'state'='State')
+#     refstat.friendly <- switch(input$refstat,
+#                                'pctile'='Percentile',
+#                                'raw'='Indicator Value (not percentile)')
+#     
+#     # *** Should make this more generic/ flexible, not hard-coded names:
+#     # *** SHOULD USE FRIENDLY NAMES IN UI LIST AND PASS myvar.friendly.base 
+#     # and then HERE IN SERVER SHOULD fix to use that to get non friendly base for plot
+#     
+#     # get long name of field selected to plot, then convert to short name
+#     myvar.friendly.base <- input$myvar.friendly.base
+#     myvar.base <- names.all[match(myvar.friendly.base, names.all.friendly)]
+#     if (substr(myvar.base,1,2)=='EJ') {
+#       myrefstat <- 'pctile'
+#       refstat.friendly <- 'Percentile'
+#     } else {
+#       myrefstat <- input$refstat
+#     }
+#     if (myrefstat=='raw' ) {
+#       myvar.full <- myvar.base
+#       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refstat.friendly, ' across ', input$sites.or.people, sep='')
+#     } else {
+#       myvar.full <- paste(input$refzone, myrefstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
+#       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
+#       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, sep='')
+#     }
+#     if (myrefstat=='raw' ) {
+#       sitecount <- 0 # suppress horizontal line benchmark when viewing raw data- it only applies to percentiles. Correct histo benchmark for raw would be the US overall histogram of that raw value in the selected # of bins, which is hard to provide here.
+#       popcount <- 0
+#     } else {
+#       sitecount <- length( fulltabler()[ , myvar.full] ) # but for popwtd hist, use popcount!
+#       #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now. fails.
+#       popcount <- outlist()$rows[ 'Sum','pop' ]
+#     }
+#     
+#     mybincount <- input$bincount # (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
+#     expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount?!
+#     expected.pop.per.bin=   popcount  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
+#     
+#     # HISTOGRAM plotted here
+#     
+#     if (input$sites.or.people=='Sites') {
+#       # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
+#       
+#       ggplot( fulltabler(), aes_string( myvar.full) ) + 
+#         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+#         geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
+#         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+#         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+#       
+#     } else {
+#       
+#       # *** hard coded to use mywtsname as weights for now:
+#       
+#       ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
+#         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+#         #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
+#         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+#         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+#     }
+#   }
+#   
+  
 })
 

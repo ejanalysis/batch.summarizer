@@ -112,19 +112,17 @@ shinyUI(
       
       tabPanel(
         "Barplots", 
-        #h4(textOutput("name4", container = span)),
         plotOutput('barplots'),
         downloadButton('download.barplot', 'Download'),
         fluidRow(
           h4('Barplot settings'),
           column(4, radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))),
-          column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw'))) 
+          column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw')))
         )
       ),
       
       tabPanel(
         "Histograms", 
-        #h4(textOutput("name5", container = span)),
         fluidRow(
           column(
             3,
@@ -132,10 +130,7 @@ shinyUI(
                         c(names.d.friendly, names.e.friendly, names.ej.friendly),
                         selected=1)
           ),
-          column(
-            9,
-            plotOutput('histograms')
-          )
+          column(9, plotOutput('histograms') )
         ),
         downloadButton('download.histogram', 'Download'),
         
