@@ -244,7 +244,7 @@ shinyServer(function(input, output) {
   colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   
-  output$fulltableout <- renderDataTable({fulltabler()} )
+  output$fulltableout <- renderDataTable({fulltabler()})
   
   outlist <- reactive({ 
     batch.summarize(
@@ -261,7 +261,48 @@ shinyServer(function(input, output) {
     # Create summary stats from uploaded batch results. outlist() is a list of 2 elements: 
     #   rows (rows of summary stats), & cols (columns of summary stats)
     # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
-    output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ))
+    
+    output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ), options=list(
+      lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+      pageLength = -1,
+      scrollX= TRUE,
+      scrollY= "365px",
+      scrollCollapse= TRUE,
+      #callback = "function(FixedColumns) {}"
+      
+      )
+    )
+    
+    # callback = "function(oTable) {}",   
+    # is the example in shiny documentation
+    # from stack.exchange:
+    # I("new $.fn.dataTable.FixedColumns( table, {
+    #   leftColumns: 5
+    #   } );")
+    # 
+    #
+    # https://datatables.net/release-datatables/extensions/FixedColumns/examples/two_columns.html
+    # The example of javascript is:
+    #     new $.fn.dataTable.FixedColumns( table, {
+    #       leftColumns: 2
+    #     } );
+    #
+    # https://datatables.net/extensions/fixedcolumns/
+    # The example of javascript is:
+    #     /*
+    #       * Example initialisation
+    #     */
+    #       $(document).ready( function () {
+    #         var table = $('#example').DataTable( {
+    #           "scrollY": "300px",
+    #           "scrollX": "100%",
+    #           "scrollCollapse": true,
+    #           "paging": false
+    #         } );
+    #         new $.fn.dataTable.FixedColumns( table );
+    #       } );
+    #     
+
     if (input$transpose.rowsout) {
       cbind(IndicatorSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))), 
             t(  rbind(  Indicator=mycolnames(), outlist()$rows, fulltabler())))  
@@ -269,7 +310,15 @@ shinyServer(function(input, output) {
          cbind( Stat_or_Site=c(rownames(outlist()$rows), fulltabler()[ , 1] )   , 
                 rbind( outlist()$rows, fulltabler()) )
     }
-  })
+  }, options=list(
+    lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+    pageLength = -1,
+    scrollX= TRUE,
+    scrollY= "365px",
+    scrollCollapse= TRUE,
+    callback = "function(FixedColumns) {}"
+  )
+  )
   
   table1 <- reactive({
     # table summarizing demog stats nearby and in US overall

@@ -81,8 +81,9 @@ shinyUI(
         #h4(textOutput("name2", container = span)),
         downloadButton('download.rowsout', 'Download'),
         radioButtons('transpose.rowsout', "Display transposed:", 
-                     c("One indicator per row, and one summary stat or site per column (useful for using search box to filter/view only cancer-related indicators for example)" =  TRUE,
-                       "One indicator per column,  one summary stat or site per row (useful for sorting sites by State, demographics, or any other indicator)" = FALSE)),
+                     c("One indicator per row, a summary stat or site per column (use search box to view only cancer indicators, e.g.)" =  TRUE,
+                       "One indicator per column, a summary stat or site per row (sort sites by State, demog., or other indicator)" = FALSE)),
+        h5('Click a heading (e.g., State) to sort, Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
         dataTableOutput("rowsout")
       ),
       
