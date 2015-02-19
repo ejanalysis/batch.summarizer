@@ -33,29 +33,57 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   rowfuname <- vector()
   rowfun <- list()
   
-  rowfuname[1]='Are any EJ Index US percentiles at/above threshold'
-  rowfun[[1]]=function(x, ...) {
+  i=0
+  
+  i=i+1
+  rowfuname[i]='Are any EJ Index US percentiles at/above threshold'
+  rowfun[[i]]=function(x, ...) {
      flagged(x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm) 
   }
   
-  rowfuname[2]='Number of EJ Index US percentiles at/above threshold'
-  rowfun[[2]]=function(x, ...) {
+  i=i+1
+  rowfuname[i]='Number of EJ Index US percentiles at/above threshold'
+  #num.EJ.at.above.threshold (was called num.EJ.80plus.calculated)
+  rowfun[[i]]=function(x, ...) {
     #print(threshnames)
     cols.above.count( x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm )
-    }
+  }
   
-  # rowfunames[3]='Ratio to US pop avg'
-  # rowfun[3]=function(x, usavgvalues, na.rm=TRUE) { x / usavgvalues } # that is not how the math will work - just a placeholder
-  # need to identify those usavgvalues columns either here or when that is called
+  i=i+1
+  rowfuname[i]='Max of EJ US percentiles'
+  rowfun[[i]]=function(x, ...) {
+    rowMaxs( x[ , threshnames], na.rm = na.rm)
+  }
   
-  #rowfunames[4]='Ratio to State pop avg'
-  #rowfun[4]=function(x, stateavgvalues, na.rm=TRUE) { x / stateavgvalues } # that is not how the math will work - just a placeholder
+  i=i+1
+  rowfuname[i]='Min of EJ US percentiles'
+  rowfun[[i]]=function(x, ...) {
+    rowMins( x[ , threshnames], na.rm = na.rm)
+  }
   
-  #num.EJ.at.above.threshold (was called num.EJ.80plus.calculated)
+  #i=i+1
+  #rowfuname[i]=''
+  #rowfun[[i]]=function(x, ...) {
+  #  f( x, na.rm = na.rm)
+  #}
+  
+  # possibly add functions here that create multiple cols, one per indicator, showing for each indicator at each site, 
+  # - is value above US avg
+  # - what is ratio of value to US avg for that value, etc.:
   #ratios.to.pop.usavg (1 col per relevant variable)
   #ratios.to.pop.region.avg (1 col per relevant variable)
   #ratios.to.pop.state.avg (1 col per relevant variable)
   #ratios.to.pop.county.avg?? (1 col per relevant variable)
+  
+  #i=i+1
+  # rowfunames[i]='Ratio of indicator Xat average site to US pop avg'  
+  # rowfun[i]=function(x, usavgvalues, na.rm=TRUE) { x / usavgvalues } # that is not how the math will work - just a placeholder
+  # need to identify those usavgvalues columns either here or when that is called
+  
+  #i=i+1
+  #rowfunames[i]='Ratio to State pop avg'
+  #rowfun[i]=function(x, stateavgvalues, na.rm=TRUE) { x / stateavgvalues } # that is not how the math will work - just a placeholder
+  
   
   ############################################
   # SUMMARY ROWS (a summary of each column):
@@ -66,37 +94,38 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   colfuname <- vector()
   colfun <- list()
   # n specifies the order in which summary stat rows will appear
+  n=0
   
-  n=1
+  n=n+1
   colfuname[n]='Average site'
   colfun[[n]]=function(x, ...) {colMeans(x, na.rm=na.rm)}
   
-  n=2
+  n=n+1
   colfuname[n]='Average person'
   colfun[[n]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)}
   
-  n=3
+  n=n+1
   colfuname[n]='Minimum'
   colfun[[n]]=function(x, ...) {colMins(x, na.rm=na.rm)}
   
-  n=4
+  n=n+1
   colfuname[n]='Maximum'
   colfun[[n]]=function(x, ...) {colMaxs(x, na.rm=na.rm)}
   
-  n=5
+  n=n+1
   colfuname[n]='Sum'
   colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
   
-  n=6
+  n=n+1
   colfuname[n]='Count of sites'
   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
   
   # manually removed this stat because colfun.picked is hard to use as currently written
-  #   n=7
+  #n=n+1
   #   colfuname[n]='Number of unique values'
   #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
   #   
-  #  n=8
+  #n=n+1
   #  colfuname[n]='Standard Deviation'
   #  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
   
@@ -211,7 +240,8 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   # rownames(colsout) <- rownames(x)  # is another option
   
   ############################################
-  # CRUDE WAY TO ADD QUANTILE SUMMARY ROWS:
+  # less elegant WAY TO APPEND QUANTILE SUMMARY ROWS:
+  ############################################
   
   if (just.rbind.quantiles) {
     quantile.rows     <- matrix(NA, nrow=length(probs), ncol=ncol(x)); rownames(quantile.rows)     <- paste('Percentile of sites', 100*probs)
@@ -227,7 +257,6 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
 }
 
 ############################################  ############################################
-
 # str(fulltable)
 # 'data.frame':  42 obs. of  179 variables:
 # $ OBJECTID                                     : int  1 2 3 4 5 6 7 8 9 10 ...

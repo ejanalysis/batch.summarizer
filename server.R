@@ -22,6 +22,7 @@ source('colMins.R')     # returns Min of each col
 source('lead.zeroes.R')
 source('wtd.colMeans.R')     # returns wtd.mean of each col
 source('change.fieldnames.R')  # updated function that helps change or resort fieldnames using a map file mapping old to new names
+source('wilcoxon.pvalues.r')  # for statistical significance testing
 
 source('batch.read.R')
 source('batch.clean.R')
@@ -109,6 +110,41 @@ shinyServer(function(input, output) {
     }
   )
   
+  output$download.table1 <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Table1.csv')
+    },
+    contentType='text/csv',
+    content = function(file) {
+      write.csv( table1(), file)
+    }
+  )
+
+  output$download.table2 <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Table2.csv')
+    },
+    contentType='text/csv',
+    content = function(file) {
+      write.csv( table2(), file)
+    }
+  )
+  
+  output$download.table3 <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Table3.csv')
+    },
+    contentType='text/csv',
+    content = function(file) {
+      write.csv( table3(), file)
+    }
+  )
+  
+  
+  
+  
+  
+    
   # TO DRAW AND/OR DOWNLOAD PLOTS, NOTE:
   # must say myplot <- reactive(  ....   p <- barplot(); return(p)   ); then in download handler, do 
   #       content = function(file) {
@@ -235,33 +271,35 @@ shinyServer(function(input, output) {
     }
   })
   
-  
-  output$table1 <- renderTable({
+  table1 <- reactive({
     # table summarizing demog stats nearby and in US overall
     popnear = outlist()$rows[ 'Sum', mywtsname]
-    mytable <- cbind(Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall'), 
-          Pop= format( c(popnear,  popus, popnear, popus), big.mark=',')
-          )
+    mytable <- cbind(
+      Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall', 'Avg person, ratio to US'), 
+      Pop= c(format( c(popnear,  popus, popnear, popus), big.mark=','), round(popnear/popus,4))
+      )
     othercols <- rbind( format(outlist()$rows['Sum', names.d ], big.mark = ','), 
                         format(us.counts[names.d], big.mark=','),
-                        paste( round(outlist()$rows['Average person' , names.d], 0), '%',sep=''),
-                        paste( round(us.percents[names.d], 0), '%',sep='') )
+                        paste( round(row3<-outlist()$rows['Average person' , names.d], 0), '%',sep=''),
+                        paste( round(row4<-us.percents[names.d], 0), '%',sep=''),
+                        format( round(row3/row4,2)))
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
   })
   
-  output$table2 <- renderTable({
+  table2 <- reactive({
     # table of significance tests for avg site's D being above US avg
-    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value'))
-    othercols <- rbind( paste( round(outlist()$rows['Average site', names.d ], 0), '%',sep = ''), 
+    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value', 'Avg site, ratio to US'))
+    othercols <- rbind( paste( round(row1<- outlist()$rows['Average site', names.d ], 0), '%',sep = ''), 
                         round(sapply(fulltabler()[ , names.d], FUN=function(x) sd(x,na.rm=TRUE)), 2),
                         0, # t stat ***
-                        0 ) # p value ***
+                        0 , # p value ***
+                        round( row1 / us.percents[names.d],2))
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
   })
 
-  output$table3 <- renderTable({
+  table3 <- reactive({
     # table of significance tests for # of sites with D above US avg
     pct.above.usavg <- pct.above(fulltabler()[ , names.d ], benchmarks=us.percents[names.d], benchnames='cutoff', na.rm=TRUE, or.tied=FALSE, below=FALSE, wts=1, of.what='all')
     count.above.usavg <- count.above(fulltabler()[ , names.d ], benchmarks=us.percents[names.d], benchnames='cutoff', or.tied=FALSE, below=FALSE, wts=1)
@@ -275,6 +313,11 @@ shinyServer(function(input, output) {
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
   })
+  
+  output$table1 <- renderTable({table1()} )
+  output$table2 <- renderTable({table2()} )
+  output$table3 <- renderTable({table3()} )
+  
 
   ##################################################################################################
   
