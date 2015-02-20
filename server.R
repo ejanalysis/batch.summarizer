@@ -3,6 +3,17 @@
 
 library(shiny) # http://shiny.rstudio.com
 
+# to DISPLAY A MAP
+# http://shiny.rstudio.com/tutorial/lesson5/
+library(maps)
+library(mapproj)
+# need to load gomap.js ??
+source("maphelpers.R")  # if we want percent choropleths of county data
+counties <- readRDS(file='data/counties.rds') # if we want county data
+counties$nonwhite <- counties$total.pop - counties$white
+
+# library(dplyr) # might not need this
+
 require(Hmisc) 
 require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist
 # ggplot2:  library(ggplot2); ggplot( fulltable, aes(pm, weight=pop) ) + geom_histogram()
@@ -31,8 +42,9 @@ source('batch.summarize.R')
 #############################
 # DEFAULT VALUES, possibly could recode to allow user to change them, and/or read fieldnames from the csv file: 
 #############################
+
 probs.default <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
-#mythreshold=80  # default for cutoff in at/above threshold stat summarizing the EJ Index US percentiles
+mythreshold.default=80  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
 na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
 #
 mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
@@ -60,6 +72,9 @@ names.all <- c(names.d, names.e, names.ej)
 names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
 
 ##########################################################################################
+# MUST BE UPDATED WHEN NEW ACS DATA IS USED !
+##########################################################################################
+
 popus <-  309138711 # 309,138,711 is from http://factfinder2.census.gov/bkmk/table/1.0/en/ACS/12_5YR/B01001/0100000US 
 # 307727594 was in sample reports # MUST BE UPDATED WHEN NEW ACS DATA IS USED ! 307727594 is from ???  
 us.percents <- 100 * c(0.35015068301904, 0.337245110039133, 0.363056255998945, 
@@ -67,10 +82,17 @@ us.percents <- 100 * c(0.35015068301904, 0.337245110039133, 0.363056255998945,
 us.counts <- us.percents * popus
 names(us.percents) <- names.d
 names(us.counts) <- names.d
-bar.cex <- 1.10
+bar.cex <- 1.10 # defines scaling for text on barplot
+
 ##########################################################################################
+##################################################################################################
+##################################################################################################
+
+
 
 shinyServer(function(input, output) {
+  
+  # User-defined name for this dataset / analysis
   
   mybatchname  <-  renderText(input$batchname)
   output$name1 <-  renderText(input$batchname)
@@ -79,7 +101,10 @@ shinyServer(function(input, output) {
   output$name4 <-  renderText(input$batchname)
   output$name5 <-  renderText(input$batchname)
   output$titletext <- renderText(paste("Batch Results Summarizer:", as.character(input$batchname)))
+  
 
+  # Code enabling Download of tables and charts
+  
   output$download.batchdata <- downloadHandler(
     filename = function() { 
       paste(mybatchname(), 'batchdata.csv')
@@ -139,29 +164,7 @@ shinyServer(function(input, output) {
       write.csv( table3(), file)
     }
   )
-  
-  
-  
-  
-  
     
-  # TO DRAW AND/OR DOWNLOAD PLOTS, NOTE:
-  # must say myplot <- reactive(  ....   p <- barplot(); return(p)   ); then in download handler, do 
-  #       content = function(file) {
-  #       ggsave(file, plot=PLOT1(), device=png, width=800, height=800, limitsize=FALSE)
-  #     }
-  #
-  #    In general, plot rendering is not something you want to do in a reactive expression; 
-  #    the reason is because reactive expressions cache their calculated values and 
-  #    only actually re-execute when one of the reactive inputs they depend on change.
-  #    So if you are calling the same reactive that does a plot from two places in your code,
-  #    then only one of those will have the behavior you want and the other will not get a plot rendered.
-  #       The changes that Stéphane recommended ensure that the "side effect free" calculations happen inside the reactive, while the operations that have side effects (printing a ggplot object) only occurs in the output and content functions where they always belong.
-  # see https://groups.google.com/forum/#!searchin/shiny-discuss/Error$20opening$20file/shiny-discuss/79fiwAp80S4/SVibuhZTO4oJ
-  # and see https://groups.google.com/forum/#!msg/shiny-discuss/u7gwXc8_vyY/IZK_o7b7I8gJ 
-  # and see http://stackoverflow.com/questions/26764481/downloading-png-from-shiny-r
-  
-  
   output$download.barplot <- downloadHandler(
     filename = function() { 
       paste(mybatchname(), barplotkind(), 'barplot.png')
@@ -189,11 +192,30 @@ shinyServer(function(input, output) {
     }
   )
   
+  # Notes on how shiny handles rendering plots, downloading them, and reactive expressions: 
+  #    TO DRAW AND/OR DOWNLOAD PLOTS, NOTE:
+  #    must say
+  #        myplot <- reactive(  ....   p <- barplot(); return(p)   ); then in download handler, do 
+  #          content = function(file) {
+  #          ggsave(file, plot=PLOT1(), device=png, width=800, height=800, limitsize=FALSE)
+  #          }
+  #    In general, plot rendering is not something you want to do in a reactive expression; 
+  #    the reason is because reactive expressions cache their calculated values and 
+  #    only actually re-execute when one of the reactive inputs they depend on change.
+  #    So if you are calling the same reactive that does a plot from two places in your code,
+  #    then only one of those will have the behavior you want and the other will not get a plot rendered.
+  #       The changes that Stéphane recommended ensure that the "side effect free" calculations happen inside the reactive, while the operations that have side effects (printing a ggplot object) only occurs in the output and content functions where they always belong.
+  #    see https://groups.google.com/forum/#!searchin/shiny-discuss/Error$20opening$20file/shiny-discuss/79fiwAp80S4/SVibuhZTO4oJ
+  #    and see https://groups.google.com/forum/#!msg/shiny-discuss/u7gwXc8_vyY/IZK_o7b7I8gJ 
+  #    and see http://stackoverflow.com/questions/26764481/downloading-png-from-shiny-r
+  
+  
   #############################
+  # OLD VS NEW VS FRIENDLIER FIELDNAMES
   
   lookup.fieldnames <- reactive({
-    # THIS LETS USER UPLOAD CUSTOM MAP OF FIELDNAMES TO RENAME THEM AND CATEGORIZED THEM, 
-    # BUT THE UPLOADED BATCH DATA WILL NOT BE RENAMED UNLESS IT IS UPLOADED AGAIN.
+    # THIS LETS USER UPLOAD A CUSTOM LOOKUP TABLE/MAPPING OF OLD TO NEW FIELDNAMES TO RENAME THEM AND CATEGORIZE THEM, 
+    # BUT I BELIEVE THE UPLOADED BATCH DATA WILL NOT BE RENAMED UNLESS/UNTIL IT IS UPLOADED AGAIN.
     # input$file2 will be NULL initially, or can use the example file and preload it
     # After the user selects and uploads a file, it will be a data frame with 
     # 'name', 'size', 'type', and 'datapath' columns. 
@@ -204,13 +226,16 @@ shinyServer(function(input, output) {
     } else {
       myfile <- inFile2$datapath
     }
-    #    mynamesfile <- renderText()
     output$infilename2 <- renderText(inFile2$name)
     fieldnamesmap <- read.csv(myfile, stringsAsFactors = FALSE)
     fieldnamesmap
   })
   
-  #  mynamesfile <-  renderText(input$file2)
+  ##################################################################################################
+  # UPLOADED DATASET AS A TABLE
+
+    # This (the reactive expression called fulltabler) is the uploaded dataset that 
+  # is the output of the batch processing and input to the batch summarizer:
   
   fulltabler <- reactive({
     
@@ -237,14 +262,28 @@ shinyServer(function(input, output) {
     fulltable
   })
   
-  # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable
+  output$fulltableout <- renderDataTable({fulltabler()})
+  
+  #####################
+  # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
+  # - Hard coded for the moment but can be generalized at some point
+  
+  # Specify names of indicators (columns) that will be compared to the threshold when doing a threshold check, 
+  # summarizing for each site how many of those indicators are at/above some specified threshold.
+  # Let user specify these at some point via selectize multiple selections pull down on tab1, using renderUI or something to show list of current set of fields as options
   mythreshnames <- reactive({ grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) })
+  
   mycolnames <- reactive({ colnames(fulltabler()) })
-  # could replace mycolnames with friendly names at some point.
+  # *** could replace mycolnames with friendly names at some point, 
+  # by using lookup.fieldnames()$longnames to replace corresponding $newnames
+  
   colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   
-  output$fulltableout <- renderDataTable({fulltabler()})
+  ##################################################################################################
+  # CREATE TABLES OF SUMMARY STATS
+  
+  # Create the reactive expression providing summary rows and cols, the key output of the batch summarizer:
   
   outlist <- reactive({ 
     batch.summarize(
@@ -256,29 +295,35 @@ shinyServer(function(input, output) {
     )
   })
   
+  ###########################
+  # Render comprehensive output/result rows & cols of the batch summarizer as an interactive datatable for the webpage:
+  
+  # RENDER THE SUMMARY *COLS* AS AN INTERACTIVE DATA TABLE FOR WEB 
+  # this recreates the output cols AND rows each time any inputs/settings change, which might be slow for a huge dataset,
+  # but it is unlikely you would ever want to recalculate ONLY the colsout, so not a big deal
+  output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ), options=list(
+    lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+    pageLength = -1,
+    scrollX= TRUE,
+    scrollY= "365px",
+    scrollCollapse= TRUE   #, callback = "function(oTable) {}"
+  )
+  )
+  
+  # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
+  # This recreates the rowsout AND colsout even if only colsout needs updating, but not a big deal typically
   output$rowsout <- renderDataTable({
     
     # Create summary stats from uploaded batch results. outlist() is a list of 2 elements: 
     #   rows (rows of summary stats), & cols (columns of summary stats)
     # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
-    
-    output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ), options=list(
-      lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
-      pageLength = -1,
-      scrollX= TRUE,
-      scrollY= "365px",
-      scrollCollapse= TRUE,
-      #callback = "function(FixedColumns) {}"
-      
-      )
-    )
-    
+
+    # notes on trying to get FixedColumns plugin for DataTable to work in shiny:
+    #
     # callback = "function(oTable) {}",   
     # is the example in shiny documentation
     # from stack.exchange:
-    # I("new $.fn.dataTable.FixedColumns( table, {
-    #   leftColumns: 5
-    #   } );")
+    #   I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
     # 
     #
     # https://datatables.net/release-datatables/extensions/FixedColumns/examples/two_columns.html
@@ -315,10 +360,13 @@ shinyServer(function(input, output) {
     pageLength = -1,
     scrollX= TRUE,
     scrollY= "365px",
-    scrollCollapse= TRUE,
-    callback = "function(FixedColumns) {}"
+    scrollCollapse= TRUE # ,
+    #callback = "function(FixedColumns) {}"
   )
   )
+  
+  ###########################################
+  # Create some summary tables of summary statistics & significance testing, comparing sites to US etc.
   
   table1 <- reactive({
     # table summarizing demog stats nearby and in US overall
@@ -368,9 +416,6 @@ shinyServer(function(input, output) {
   output$table3 <- renderTable({table3()} )
   
 
-  ##################################################################################################
-  
-  
   ##################################################################################################
   # BARPLOTS
   
@@ -431,9 +476,8 @@ shinyServer(function(input, output) {
     
   })
   
-  
-  
-  # COPY OF above renderPlot function , but not reactive, to address apparent bug in downloading png:  
+
+  # EXACT COPY OF above renderPlot function , but not reactive, to address apparent bug in downloading png:  
   # see https://groups.google.com/forum/#!searchin/shiny-discuss/Error$20opening$20file/shiny-discuss/79fiwAp80S4/SVibuhZTO4oJ
   
   barplots.NONreactive <- function(){
@@ -577,84 +621,32 @@ shinyServer(function(input, output) {
   
   output$histograms <- renderPlot( histograms.react() )
   
-#   # EXACT COPY OF above renderPlot function , but not reactive, to address apparent bug in downloading png:  
-#   
-#   histograms.NONreactive <- function(){
-#     # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
-#     
-#     # *** User will be able to define these using checkboxes:
-#     # (this code presumes new variable names are as in default file)
-#     #       myvar.base <- 'VSI.eo'  # *** BUT IF IT IS A SUMMARY STAT LIKE ??? this won't work in hist(fulltable[ , myvar]) since it is in outlist()$rows not in fulltable
-#     #       myvar.full <- paste(refzone, refstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
-#     #       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
-#     #       myvar.friendly.base <- 'Demographic Index'
-#     #       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, ' across ', sites.or.people, sep='')
-#     
-#     refzone.friendly <- switch(input$refzone, 
-#                                'us'='US',
-#                                'region'='Region',
-#                                'state'='State')
-#     refstat.friendly <- switch(input$refstat,
-#                                'pctile'='Percentile',
-#                                'raw'='Indicator Value (not percentile)')
-#     
-#     # *** Should make this more generic/ flexible, not hard-coded names:
-#     # *** SHOULD USE FRIENDLY NAMES IN UI LIST AND PASS myvar.friendly.base 
-#     # and then HERE IN SERVER SHOULD fix to use that to get non friendly base for plot
-#     
-#     # get long name of field selected to plot, then convert to short name
-#     myvar.friendly.base <- input$myvar.friendly.base
-#     myvar.base <- names.all[match(myvar.friendly.base, names.all.friendly)]
-#     if (substr(myvar.base,1,2)=='EJ') {
-#       myrefstat <- 'pctile'
-#       refstat.friendly <- 'Percentile'
-#     } else {
-#       myrefstat <- input$refstat
-#     }
-#     if (myrefstat=='raw' ) {
-#       myvar.full <- myvar.base
-#       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refstat.friendly, ' across ', input$sites.or.people, sep='')
-#     } else {
-#       myvar.full <- paste(input$refzone, myrefstat, myvar.base, sep='.')  # this presumes new variable names are as in default file
-#       myvar.full <- gsub('us.pctile', 'pctile', myvar.full)  # us.avg. is used but not us.pctile... it is just pctile for us! # this presumes new variable names are as in default file
-#       myvar.friendly.full <- paste(myvar.friendly.base, ', as ', refzone.friendly, ' ', refstat.friendly, sep='')
-#     }
-#     if (myrefstat=='raw' ) {
-#       sitecount <- 0 # suppress horizontal line benchmark when viewing raw data- it only applies to percentiles. Correct histo benchmark for raw would be the US overall histogram of that raw value in the selected # of bins, which is hard to provide here.
-#       popcount <- 0
-#     } else {
-#       sitecount <- length( fulltabler()[ , myvar.full] ) # but for popwtd hist, use popcount!
-#       #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now. fails.
-#       popcount <- outlist()$rows[ 'Sum','pop' ]
-#     }
-#     
-#     mybincount <- input$bincount # (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
-#     expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount?!
-#     expected.pop.per.bin=   popcount  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
-#     
-#     # HISTOGRAM plotted here
-#     
-#     if (input$sites.or.people=='Sites') {
-#       # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
-#       
-#       ggplot( fulltabler(), aes_string( myvar.full) ) + 
-#         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
-#         geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
-#         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-#         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
-#       
-#     } else {
-#       
-#       # *** hard coded to use mywtsname as weights for now:
-#       
-#       ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
-#         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
-#         #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
-#         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-#         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
-#     }
-#   }
-#   
+  ##################################################################################################
+  # MAPS
   
+  output$map <- renderPlot({
+    args <- switch(input$mapvar,
+                   "Percent Non-White" = list(counties$nonwhite, "darkblue", "% Non-White"),
+                   "Percent White" = list(counties$white, "darkgreen", "% White"),
+                   "Percent Black" = list(counties$black, "black", "% Black"),
+                   "Percent Hispanic" = list(counties$hispanic, "darkorange", "% Hispanic"),
+                   "Percent Asian" = list(counties$asian, "darkviolet", "% Asian"))
+    # or hardcoded for now ***
+    # data, color, legend params re passed using args above 
+    args$min <- input$range[1]
+    args$max <- input$range[2]
+    
+    do.call(percent_map, args)
+  })
+  
+  # notes from superzip map example... work in progress
+  #   allzips <- readRDS("data/superzip.rds")
+  #   allmap$latitude <- jitter(fulltabler()$lat)
+  #   allmap$longitude <- jitter(fulltabler()$lon)
+  #   #allmap$college <- allzips$college * 100
+  #   #allmap$zipcode <- formatC(allzips$zipcode, width=5, format="d", flag="0")
+  #   row.names(allmap) <- allmap$zipcode
+  #   cleantable <- allmap[ , c('ST', 'lat', 'lon', 'pop', names.d, )]
+
 })
 

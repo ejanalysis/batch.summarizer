@@ -3,9 +3,10 @@ library(shiny) # http://shiny.rstudio.com
 #############################
 # DEFAULT VALUES, possibly could recode to allow user to change them, and/or read fieldnames from the csv file: 
 #############################
+
 probs.default <-         c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
 probs.default.choices <- c('0','0.25','0.50','0.75','0.80','0.90','0.95','0.99','1.00')  # defaults for quantiles summary stats
-#mythreshold=80  # default for cutoff in at/above threshold stat summarizing the EJ Index US percentiles
+mythreshold.default=80  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
 na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
 #
 mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
@@ -42,7 +43,9 @@ shinyUI(
     tabsetPanel(
       
       tabPanel(
+        
         "Upload a batch",
+        
         br(),
         #h4(textOutput("name1", container = span)),
         fluidRow(
@@ -60,7 +63,8 @@ shinyUI(
           column(
             4,
             h4('Analysis settings'),
-            numericInput('threshold', label='Threshold %ile:', value=80, min=1, max=100),
+            # *** currently user is limited to setting threshold of integer 1-100, but might later want to expand to allow comparing raw data to thresholds with fractions/decimals/etc.
+            numericInput('threshold', label='Threshold %ile:', value=mythreshold.default, min=1, max=100),
             checkboxGroupInput('probs','Percentiles of sites & residents to calculate:', choices=probs.default.choices, selected = probs.default.choices)
             #         checkboxInput('header', 'Header', TRUE),
             #         radioButtons('sep', 'Separator',
@@ -71,13 +75,13 @@ shinyUI(
           )
         ),
         tags$hr(),
-        downloadButton('download.batchdata', 'Download the uploaded batch data with renamed fields but not summarized') #,
-        
-        #dataTableOutput("fulltableout")
+        downloadButton('download.batchdata', 'Download the uploaded batch data with renamed fields but not summarized')
       ),
       
       tabPanel(
+        
         "Summary rows", 
+        
         #h4(textOutput("name2", container = span)),
         downloadButton('download.rowsout', 'Download'),
         radioButtons('transpose.rowsout', "Display transposed:", 
@@ -88,14 +92,18 @@ shinyUI(
       ),
       
       tabPanel(
+        
         "Summary cols", 
+        
         #h4(textOutput("name3", container = span)),
         downloadButton('download.colsout', 'Download'),
         dataTableOutput("colsout")
       ), 
       
       tabPanel(
+        
         "Stat Tests", 
+        
         #h4(textOutput("name3", container = span)),
         br(),
         h4('Table 1. Does the population near these sites as a whole have demographics above the US average?'),
@@ -112,7 +120,9 @@ shinyUI(
       ), 
       
       tabPanel(
+        
         "Barplots", 
+        
         plotOutput('barplots'),
         downloadButton('download.barplot', 'Download'),
         fluidRow(
@@ -123,7 +133,9 @@ shinyUI(
       ),
       
       tabPanel(
+        
         "Histograms", 
+        
         fluidRow(
           column(
             3,
@@ -157,19 +169,26 @@ shinyUI(
             sliderInput('bincount', label=h5('Bins'), 5, 100, step=5, value=10)
           )
         )
+      ),
+      
+      tabPanel(
+        
+        "Maps", 
+        
+        h3('US County Map, Census 2010')
+        
+        selectInput("mapvar", 
+                    label = "Choose a variable to display on map",
+                    choices = c("Percent White", "Percent Black", "Percent Hispanic", "Percent Asian"), # names.d.friendly,
+                    selected = 1),
+        sliderInput("range", 
+                    label = "Range of interest:",
+                    min = 0, max = 100, value = c(0, 100)),
+        
+        plotOutput("map")
       )
     )
   )
 )
 
-#######################
-# notes:
-# Output function     reactive output created
-# htmlOutput          raw HTML
-# imageOutput         image
-# plotOutput	        plot
-# tableOutput	        table
-# textOutput	        text
-# uiOutput	          raw HTML
-# verbatimTextOutput	text
-#######################
+
