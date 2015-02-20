@@ -10,7 +10,7 @@ library(mapproj)
 # need to load gomap.js ??
 source("maphelpers.R")  # if we want percent choropleths of county data
 counties <- readRDS(file='data/counties.rds') # if we want county data
-counties$nonwhite <- counties$total.pop - counties$white
+counties$nonwhite <- round( 100 - counties$white, 1)
 
 # library(dplyr) # might not need this
 

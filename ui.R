@@ -175,11 +175,11 @@ shinyUI(
         
         "Maps", 
         
-        h3('US County Map, Census 2010')
+        h3('US County Map, Census 2010'),
         
         selectInput("mapvar", 
                     label = "Choose a variable to display on map",
-                    choices = c("Percent White", "Percent Black", "Percent Hispanic", "Percent Asian"), # names.d.friendly,
+                    choices = c("Percent Non-White", "Percent White", "Percent Black", "Percent Hispanic", "Percent Asian"), # names.d.friendly,
                     selected = 1),
         sliderInput("range", 
                     label = "Range of interest:",
