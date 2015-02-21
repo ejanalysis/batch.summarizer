@@ -1,5 +1,5 @@
 # for debugging:
-# options(shiny.trace=TRUE)
+# options(shiny.trace=FALSE)
 # options(error=browser)
 # options(shiny.error=browser)
 
@@ -234,6 +234,16 @@ shinyServer(function(input, output) {
     fulltable
   })
   
+  make.colnames.friendly <- function(df) {
+    # function of fulltabler()
+    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
+  }
+  
+  make.colnames.friendly.complete <- function(df) {
+    # function of fulltabler()
+    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
+  }
+
   #output$fulltableout <- renderDataTable({fulltabler()})
   
   #####################
@@ -293,6 +303,10 @@ shinyServer(function(input, output) {
       colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
       probs=as.numeric( input$probs ), na.rm=na.rm
     )
+    
+    # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
+    print(colnames(fulltabler()))
+    if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename=fulltabler()$name, x$cols) }
     
     # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
     vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
