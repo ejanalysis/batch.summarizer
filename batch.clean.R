@@ -57,8 +57,8 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   return(x)
 }
 
-# # default is to use the mapping in this file:  '~/Dropbox/EJSCREEN/batch summary/map batchtool to gdb to R fieldnames.csv'
-# setwd('~/Dropbox/EJSCREEN/batch summary')
+# # default is to use the mapping in this file:  'map batchtool to gdb to R fieldnames.csv'
+# setwd('~/Dropbox/......./batch summary')
 # y= names( read.csv('SAMPLE OUTPUT OF BATCH TOOL 2015.csv', stringsAsFactors = FALSE) )
 # x=    read.csv('map batchtool to gdb to R fieldnames.csv', stringsAsFactors = FALSE)
 # cbind(batchoutputnames=y, friendlynames=x$Rfieldname[match(y, x$batchname)]) 

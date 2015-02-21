@@ -3,7 +3,7 @@
 
 library(shiny) # http://shiny.rstudio.com
 
-# to DISPLAY A MAP
+# to DISPLAY A SIMPLE COUNTY CHOROPLETH MAP
 # http://shiny.rstudio.com/tutorial/lesson5/
 library(maps)
 library(mapproj)
@@ -39,56 +39,8 @@ source('batch.read.R')
 source('batch.clean.R')
 source('batch.summarize.R')
 
-#############################
-# DEFAULT VALUES, possibly could recode to allow user to change them, and/or read fieldnames from the csv file: 
-#############################
-
-probs.default <- c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
-mythreshold.default=80  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
-na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
-#
-mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
-mynamesfile.default <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames & var type & var category
-# *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
-# default Demog vars for now:
-mywtsname <- 'pop'  # used for weighted means to get stats on the average person in all these zones (e.g. avg person nearby any site)
-names.d          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64') 
-names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
-# default Envt vars for now:
-names.e          <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
-             "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
-             "proximity.npdes")
-names.e.friendly <- c("PM2.5", "Ozone", "Cancer risk", "Neuro.", "Respiratory", "Diesel PM", "% built pre-1960", 
-                      "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
-                      "NPDES proximity")
-# default EJ vars for now:
-names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", 
-              "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
-              "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
-              "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
-              "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
-names.ej.friendly <- paste('EJ:', names.e.friendly)
-names.all <- c(names.d, names.e, names.ej)
-names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
-
-##########################################################################################
-# MUST BE UPDATED WHEN NEW ACS DATA IS USED !
-##########################################################################################
-
-popus <-  309138711 # 309,138,711 is from http://factfinder2.census.gov/bkmk/table/1.0/en/ACS/12_5YR/B01001/0100000US 
-# 307727594 was in sample reports # MUST BE UPDATED WHEN NEW ACS DATA IS USED ! 307727594 is from ???  
-us.percents <- 100 * c(0.35015068301904, 0.337245110039133, 0.363056255998945, 
-  0.147948736834136, 0.0514480674233393, 0.0651419032409694, 0.131563727067491)
-us.counts <- us.percents * popus
-names(us.percents) <- names.d
-names(us.counts) <- names.d
-bar.cex <- 1.10 # defines scaling for text on barplot
-
-##########################################################################################
 ##################################################################################################
 ##################################################################################################
-
-
 
 shinyServer(function(input, output) {
   
@@ -220,6 +172,7 @@ shinyServer(function(input, output) {
     # After the user selects and uploads a file, it will be a data frame with 
     # 'name', 'size', 'type', and 'datapath' columns. 
     # The 'datapath' column will contain the local filenames where the data can be found.
+    # THIS IS USED ALSO BY vartype() and varcategory() to classify the indicators in useful ways for filtering tables.
     inFile2 <- input$file2
     if (is.null(inFile2)) {
       myfile <- mynamesfile.default
@@ -229,6 +182,23 @@ shinyServer(function(input, output) {
     output$infilename2 <- renderText(inFile2$name)
     fieldnamesmap <- read.csv(myfile, stringsAsFactors = FALSE)
     fieldnamesmap
+  })
+  
+  vartype <- reactive({
+    if ('vartype' %in% colnames(lookup.fieldnames())) {
+      # for each of the mycolnames(), find the corresponding vartype by looking in the lookup.fieldnames() table
+      lookup.fieldnames()$vartype[match(mycolnames(), lookup.fieldnames()$newnames)]
+    } else {
+      NA
+    }
+  })
+  
+  varcategory <- reactive({
+    if ('varcategory' %in% colnames(lookup.fieldnames())) {
+      lookup.fieldnames()$varcategory[match(mycolnames(), lookup.fieldnames()$newnames)]
+    } else {
+      NA
+    }
   })
   
   ##################################################################################################
@@ -262,37 +232,66 @@ shinyServer(function(input, output) {
     fulltable
   })
   
-  output$fulltableout <- renderDataTable({fulltabler()})
+  #output$fulltableout <- renderDataTable({fulltabler()})
   
   #####################
   # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
   # - Hard coded for the moment but can be generalized at some point
-  
+  #
   # Specify names of indicators (columns) that will be compared to the threshold when doing a threshold check, 
   # summarizing for each site how many of those indicators are at/above some specified threshold.
   # Let user specify these at some point via selectize multiple selections pull down on tab1, using renderUI or something to show list of current set of fields as options
-  mythreshnames <- reactive({ grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) })
+  # make this the default but offer them ui that shows colnames(fulltabler()) and lets them hit multiple checkboxes or something to specify 3+ groups and thresholds for those.
+  mythreshnames <- reactive({
+    list( 
+      grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
+      grep('region.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
+      grep('state.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) 
+    )
+  })
   
   mycolnames <- reactive({ colnames(fulltabler()) })
-  # *** could replace mycolnames with friendly names at some point, 
+  # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
+
+  mycolnames.friendly <- reactive({
+    print(mycolnames())
+    # lookup the unfriendly colnames in the lookup table to get longname 
+    #(and vartype?) and paste them together to create a unique friendlier name?
+#    lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] 
+mycolnames()
+      })
   
-  colfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
-  rowfun.picked <- 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
+  colfun.picked <- colfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
+  rowfun.picked <- rowfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   
   ##################################################################################################
   # CREATE TABLES OF SUMMARY STATS
   
   # Create the reactive expression providing summary rows and cols, the key output of the batch summarizer:
+  # Create summary stats from uploaded batch results. 
+  # outlist() is a list of 2 elements: 
+  #   rows (rows of summary stats), & cols (columns of summary stats)
   
   outlist <- reactive({ 
-    batch.summarize(
+    x= batch.summarize(
       fulltabler(), 
       wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
-      threshnames=mythreshnames(), threshold=input$threshold, 
+      threshnames=mythreshnames(), threshold=list(input$threshold1, input$threshold2, input$threshold3), threshgroup=threshgroup.default,
       colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
       probs=as.numeric( input$probs ), na.rm=na.rm
     )
+    
+    # FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
+    vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
+    x$rows[ , vars.NA] <- NA
+    vars.round0 <- 'pop'
+    x$rows[ , vars.round0] <- round( x$rows[ , vars.round0], 0) 
+    # stats.round2 <- c('Average site', 'Average person')
+    #x$rows[ stats.round2, ] <- round( x$rows[ stats.round2, ] , 2)
+    #vars.comma  <- 'pop'
+    #x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',') 
+    x
   })
   
   ###########################
@@ -301,59 +300,46 @@ shinyServer(function(input, output) {
   # RENDER THE SUMMARY *COLS* AS AN INTERACTIVE DATA TABLE FOR WEB 
   # this recreates the output cols AND rows each time any inputs/settings change, which might be slow for a huge dataset,
   # but it is unlikely you would ever want to recalculate ONLY the colsout, so not a big deal
+  
   output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ), options=list(
     lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
     pageLength = -1,
     scrollX= TRUE,
     scrollY= "365px",
-    scrollCollapse= TRUE   #, callback = "function(oTable) {}"
+    scrollCollapse= TRUE   #, callback = "function(oTable) {}"    # work in progress
   )
   )
   
   # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
   # This recreates the rowsout AND colsout even if only colsout needs updating, but not a big deal typically
+
   output$rowsout <- renderDataTable({
     
-    # Create summary stats from uploaded batch results. outlist() is a list of 2 elements: 
-    #   rows (rows of summary stats), & cols (columns of summary stats)
-    # DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
+    x <- outlist()$rows
 
-    # notes on trying to get FixedColumns plugin for DataTable to work in shiny:
-    #
-    # callback = "function(oTable) {}",   
-    # is the example in shiny documentation
-    # from stack.exchange:
-    #   I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
-    # 
-    #
-    # https://datatables.net/release-datatables/extensions/FixedColumns/examples/two_columns.html
-    # The example of javascript is:
-    #     new $.fn.dataTable.FixedColumns( table, {
-    #       leftColumns: 2
-    #     } );
-    #
-    # https://datatables.net/extensions/fixedcolumns/
-    # The example of javascript is:
-    #     /*
-    #       * Example initialisation
-    #     */
-    #       $(document).ready( function () {
-    #         var table = $('#example').DataTable( {
-    #           "scrollY": "300px",
-    #           "scrollX": "100%",
-    #           "scrollCollapse": true,
-    #           "paging": false
-    #         } );
-    #         new $.fn.dataTable.FixedColumns( table );
-    #       } );
-    #     
-
+    # FORMAT FOR DISPLAY
+    stats.round2 <- c('Average site', 'Average person')
+    x[ stats.round2, ] <- round( x[ stats.round2, ] , 2)
+    vars.comma  <- 'pop'
+    x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',') 
+    
+    # CAN DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
     if (input$transpose.rowsout) {
-      cbind(IndicatorSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))), 
-            t(  rbind(  Indicator=mycolnames(), outlist()$rows, fulltabler())))  
+      # one row per indicator, one col per stat or site
+      
+      cbind(
+        IndicatorSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
+        Type= vartype(),
+        Categ= varcategory(),
+        t(  rbind(  Indicator=mycolnames.friendly(), x, fulltabler() )))  
     } else {
-         cbind( Stat_or_Site=c(rownames(outlist()$rows), fulltabler()[ , 1] )   , 
-                rbind( outlist()$rows, fulltabler()) )
+      # one col per indicator, one row per  site
+      cbind(
+        Stat_or_Site=c( fulltabler()[ , 1] )   , 
+        rbind(  fulltabler()) )
+      # or to show stats not just sites, but less useful when sorting sites:
+      #       Stat_or_Site=c(1:length(rownames(x)), fulltabler()[ , 1] )   , 
+      #       rbind( x, fulltabler()) )
     }
   }, options=list(
     lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
@@ -361,9 +347,38 @@ shinyServer(function(input, output) {
     scrollX= TRUE,
     scrollY= "365px",
     scrollCollapse= TRUE # ,
-    #callback = "function(FixedColumns) {}"
+    #callback = "function(FixedColumns) {}"  # work in progress
   )
   )
+  # notes on trying to get FixedColumns plugin for DataTable to work in shiny:
+  #
+  # callback = "function(oTable) {}",   
+  # is the example in shiny documentation
+  # from stack.exchange:
+  #   I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
+  # 
+  #
+  # https://datatables.net/release-datatables/extensions/FixedColumns/examples/two_columns.html
+  # The example of javascript is:
+  #     new $.fn.dataTable.FixedColumns( table, {
+  #       leftColumns: 2
+  #     } );
+  #
+  # https://datatables.net/extensions/fixedcolumns/
+  # The example of javascript is:
+  #     /*
+  #       * Example initialisation
+  #     */
+  #       $(document).ready( function () {
+  #         var table = $('#example').DataTable( {
+  #           "scrollY": "300px",
+  #           "scrollX": "100%",
+  #           "scrollCollapse": true,
+  #           "paging": false
+  #         } );
+  #         new $.fn.dataTable.FixedColumns( table );
+  #       } );
+  #     
   
   ###########################################
   # Create some summary tables of summary statistics & significance testing, comparing sites to US etc.
@@ -566,9 +581,12 @@ shinyServer(function(input, output) {
     # and then HERE IN SERVER SHOULD fix to use that to get non friendly base for plot
     
     # get long name of field selected to plot, then convert to short name
+    # *** could later change this to be more generic and use lookup.fieldnames() sort of like this:
+    #   lookup.fieldnames()[match(input$myvar.friendly.base, lookup.fieldnames()[ , paste(c('longname', 'vartype'))]), 'newname' ] 
     myvar.friendly.base <- input$myvar.friendly.base
     myvar.base <- names.all[match(myvar.friendly.base, names.all.friendly)]
-    if (substr(myvar.base,1,2)=='EJ') {
+    
+    if (substr(myvar.base, 1, 2)=='EJ') {
       myrefstat <- 'pctile'
       refstat.friendly <- 'Percentile'
     } else {
