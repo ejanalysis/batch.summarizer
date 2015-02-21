@@ -1,3 +1,5 @@
+# for debugging:
+# options(shiny.trace=TRUE)
 # options(error=browser)
 # options(shiny.error=browser)
 
@@ -254,13 +256,11 @@ shinyServer(function(input, output) {
   # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
 
-  mycolnames.friendly <- reactive({
-    print(mycolnames())
-    # lookup the unfriendly colnames in the lookup table to get longname 
-    #(and vartype?) and paste them together to create a unique friendlier name?
-#    lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] 
-mycolnames()
-      })
+#   mycolnames.friendly <- reactive({
+#     # lookup the unfriendly colnames in the lookup table to get longname 
+#     #(and vartype?) and paste them together to create a unique friendlier name?
+#     lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] 
+#   })
   
   colfun.picked <- colfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   rowfun.picked <- rowfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
@@ -282,7 +282,7 @@ mycolnames()
       probs=as.numeric( input$probs ), na.rm=na.rm
     )
     
-    # FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
+    # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
     vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
     x$rows[ , vars.NA] <- NA
     vars.round0 <- 'pop'
@@ -331,11 +331,12 @@ mycolnames()
         IndicatorSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
         Type= vartype(),
         Categ= varcategory(),
-        t(  rbind(  Indicator=mycolnames.friendly(), x, fulltabler() )))  
+        Indicator=mycolnames(),
+        t(  rbind(   x, fulltabler() )))  
     } else {
       # one col per indicator, one row per  site
       cbind(
-        Stat_or_Site=c( fulltabler()[ , 1] )   , 
+        Site=c( fulltabler()[ , 1] )   , 
         rbind(  fulltabler()) )
       # or to show stats not just sites, but less useful when sorting sites:
       #       Stat_or_Site=c(1:length(rownames(x)), fulltabler()[ , 1] )   , 
