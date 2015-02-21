@@ -1,43 +1,11 @@
 library(shiny) # http://shiny.rstudio.com
 
-#############################
-# DEFAULT VALUES, possibly could recode to allow user to change them, and/or read fieldnames from the csv file: 
-#############################
-
-probs.default <-         c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)  # defaults for quantiles summary stats
-probs.default.choices <- c('0','0.25','0.50','0.75','0.80','0.90','0.95','0.99','1.00')  # defaults for quantiles summary stats
-mythreshold.default=80  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
-na.rm=TRUE  # default for all functions so can get stats even if one site (or one indicator at one site) has no data
-#
-mydemofile <- 'Export_Output_Example2.txt' # example of export of batch results, for use in testing/demonstrating summarizer
-mynamesfile <- 'map batch to friendly fieldnames v1.csv' # has default input and output and friendly fieldnames & var type & var category
-# *** SPECIFY MORE PARAMETERS - USE DEFAULTS FOR NOW, POSSIBLY RECODE LATER TO LET USER CHANGE THESE
-# default Demog vars for now:
-mywtsname <- 'pop'  # used for weighted means to get stats on the average person in all these zones (e.g. avg person nearby any site)
-names.d          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64') 
-names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
-# default Envt vars for now:
-names.e          <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
-                      "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", 
-                      "proximity.npdes")
-names.e.friendly <- c("PM2.5", "Ozone", "Cancer risk", "Neuro.", "Respiratory", "Diesel PM", "% built pre-1960", 
-                      "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", 
-                      "NPDES proximity")
-# default EJ vars for now:
-names.ej <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", 
-              "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", 
-              "EJ.DISPARITY.pctpre1960.eo", "EJ.DISPARITY.traffic.score.eo", 
-              "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", 
-              "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
-names.ej.friendly <- paste('EJ:', names.e.friendly)
-names.all <- c(names.d, names.e, names.ej)
-names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
-#######################################################################################
-
 shinyUI(
   fluidPage(
+
     titlePanel(
-      h2(textOutput('titletext'))
+      h2(textOutput('titletext')),
+      windowTitle = 'Batch Summarizer'
       ),
     
     tabsetPanel(
@@ -63,8 +31,13 @@ shinyUI(
           column(
             4,
             h4('Analysis settings'),
-            # *** currently user is limited to setting threshold of integer 1-100, but might later want to expand to allow comparing raw data to thresholds with fractions/decimals/etc.
-            numericInput('threshold', label='Threshold %ile:', value=mythreshold.default, min=1, max=100),
+            
+            # *** later change this to use dynamic ui to allow user to flexibly specify multiple thresholds in multiple groups,
+            # maybe using selectize to specify groups of columns (threshnames list), groups of thresholds (threshold list), etc.
+            numericInput('threshold1', label='Threshold value(s) for 1st set of comparisons (e.g. %ile 1-100):', value=threshold.default[[1]][1]), 
+            numericInput('threshold2', label='Threshold value(s) for 2d set of comparisons (e.g. %ile 1-100):', value=threshold.default[[2]][1]), 
+            numericInput('threshold3', label='Threshold value(s) for 3d set of comparisons (e.g. %ile 1-100):', value=threshold.default[[3]][1]), 
+            
             checkboxGroupInput('probs','Percentiles of sites & residents to calculate:', choices=probs.default.choices, selected = probs.default.choices)
             #         checkboxInput('header', 'Header', TRUE),
             #         radioButtons('sep', 'Separator',
@@ -85,10 +58,12 @@ shinyUI(
         #h4(textOutput("name2", container = span)),
         downloadButton('download.rowsout', 'Download'),
         radioButtons('transpose.rowsout', "Display transposed:", 
-                     c("One indicator per row, a summary stat or site per column (use search box to view only cancer indicators, e.g.)" =  TRUE,
-                       "One indicator per column, a summary stat or site per row (sort sites by State, demog., or other indicator)" = FALSE)),
-        h5('Click a heading (e.g., State) to sort, Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
-        dataTableOutput("rowsout")
+                     c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
+                       "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE)),
+        
+        dataTableOutput("rowsout"),
+        h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
+        h5('or enter text in the filter box at the bottom of a column.')
       ),
       
       tabPanel(

@@ -3,14 +3,19 @@
 #' @param probs Vector of numeric values, fractions, to use as probabilities used in finding quantiles. Default is c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
 #' @param na.rm Logical TRUE by default, specifying if na.rm should be used for sum(), mean(), and other functions.
 #' @param wts weights vector for wtd.mean or weighted.quantile etc.
-#' @param threshold cutoff number used to count find sites where 1+ of given indicators are at/above the threshold & how many of the indicators are
-#' @param threshnames vector of character colnames defining fields in x that get compared to threshold
+#' @param threshold list of vectors each with 1+ thresholds (cutoff numbers) used to count find sites where 1+ of given set of indicators are at/above the threshold & how many of the indicators are.
+#'  If an element of the list is a single number, that is used for the whole group (all the threshnames in that nth list element). 
+#'  Otherwise/in general, each vector is recycled over the threshnames in corresponding list element, 
+#'  so each threshname can have its own threshold like some field-specific benchmark, or they can all use the same threshold like 50.
+#' @param threshnames list of vectors of character colnames defining fields in x that get compared to threshold, or to thresholds
+#' @param threshgroup list of 1+ character strings naming the elements of threshnames list, such as "EJ US pctiles"
 #' @param rowfun.picked logical vector specifying which of the pre-defined functions (like at/above threshold) are needed and will be applied
 #' @param colfun.picked  logical vector specifying which of the pre-defined functions (like colSums) are needed and will be applied
 #' @author ejanalyst info@ejanalysis.com
 #' @export
-batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=80, threshnames='', na.rm=TRUE, 
-                            rowfun.picked='all', colfun.picked='all') {
+batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), 
+                            threshold=list(80), threshnames=list(colnames(x)), threshgroup=list('variables'), 
+                            na.rm=TRUE, rowfun.picked='all', colfun.picked='all') {
 
   ############################################
   # Basic error checking
@@ -20,7 +25,9 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   if (cols[1]=='all') {cols <- colnames(x)}
   if (any(!(cols %in% colnames(x)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(x)')}
   if (!is.vector(probs) | !is.numeric(probs) | any(probs > 1) | any(probs < 0)) {stop('probs must be a numeric vector of fractions for quantile function')}
-
+  
+  if (1 != length(unique( length(threshold), length(threshnames), length(threshgroup) ) )) {stop('lengths of threshold list, threshnames list, threshgroup list must be identical') }
+  
   # Specify summary metrics to calculate.
   # Provide a default set of summary metrics.
   # A later version could allow user to select from a list of functions, and eventually even specify custom functions perhaps, 
@@ -35,40 +42,46 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   
   i=0
   
-  i=i+1
-  rowfuname[i]='Are any EJ Index US percentiles at/above threshold'
-  rowfun[[i]]=function(x, ...) {
-     flagged(x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm) 
-  }
+  ########
   
-  i=i+1
-  rowfuname[i]='Number of EJ Index US percentiles at/above threshold'
-  #num.EJ.at.above.threshold (was called num.EJ.80plus.calculated)
-  rowfun[[i]]=function(x, ...) {
-    #print(threshnames)
-    cols.above.count( x[ , threshnames], cutoff=threshold, or.tied=TRUE, na.rm=na.rm )
-  }
+  # create a set of comparisons to threshold(s), one set per element/vector in the list
   
-  i=i+1
-  rowfuname[i]='Max of EJ US percentiles'
-  rowfun[[i]]=function(x, ...) {
-    rowMaxs( x[ , threshnames], na.rm = na.rm)
+  for (setnum in 1:length(threshold)) {
+    
+    # one set of thresholds, which are recycled as needed to match length of this threshnames[[threshnum]] vector
+    
+    i=i+1
+    rowfuname[i]=paste('Max of', threshgroup[[setnum]])
+    rowfun[[i]]=function(x, ...) {
+      rowMaxs( x[ , threshnames[[setnum]] ], na.rm = na.rm)
+    }
+    
+    i=i+1
+    rowfuname[i]=paste('Are any', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
+    rowfun[[i]]=function(x, ...) {
+      0 < cols.above.count( x[ , threshnames[[setnum]] ], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm )
+    }
+    
+    i=i+1
+    rowfuname[i]=paste('Number of', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
+    rowfun[[i]]=function(x, ...) {
+      cols.above.count( x[ , threshnames[[setnum]] ], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm )
+    }
+    
   }
-  
-  i=i+1
-  rowfuname[i]='Min of EJ US percentiles'
-  rowfun[[i]]=function(x, ...) {
-    rowMins( x[ , threshnames], na.rm = na.rm)
-  }
-  
+
+
   #i=i+1
   #rowfuname[i]=''
   #rowfun[[i]]=function(x, ...) {
   #  f( x, na.rm = na.rm)
   #}
-  
+
+    
+  # RATIO TO AVERAGE IN ZONE, RATHER THAN JUST ABOVE/BELOW COMPARISON TO A THRESHOLD:
+  #
   # possibly add functions here that create multiple cols, one per indicator, showing for each indicator at each site, 
-  # - is value above US avg
+  # - is value above US avg (would have to extract that AVG first, a bit more work than just comparing to specified thresholds)
   # - what is ratio of value to US avg for that value, etc.:
   #ratios.to.pop.usavg (1 col per relevant variable)
   #ratios.to.pop.region.avg (1 col per relevant variable)
@@ -76,15 +89,14 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   #ratios.to.pop.county.avg?? (1 col per relevant variable)
   
   #i=i+1
-  # rowfunames[i]='Ratio of indicator Xat average site to US pop avg'  
+  # rowfunames[i]='Ratio of indicator X at average site to US pop avg'  
   # rowfun[i]=function(x, usavgvalues, na.rm=TRUE) { x / usavgvalues } # that is not how the math will work - just a placeholder
   # need to identify those usavgvalues columns either here or when that is called
   
   #i=i+1
   #rowfunames[i]='Ratio to State pop avg'
   #rowfun[i]=function(x, stateavgvalues, na.rm=TRUE) { x / stateavgvalues } # that is not how the math will work - just a placeholder
-  
-  
+
   ############################################
   # SUMMARY ROWS (a summary of each column):
   ############################################
@@ -105,6 +117,19 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   colfun[[n]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)}
   
   n=n+1
+  colfuname[n]='Median site'
+  colfun[[n]]=function(x, ...) {
+    sapply(x, FUN=function(y) {median(y, na.rm=na.rm)})
+  }
+  
+  n=n+1
+  colfuname[n]='Median person'
+  colfun[[n]]=function(x, ...) {
+    sapply(x, FUN=function(y) {wtd.quantile(y, probs=0.50, weights=wts, na.rm=na.rm)})
+  }
+
+    
+  n=n+1
   colfuname[n]='Minimum'
   colfun[[n]]=function(x, ...) {colMins(x, na.rm=na.rm)}
   
@@ -124,13 +149,12 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   #n=n+1
   #   colfuname[n]='Number of unique values'
   #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
-  #   
+
   #n=n+1
   #  colfuname[n]='Standard Deviation'
   #  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
   
-  # *** NOTE: CANNOT HAVE n=9 etc. here while quantiles are appended the way they currently are done
-  
+
   ############################################
   # THESE SUMMARY FUNCTIONS RETURN MULTIPLE ROWS EACH:
   # THAT REQUIRES A DIFFERENT APPROACH TO POPULATING THE RESULTS VARIABLE
