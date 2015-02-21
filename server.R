@@ -203,6 +203,17 @@ shinyServer(function(input, output) {
     }
   })
   
+  make.colnames.friendly <- function(df) {
+    # function of fulltabler()
+    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
+  }
+  
+  make.colnames.friendly.complete <- function(df) {
+    # function of fulltabler()
+    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
+  }
+  
+  
   ##################################################################################################
   # UPLOADED DATASET AS A TABLE
 
@@ -234,16 +245,6 @@ shinyServer(function(input, output) {
     fulltable
   })
   
-  make.colnames.friendly <- function(df) {
-    # function of fulltabler()
-    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
-  }
-  
-  make.colnames.friendly.complete <- function(df) {
-    # function of fulltabler()
-    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
-  }
-
   #output$fulltableout <- renderDataTable({fulltabler()})
   
   #####################
@@ -305,7 +306,6 @@ shinyServer(function(input, output) {
     )
     
     # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
-    print(colnames(fulltabler()))
     if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename=fulltabler()$name, x$cols) }
     
     # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
@@ -331,7 +331,7 @@ shinyServer(function(input, output) {
     lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
     pageLength = -1,
     scrollX= TRUE,
-    scrollY= "365px",
+    scrollY= "800px",
     scrollCollapse= TRUE   #, callback = "function(oTable) {}"    # work in progress
   )
   )
@@ -369,11 +369,12 @@ shinyServer(function(input, output) {
       #       rbind( x, fulltabler()) )
     }
   }, options=list(
-    lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
-    pageLength = -1,
+    #lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+    #pageLength = -1,
     scrollX= TRUE,
-    scrollY= "365px",
-    scrollCollapse= TRUE # ,
+    scrollY= "400px",
+    scrollCollapse= TRUE,
+    dom = 'rti'
     #callback = "function(FixedColumns) {}"  # work in progress
   )
   )

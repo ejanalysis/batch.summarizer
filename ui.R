@@ -56,14 +56,14 @@ shinyUI(
         "Summary rows", 
         
         #h4(textOutput("name2", container = span)),
-        downloadButton('download.rowsout', 'Download'),
-        radioButtons('transpose.rowsout', "Display transposed:", 
-                     c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
-                       "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE)),
         
         dataTableOutput("rowsout"),
         h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
-        h5('or enter text in the filter box at the bottom of a column.')
+        h5('or enter text in the filter box at the bottom of a column.'),
+        downloadButton('download.rowsout', 'Download'),
+        radioButtons('transpose.rowsout', "Display transposed:", 
+                     c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
+                       "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE))
       ),
       
       tabPanel(
