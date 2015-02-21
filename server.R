@@ -256,11 +256,23 @@ shinyServer(function(input, output) {
   # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
 
-#   mycolnames.friendly <- reactive({
-#     # lookup the unfriendly colnames in the lookup table to get longname 
-#     #(and vartype?) and paste them together to create a unique friendlier name?
-#     lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] 
-#   })
+  mycolnames.friendly <- reactive({
+    # lookup the unfriendly colnames in the lookup table to get longname 
+    # For default summary cols view, this is good- not unique names but other cols are there so OK.
+    # For transposed view, need headers to be full unique names, so need vartype and longname...paste them together to create a unique friendlier name
+    lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] 
+  })
+  
+  mycolnames.friendly.complete <- reactive({
+    # lookup the unfriendly colnames in the lookup table to get longname 
+    # For default summary cols view, this is good- not unique names but other cols are there so OK.
+    # For transposed view, need headers to be full unique names, so need vartype and longname...paste them together to create a unique friendlier name
+    paste( 
+      lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] , 
+      lookup.fieldnames()$vartype[ match(mycolnames(), lookup.fieldnames()$newname) ] 
+      )
+  })
+  
   
   colfun.picked <- colfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   rowfun.picked <- rowfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
@@ -328,15 +340,15 @@ shinyServer(function(input, output) {
       # one row per indicator, one col per stat or site
       
       cbind(
-        IndicatorSort=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
+        n=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
         Type= vartype(),
         Categ= varcategory(),
-        Indicator=mycolnames(),
+        Indicator=mycolnames.friendly(),
         t(  rbind(   x, fulltabler() )))  
     } else {
       # one col per indicator, one row per  site
       cbind(
-        Site=c( fulltabler()[ , 1] )   , 
+        #Site=c( fulltabler()[ , 1] )   , # that was redundant 
         rbind(  fulltabler()) )
       # or to show stats not just sites, but less useful when sorting sites:
       #       Stat_or_Site=c(1:length(rownames(x)), fulltabler()[ , 1] )   , 
