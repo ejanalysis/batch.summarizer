@@ -49,23 +49,23 @@ shinyUI(
         tags$hr()
       ),
       
-      tabPanel(
-        
-        "Sites",
-        
-        dataTableOutput("sitesout"),
-        h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
-        h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.'),
-        h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON'),
-        downloadButton('download.sitesout', 'Download')
-        #         radioButtons('transpose.rowsout', "Display transposed:", 
-        #                      c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
-        #                        "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE))
-      ),
+      # tabPanel(
+      # 
+      #         "Sites1",
+      #         
+      #         dataTableOutput("sitesout"),
+      #         h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
+      #         h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.'),
+      #         h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON'),
+      #         downloadButton('download.sitesout', 'Download')
+      #         #         radioButtons('transpose.rowsout', "Display transposed:", 
+      #         #                      c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
+      #         #                        "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE))
+      #       ),
       
       tabPanel(
         
-        "Summary rows", 
+        "Summary Stats", 
         
         dataTableOutput("rowsout"),
         h5('Tip: Enter text (e.g., EJ, Env, statepctile, etc. for the Type column) in the filter boxes at the bottoms of columns to limit view to certain rows.'),
@@ -79,11 +79,13 @@ shinyUI(
       
       tabPanel(
         
-        "Summary cols", 
+        "Individual Sites", 
         
-        #h4(textOutput("name3", container = span)),
         downloadButton('download.colsout', 'Download'),
-        dataTableOutput("colsout")
+        dataTableOutput("colsout"),
+        h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
+        h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.'),
+        h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON')
       ), 
       
       tabPanel(

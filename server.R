@@ -42,6 +42,9 @@ source('batch.clean.R')
 source('batch.summarize.R')
 
 ##################################################################################################
+pixels.per.char <- 10 #????
+max.allowed=30 # max length of site name we want displayed before wrapping in sites table
+
 ##################################################################################################
 
 shinyServer(function(input, output) {
@@ -59,15 +62,6 @@ shinyServer(function(input, output) {
 
   # Code enabling Download of tables and charts
   
-  output$download.sitesout <- downloadHandler(
-    filename = function() { 
-      paste(mybatchname(), 'site result for each indicator.csv')
-    },
-    contentType='text/csv',
-    content = function(file) {
-      write.csv(  fulltabler(), file)
-    }
-  )
 
   output$download.rowsout <- downloadHandler(
     filename = function() { 
@@ -75,7 +69,7 @@ shinyServer(function(input, output) {
     },
     contentType='text/csv',
     content = function(file) {
-      write.csv( rbind( outlist()$rows, fulltabler()), file)
+      write.csv( make.colnames.friendly.complete( rbind( outlist()$rows, fulltabler() )  ), file)
     }
   )
   
@@ -85,7 +79,7 @@ shinyServer(function(input, output) {
     },
     contentType='text/csv',
     content = function(file) {
-      write.csv( cbind( outlist()$cols, fulltabler()), file)
+      write.csv( cbind( outlist()$cols,  make.colnames.friendly.complete( fulltabler() ) ), file)
     }
   )
   
@@ -203,16 +197,7 @@ shinyServer(function(input, output) {
     }
   })
   
-  make.colnames.friendly <- function(df) {
-    # function of fulltabler()
-    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
-  }
-  
-  make.colnames.friendly.complete <- function(df) {
-    # function of fulltabler()
-    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
-  }
-  
+ 
   
   ##################################################################################################
   # UPLOADED DATASET AS A TABLE
@@ -267,7 +252,9 @@ shinyServer(function(input, output) {
   # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
 
-  mycolnames.friendly <- reactive({
+  ######## probably redundant:
+
+    mycolnames.friendly <- reactive({
     # lookup the unfriendly colnames in the lookup table to get longname 
     # For default summary cols view, this is good- not unique names but other cols are there so OK.
     # For transposed view, need headers to be full unique names, so need vartype and longname...paste them together to create a unique friendlier name
@@ -282,6 +269,25 @@ shinyServer(function(input, output) {
       lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] , 
       lookup.fieldnames()$vartype[ match(mycolnames(), lookup.fieldnames()$newname) ] 
       )
+  })
+  
+  make.colnames.friendly <- function(df) {
+    # function of fulltabler()
+    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
+    df
+  }
+  
+  make.colnames.friendly.complete <- function(df) {
+    # function of fulltabler()
+    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
+    df
+  }
+  ########
+  
+  namecolpixels <- reactive({
+    namecolchars <- min(max.allowed, max(nchar(fulltabler()$name)) )
+    namecolpixels <- pixels.per.char * namecolchars
+    namecolpixels
   })
   
   
@@ -328,13 +334,17 @@ shinyServer(function(input, output) {
   # but it is unlikely you would ever want to recalculate ONLY the colsout, so not a big deal
   
   output$colsout <- renderDataTable( 
-    cbind(outlist()$cols, fulltabler() ), 
+    
+    cbind(outlist()$cols, make.colnames.friendly.complete( fulltabler()  ) ), 
     options=list(
-      lengthMenu = list(c(10, 200, -1), c('10', '100', 'All')),
+      lengthMenu = list(c(10, 100, -1), c('10', '100', 'All')),
       pageLength = 100,  # -1 loads all the rows into page 1, which might be too slow if huge # of sites is uploaded
       scrollX= TRUE,
-      columnDefs = list(list(width="440px", targets=list(0))),  # makes the 1st column wide 
-      scrollY= "800px", 
+      scrollY= "440px", # 440px is enough for 12 rows on my browser
+      dom = 'rtip',
+      columnDefs = list(list(width="420px", targets=list(0, length(outlist()$cols[1,]) + 
+                                                           which(mycolnames()=='name')
+                                                         -1))),  # makes the 1st column wide & the one called name
       scrollCollapse= TRUE   #, 
       # callback = "function(oTable) {}"    # work in progress - see same issue on FixedColumns in rowsout, below
     )
@@ -343,28 +353,25 @@ shinyServer(function(input, output) {
   # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
   # This recreates the rowsout AND colsout even if only colsout needs updating, but not a big deal typically
   
-  output$sitesout <- renderDataTable({
-    cbind(
-      Site=c( fulltabler()[ , 1] )   , # that is redundant but is a simple workaround to make the name col wide here like the indicatorname col in other view
-      rbind(  fulltabler()) 
-    )
-    
-    # or to show stats not just sites, but less useful when sorting sites:
-    #       Stat_or_Site=c(1:length(rownames(x)), fulltabler()[ , 1] )   , 
-    #       rbind( x, fulltabler()) )
-  }, options=list(
-    scrollX= TRUE,
-    scrollY= "440px", # 440px is enough for 12 rows on my browser
-    lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
-    pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window, but that may slow down too much in transposed view of all sites if huge # of sites ***
-    scrollCollapse= TRUE,
-    dom = 'rtip',
-    columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!?  # Right now this worked for one view but not as well for transposed view... quick workaround is to add a col to transposed one
-    #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
-    #callback = "function(table) {}"  # work in progress
-  )
-  )
-
+  #   output$sitesout <- renderDataTable({
+  #     cbind(
+  #       Site=c( fulltabler()[ , 1] )   , # that is redundant but is a simple workaround to make the name col wide here like the indicatorname col in other view
+  #       rbind(  fulltabler()) 
+  #     )
+  #     
+  #   }, options=list(
+  #     scrollX= TRUE,
+  #     scrollY= "440px", # 440px is enough for 12 rows on my browser
+  #     lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+  #     pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window, but that may slow down too much in transposed view of all sites if huge # of sites ***
+  #     scrollCollapse= TRUE,
+  #     dom = 'rtip',
+  #     columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!?  # Right now this worked for one view but not as well for transposed view... quick workaround is to add a col to transposed one
+  #     #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
+  #     #callback = "function(table) {}"  # work in progress
+  #   )
+  #   )
+  
   output$rowsout <- renderDataTable({
     
     # prepare to display  1) table of summary stats which is outlist()$rows, along with the full table of facility-specific batch results, 
