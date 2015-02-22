@@ -65,7 +65,7 @@ shinyServer(function(input, output) {
 
   output$download.rowsout <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'summary stats on each indicator and site result for each indicator.csv')
+      paste(mybatchname(), 'summary stats on each indicator -plus site data.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -75,7 +75,7 @@ shinyServer(function(input, output) {
   
   output$download.colsout <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'summary stats on each site.csv')
+      paste(mybatchname(), 'summary stats on each site -plus site data.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -85,7 +85,7 @@ shinyServer(function(input, output) {
   
   output$download.table1 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table1 Demographic Summary.csv')
+      paste(mybatchname(), 'Table 1 Demographic Summary.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -95,7 +95,7 @@ shinyServer(function(input, output) {
 
   output$download.table2 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table2 Demographic Summary.csv')
+      paste(mybatchname(), 'Table 2 Demographic Summary.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -105,7 +105,7 @@ shinyServer(function(input, output) {
   
   output$download.table3 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table3 Demographic Summary.csv')
+      paste(mybatchname(), 'Table 3 Demographic Summary.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -227,6 +227,7 @@ shinyServer(function(input, output) {
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     fulltable <- batch.clean(fulltable, oldcolnames=lookup.fieldnames()$oldnames, newcolnames=lookup.fieldnames()$newnames )
+    if ('name' %in% colnames(fulltable) ) { rownames(fulltable) <- fulltable[ , 'name'] } # become colnames when transposed for viewing? no.
     fulltable
   })
   
@@ -340,7 +341,7 @@ shinyServer(function(input, output) {
       lengthMenu = list(c(10, 100, -1), c('10', '100', 'All')),
       pageLength = 100,  # -1 loads all the rows into page 1, which might be too slow if huge # of sites is uploaded
       scrollX= TRUE,
-      scrollY= "440px", # 440px is enough for 12 rows on my browser
+      scrollY= "340px", # 440px is enough for 12 rows on my browser but headers wrap to use up lots of space
       dom = 'rtip',
       columnDefs = list(list(width="420px", targets=list(0, length(outlist()$cols[1,]) + 
                                                            which(mycolnames()=='name')
