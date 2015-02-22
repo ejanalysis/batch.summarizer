@@ -59,19 +59,19 @@ shinyServer(function(input, output) {
 
   # Code enabling Download of tables and charts
   
-  output$download.batchdata <- downloadHandler(
+  output$download.sitesout <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'batchdata.csv')
+      paste(mybatchname(), 'site result for each indicator.csv')
     },
     contentType='text/csv',
     content = function(file) {
-      write.csv( fulltabler(), file)
+      write.csv(  fulltabler(), file)
     }
   )
-  
+
   output$download.rowsout <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'rowsout.csv')
+      paste(mybatchname(), 'summary stats on each indicator and site result for each indicator.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -81,7 +81,7 @@ shinyServer(function(input, output) {
   
   output$download.colsout <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'colsout.csv')
+      paste(mybatchname(), 'summary stats on each site.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -91,7 +91,7 @@ shinyServer(function(input, output) {
   
   output$download.table1 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table1.csv')
+      paste(mybatchname(), 'Table1 Demographic Summary.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -101,7 +101,7 @@ shinyServer(function(input, output) {
 
   output$download.table2 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table2.csv')
+      paste(mybatchname(), 'Table2 Demographic Summary.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -111,7 +111,7 @@ shinyServer(function(input, output) {
   
   output$download.table3 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table3.csv')
+      paste(mybatchname(), 'Table3 Demographic Summary.csv')
     },
     contentType='text/csv',
     content = function(file) {
@@ -121,7 +121,7 @@ shinyServer(function(input, output) {
     
   output$download.barplot <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), barplotkind(), 'barplot.png')
+      paste(mybatchname(), barplotkind(), 'barplot comparing sites to US.png')
     },
     contentType='image/png',
     content = function(file) {
@@ -135,7 +135,7 @@ shinyServer(function(input, output) {
   
   output$download.histogram <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), histogramkind(), 'histogram.png')
+      paste(mybatchname(), histogramkind(), 'histogram across sites or people.png')
     },
     contentType='image/png',
     content = function(file) {
@@ -342,36 +342,16 @@ shinyServer(function(input, output) {
   
   # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
   # This recreates the rowsout AND colsout even if only colsout needs updating, but not a big deal typically
-
-  output$rowsout <- renderDataTable({
+  
+  output$sitesout <- renderDataTable({
+    cbind(
+      Site=c( fulltabler()[ , 1] )   , # that is redundant but is a simple workaround to make the name col wide here like the indicatorname col in other view
+      rbind(  fulltabler()) 
+    )
     
-    x <- outlist()$rows
-
-    # FORMAT FOR DISPLAY
-    stats.round2 <- c('Average site', 'Average person')
-    x[ stats.round2, ] <- round( x[ stats.round2, ] , 2)
-    vars.comma  <- 'pop'
-    x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',') 
-    
-    # CAN DISPLAY THE SUMMARY ROWS AS A TABLE BUT TRANSPOSED SO EASIER TO SEE
-    if (input$transpose.rowsout) {
-      # one row per indicator, one col per stat or site
-      
-      cbind(
-        n=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
-        Category= varcategory(),
-        Type= vartype(),
-        Indicator=mycolnames.friendly(),
-        t(  rbind(   x, fulltabler() )))  
-    } else {
-      # one col per indicator, one row per  site
-      cbind(
-        Site=c( fulltabler()[ , 1] )   , # that is redundant but is a simple workaround to make the name col wide here like the indicatorname col in other view
-        rbind(  fulltabler()) )
-      # or to show stats not just sites, but less useful when sorting sites:
-      #       Stat_or_Site=c(1:length(rownames(x)), fulltabler()[ , 1] )   , 
-      #       rbind( x, fulltabler()) )
-    }
+    # or to show stats not just sites, but less useful when sorting sites:
+    #       Stat_or_Site=c(1:length(rownames(x)), fulltabler()[ , 1] )   , 
+    #       rbind( x, fulltabler()) )
   }, options=list(
     scrollX= TRUE,
     scrollY= "440px", # 440px is enough for 12 rows on my browser
@@ -384,6 +364,48 @@ shinyServer(function(input, output) {
     #callback = "function(table) {}"  # work in progress
   )
   )
+
+  output$rowsout <- renderDataTable({
+    
+    # prepare to display  1) table of summary stats which is outlist()$rows, along with the full table of facility-specific batch results, 
+    # or 2) just the transposed full table of facility-specific batch results.
+    
+    x <- outlist()$rows
+
+    # FORMAT FOR DISPLAY
+    stats.round2 <- c('Average site', 'Average person')
+    x[ stats.round2, ] <- round( x[ stats.round2, ] , 2)
+    vars.comma  <- 'pop'
+    x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',') 
+    
+    # widerows=c(4, which(=='name'))  # to be completed...
+    
+   # if (input$transpose.rowsout) {
+
+      # one row per indicator, one col per stat or site
+      cbind(
+        n=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
+        Category= varcategory(),
+        Type= vartype(),
+        Indicator=mycolnames.friendly(),
+        t(  rbind(   x, fulltabler() ))
+      )  
+    #} else {
+      # one col per indicator, one row per  site
+    #}
+  }, options=list(
+    scrollX= TRUE,
+    scrollY= "440px", # 440px is enough for 12 rows on my browser
+    lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+    pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window
+    scrollCollapse= TRUE,
+    dom = 'rtip',
+    columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!? 
+    #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
+    #callback = "function(table) {}"  # work in progress
+  )
+  )
+  
   # notes on trying to get FixedColumns plugin for DataTable to work in shiny:
   #
   #https://github.com/DataTables/FixedColumns/blob/master/README.md

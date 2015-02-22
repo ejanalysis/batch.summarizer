@@ -26,7 +26,7 @@ shinyUI(
           ),
           column(
             4,
-            h4(textInput('batchname', "Rename this analysis", "Example Dataset"))
+            h4(textInput('batchname', "Name this analysis", "Example Dataset"))
           ),
           column(
             4,
@@ -44,26 +44,37 @@ shinyUI(
             #                      c(Comma=',', Semicolon=';', Tab='\t'), ','),
             #         radioButtons('quote', 'Quote',
             #                      c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"'), 
-            
           )
         ),
-        tags$hr(),
-        downloadButton('download.batchdata', 'Download the uploaded batch data with renamed fields but not summarized')
+        tags$hr()
+      ),
+      
+      tabPanel(
+        
+        "Sites",
+        
+        dataTableOutput("sitesout"),
+        h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
+        h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.'),
+        h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON'),
+        downloadButton('download.sitesout', 'Download')
+        #         radioButtons('transpose.rowsout', "Display transposed:", 
+        #                      c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
+        #                        "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE))
       ),
       
       tabPanel(
         
         "Summary rows", 
         
-        #h4(textOutput("name2", container = span)),
-        
         dataTableOutput("rowsout"),
-        h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
-        h5('or enter text in the filter box at the bottom of a column.'),
-        downloadButton('download.rowsout', 'Download'),
-        radioButtons('transpose.rowsout', "Display transposed:", 
-                     c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
-                       "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE))
+        h5('Tip: Enter text (e.g., EJ, Env, statepctile, etc. for the Type column) in the filter boxes at the bottoms of columns to limit view to certain rows.'),
+        h5('Tip: Click a heading (e.g., Type) twice to sort descending, then Shift-click another column (e.g., Average person) twice for descending secondary sort (to sort on 2d col within each group in 1st col)'),
+        h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON'),
+        downloadButton('download.rowsout', 'Download')
+        #         radioButtons('transpose.rowsout', "Display transposed:", 
+        #                      c("1 indicator/row, 1 stat or site/column (e.g. to view only cancer stats)" =  TRUE,
+        #                        "1 indicator/column, 1 site/row (e.g. to sort sites by State, indicator, etc.)" = FALSE))
       ),
       
       tabPanel(
