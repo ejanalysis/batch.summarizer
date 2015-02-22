@@ -327,13 +327,17 @@ shinyServer(function(input, output) {
   # this recreates the output cols AND rows each time any inputs/settings change, which might be slow for a huge dataset,
   # but it is unlikely you would ever want to recalculate ONLY the colsout, so not a big deal
   
-  output$colsout <- renderDataTable( cbind(outlist()$cols, fulltabler() ), options=list(
-    lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
-    pageLength = -1,
-    scrollX= TRUE,
-    scrollY= "800px",
-    scrollCollapse= TRUE   #, callback = "function(oTable) {}"    # work in progress
-  )
+  output$colsout <- renderDataTable( 
+    cbind(outlist()$cols, fulltabler() ), 
+    options=list(
+      lengthMenu = list(c(10, 200, -1), c('10', '100', 'All')),
+      pageLength = 100,  # -1 loads all the rows into page 1, which might be too slow if huge # of sites is uploaded
+      scrollX= TRUE,
+      columnDefs = list(list(width="440px", targets=list(0))),  # makes the 1st column wide 
+      scrollY= "800px", 
+      scrollCollapse= TRUE   #, 
+      # callback = "function(oTable) {}"    # work in progress - see same issue on FixedColumns in rowsout, below
+    )
   )
   
   # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
@@ -355,30 +359,34 @@ shinyServer(function(input, output) {
       
       cbind(
         n=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
+        Category= varcategory(),
         Type= vartype(),
-        Categ= varcategory(),
         Indicator=mycolnames.friendly(),
         t(  rbind(   x, fulltabler() )))  
     } else {
       # one col per indicator, one row per  site
       cbind(
-        #Site=c( fulltabler()[ , 1] )   , # that was redundant 
+        Site=c( fulltabler()[ , 1] )   , # that is redundant but is a simple workaround to make the name col wide here like the indicatorname col in other view
         rbind(  fulltabler()) )
       # or to show stats not just sites, but less useful when sorting sites:
       #       Stat_or_Site=c(1:length(rownames(x)), fulltabler()[ , 1] )   , 
       #       rbind( x, fulltabler()) )
     }
   }, options=list(
-    #lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
-    #pageLength = -1,
     scrollX= TRUE,
-    scrollY= "400px",
+    scrollY= "440px", # 440px is enough for 12 rows on my browser
+    lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+    pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window, but that may slow down too much in transposed view of all sites if huge # of sites ***
     scrollCollapse= TRUE,
-    dom = 'rti'
-    #callback = "function(FixedColumns) {}"  # work in progress
+    dom = 'rtip',
+    columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!?  # Right now this worked for one view but not as well for transposed view... quick workaround is to add a col to transposed one
+    #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
+    #callback = "function(table) {}"  # work in progress
   )
   )
   # notes on trying to get FixedColumns plugin for DataTable to work in shiny:
+  #
+  #https://github.com/DataTables/FixedColumns/blob/master/README.md
   #
   # callback = "function(oTable) {}",   
   # is the example in shiny documentation

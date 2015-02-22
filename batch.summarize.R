@@ -130,11 +130,11 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
 
     
   n=n+1
-  colfuname[n]='Minimum'
+  colfuname[n]='Min'
   colfun[[n]]=function(x, ...) {colMins(x, na.rm=na.rm)}
   
   n=n+1
-  colfuname[n]='Maximum'
+  colfuname[n]='Max'
   colfun[[n]]=function(x, ...) {colMaxs(x, na.rm=na.rm)}
   
   n=n+1
