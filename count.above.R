@@ -34,7 +34,6 @@ count.above <- function(df, benchmarks='mean', benchnames='cutoff', or.tied=FALS
   #
   # NA values in df are not counted and are not in the numerator of pct.above() but the denominator of pct.above() is a count of all rows of df, not just the non-NA ones.
   #
-  # Mark A. Corrales 2014
   #################################################################################
   
   if ( any(is.na(benchmarks))) {print("Error - benchmarks cannot include NA values."); return(NA)}

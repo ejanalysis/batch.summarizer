@@ -41,7 +41,6 @@ pct.above <- function(df, benchmarks='mean', benchnames='cutoff', na.rm=FALSE, o
   #
   # NA values in df are not counted and are not in the numerator of pct.above() but the denominator of pct.above() is a count of all rows of df, not just the non-NA ones.
   #
-  # Mark A. Corrales 2014
   #################################################################################
 
   if (is.matrix(df)) {df <- as.data.frame(df) } #warning("df is a matrix... converting to data.frame")

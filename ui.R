@@ -32,6 +32,7 @@ shinyUI(
             4,
             h4('Analysis settings'),
             
+            # uiOutput('threshnamesPicker')
             # *** later change this to use dynamic ui to allow user to flexibly specify multiple thresholds in multiple groups,
             # maybe using selectize to specify groups of columns (threshnames list), groups of thresholds (threshold list), etc.
             numericInput('threshold1', label='Threshold value(s) for 1st set of comparisons (e.g. %ile 1-100):', value=threshold.default[[1]][1]), 
@@ -116,7 +117,8 @@ shinyUI(
         fluidRow(
           h4('Barplot settings'),
           column(4, radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))),
-          column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw')))
+          column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw'))),
+          column(3, radioButtons('barvarmean', 'Statistic', list('Average'='avg', 'Median'='med')))
         )
       ),
       

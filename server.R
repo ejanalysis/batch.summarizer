@@ -249,6 +249,13 @@ shinyServer(function(input, output) {
     )
   })
   
+  #   threshnamePicker <- renderUI({
+  #     selectInput("mythreshnames", "Choose fields to compare to threshold(s):", as.list(camps)) 
+  #   })
+  
+  
+  
+  
   mycolnames <- reactive({ colnames(fulltabler()) })
   # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
@@ -329,10 +336,14 @@ shinyServer(function(input, output) {
   
   ###########################
   # Render comprehensive output/result rows & cols of the batch summarizer as an interactive datatable for the webpage:
-  
-  # RENDER THE SUMMARY *COLS* AS AN INTERACTIVE DATA TABLE FOR WEB 
   # this recreates the output cols AND rows each time any inputs/settings change, which might be slow for a huge dataset,
   # but it is unlikely you would ever want to recalculate ONLY the colsout, so not a big deal
+  
+  ###########################
+  # one summary stat per site
+  ###########################
+
+    # RENDER THE SUMMARY *COLS* AS AN INTERACTIVE DATA TABLE FOR WEB
   
   output$colsout <- renderDataTable( 
     
@@ -348,44 +359,34 @@ shinyServer(function(input, output) {
                                                          -1))),  # makes the 1st column wide & the one called name
       scrollCollapse= TRUE   #, 
       # callback = "function(oTable) {}"    # work in progress - see same issue on FixedColumns in rowsout, below
+      #     columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!?  # Right now this worked for one view but not as well for transposed view... quick workaround is to add a col to transposed one
+      #     #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
+      #     #callback = "function(table) {}"  # work in progress
     )
   )
   
+  ###########################
+  # one summary stat per indicator
+  ###########################
+  
   # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
-  # This recreates the rowsout AND colsout even if only colsout needs updating, but not a big deal typically
-  
-  #   output$sitesout <- renderDataTable({
-  #     cbind(
-  #       Site=c( fulltabler()[ , 1] )   , # that is redundant but is a simple workaround to make the name col wide here like the indicatorname col in other view
-  #       rbind(  fulltabler()) 
-  #     )
-  #     
-  #   }, options=list(
-  #     scrollX= TRUE,
-  #     scrollY= "440px", # 440px is enough for 12 rows on my browser
-  #     lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
-  #     pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window, but that may slow down too much in transposed view of all sites if huge # of sites ***
-  #     scrollCollapse= TRUE,
-  #     dom = 'rtip',
-  #     columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!?  # Right now this worked for one view but not as well for transposed view... quick workaround is to add a col to transposed one
-  #     #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
-  #     #callback = "function(table) {}"  # work in progress
-  #   )
-  #   )
-  
+
   output$rowsout <- renderDataTable({
     
-    # prepare to display  1) table of summary stats which is outlist()$rows, along with the full table of facility-specific batch results, 
-    # or 2) just the transposed full table of facility-specific batch results.
+    # prepare to display table of summary stats which is outlist()$rows, along with the full table of facility-specific batch results
     
     x <- outlist()$rows
-
+    
     # FORMAT FOR DISPLAY
     stats.round2 <- c('Average site', 'Average person')
     x[ stats.round2, ] <- round( x[ stats.round2, ] , 2)
-    vars.comma  <- 'pop'
-    x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',') 
+
+    vars.round0 <- unique( c( names.d, grep('VSI.eo', mycolnames(), value=TRUE), grep('pct', mycolnames(), value=TRUE) ) ) # intended to find pctile and pct and VSI.eo to get the ones that are integer 0-100 
+    x[ , vars.round0]  <- round( x[ , vars.round0 ] , 0)
     
+    vars.comma  <- 'pop'
+    x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',')
+
     # widerows=c(4, which(=='name'))  # to be completed...
     
    # if (input$transpose.rowsout) {
@@ -502,7 +503,7 @@ shinyServer(function(input, output) {
   
   # for use in name of file when saving plot
   barplotkind <- reactive({
-    paste(input$bartype, input$barvartype, sep='_' )
+    paste(input$bartype, input$barvartype, input$barvarmean, sep='_' )
   })
   #as.character(input$barplot.title)
   
@@ -531,10 +532,19 @@ shinyServer(function(input, output) {
       mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
     }
     
-    mybarvars.sumstat <- c( 'Average site','Average person')
-    mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+    if (input$barvarmean=='med') {
+      mybarvars.sumstat <- c( 'Median site','Median person')
+      mybarvars.refzone.row <- 'Median person'  # 'Median person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+      mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US')
+    } else {
+      # input$barvarmean=='avg'
+      mybarvars.sumstat <- c( 'Average site','Average person')
+      mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+      mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
+    }
+    
     if (input$barvartype=='pctile' | input$bartype=='EJ') {
-      # use 50th percentile person as US overall benchmark
+      # use 50th percentile person as US overall benchmark in this case
       plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
                          rep(50, length(mybarvars.refzone)) ) 
     } else {
@@ -548,11 +558,11 @@ shinyServer(function(input, output) {
     # as.character(input$barplot.title)  # was a way to just let user specify title
     
     barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
-             main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for avg site, for avg resident near any site, and in US overall',sep=' ' ) ,
+             main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ) ,
              col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, 
              ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
-    legend(x='topright', legend=c(  'Average site here', 'Average person here', 'Avg. person in US'), fill=c('yellow', 'green', 'blue'), 
+    legend(x='topright', legend=mylegend, fill=c('yellow', 'green', 'blue'), 
            cex=bar.cex)
     
   })
