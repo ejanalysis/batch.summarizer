@@ -121,8 +121,9 @@ shinyServer(function(input, output) {
     content = function(file) {
       #ggsave(file, plot=barplots(), device=png, width = 1200, height = 768, units = "px", pointsize = 12)
       png(filename=file, width = 1400, height = 768, units = "px", pointsize = 12)
-      # THIS WORKAROUND DOES WORK FOR NOW:
-      barplots.NONreactive()
+      print(barplots.react())
+      # THIS WORKAROUND DOES WORK :
+      #      barplots.NONreactive()
       dev.off()
     }
   )
@@ -231,38 +232,17 @@ shinyServer(function(input, output) {
     fulltable
   })
   
-  #output$fulltableout <- renderDataTable({fulltabler()})
-  
+
   #####################
   # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
-  # - Hard coded for the moment but can be generalized at some point
-  #
-  # Specify names of indicators (columns) that will be compared to the threshold when doing a threshold check, 
-  # summarizing for each site how many of those indicators are at/above some specified threshold.
-  # Let user specify these at some point via selectize multiple selections pull down on tab1, using renderUI or something to show list of current set of fields as options
-  # make this the default but offer them ui that shows colnames(fulltabler()) and lets them hit multiple checkboxes or something to specify 3+ groups and thresholds for those.
-  mythreshnames <- reactive({
-    list( 
-      grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
-      grep('region.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
-      grep('state.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) 
-    )
-  })
-  
-  #   threshnamePicker <- renderUI({
-  #     selectInput("mythreshnames", "Choose fields to compare to threshold(s):", as.list(camps)) 
-  #   })
-  
-  
-  
-  
+
   mycolnames <- reactive({ colnames(fulltabler()) })
   # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
-
+  
   ######## probably redundant:
-
-    mycolnames.friendly <- reactive({
+  
+  mycolnames.friendly <- reactive({
     # lookup the unfriendly colnames in the lookup table to get longname 
     # For default summary cols view, this is good- not unique names but other cols are there so OK.
     # For transposed view, need headers to be full unique names, so need vartype and longname...paste them together to create a unique friendlier name
@@ -276,7 +256,7 @@ shinyServer(function(input, output) {
     paste( 
       lookup.fieldnames()$longname[ match(mycolnames(), lookup.fieldnames()$newname) ] , 
       lookup.fieldnames()$vartype[ match(mycolnames(), lookup.fieldnames()$newname) ] 
-      )
+    )
   })
   
   make.colnames.friendly <- function(df) {
@@ -292,6 +272,42 @@ shinyServer(function(input, output) {
   }
   ########
   
+
+  #####################  #####################
+  # Specify names of indicators (columns) that will be compared to the threshold when doing a threshold check, 
+  # summarizing for each site how many of those indicators are at/above some specified threshold.
+  # Let user specify these at some point via selectize multiple selections pull down on tab1, using renderUI or something to show list of current set of fields as options
+  # make this the default but offer them ui that shows colnames(fulltabler()) and lets them hit multiple checkboxes or something to specify 3+ groups and thresholds for those.
+
+    mythreshnames.default <- reactive({
+      list( 
+        group1=grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
+        group2=grep('region.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
+        group3=grep('state.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) 
+      )
+    })
+  
+  output$thresholdPICKS <- renderUI({
+    mychoices <- mycolnames()
+    names(mychoices) = mycolnames.friendly.complete()
+    selectInput(
+      "mythreshnames.in", 
+      "Choose additional fields to compare to threshold(s):", 
+      choices = mychoices,
+      multiple = TRUE,
+      selected=mythreshnames.default()
+     )
+  })
+  
+  mythreshnames <-  reactive({ 
+    c(list(usergroup=input$mythreshnames.in ), mythreshnames.default() )
+  })
+  
+  output$mythreshnames.toprint <- renderPrint( mythreshnames() )
+  
+  #####################  #####################
+  
+ 
   namecolpixels <- reactive({
     namecolchars <- min(max.allowed, max(nchar(fulltabler()$name)) )
     namecolpixels <- pixels.per.char * namecolchars
@@ -314,7 +330,7 @@ shinyServer(function(input, output) {
     x= batch.summarize(
       fulltabler(), 
       wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
-      threshnames=mythreshnames(), threshold=list(input$threshold1, input$threshold2, input$threshold3), threshgroup=threshgroup.default,
+      threshnames= mythreshnames(), threshold=list(input$threshold1, input$threshold2, input$threshold3), threshgroup=threshgroup.default,
       colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
       probs=as.numeric( input$probs ), na.rm=na.rm
     )
@@ -507,7 +523,8 @@ shinyServer(function(input, output) {
   })
   #as.character(input$barplot.title)
   
-  output$barplots <- renderPlot({
+  barplots.react <- reactive({
+    
     # One set of bars per each of the myvars
     # *** possibly allow these to be set by user instead of hard-coded names:
     mybarvars <- switch(input$bartype,
@@ -557,7 +574,7 @@ shinyServer(function(input, output) {
     if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
     # as.character(input$barplot.title)  # was a way to just let user specify title
     
-    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
+    myplot=barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
              main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ) ,
              col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, 
@@ -565,64 +582,16 @@ shinyServer(function(input, output) {
     legend(x='topright', legend=mylegend, fill=c('yellow', 'green', 'blue'), 
            cex=bar.cex)
     
+    #     myplot <- ggplot( plotdata, aes_string(  ) ) + 
+    #       geom_barplot(fill='white', colour='darkgreen') +
+    #       #geom_hline(aes_string(yintercept= )) +
+    #       xlab( mybarvars.friendly ) + ylab(ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value')) + 
+    #       ggtitle( paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
+    
+    return(myplot) # but that won't return the legend
   })
   
-
-  # EXACT COPY OF above renderPlot function , but not reactive, to address apparent bug in downloading png:  
-  # see https://groups.google.com/forum/#!searchin/shiny-discuss/Error$20opening$20file/shiny-discuss/79fiwAp80S4/SVibuhZTO4oJ
-  
-  barplots.NONreactive <- function(){
-    # One set of bars per each of the myvars
-    # *** possibly allow these to be set by user instead of hard-coded names:
-    mybarvars <- switch(input$bartype,
-                        'Demographic' = names.d,
-                        'Environmental' = names.e,
-                        'EJ' = names.ej
-    )
-    mybarvars.friendly <- switch(input$bartype,
-                                 'Demographic' = names.d.friendly,
-                                 'Environmental' = names.e.friendly,
-                                 'EJ' = names.ej.friendly
-    )
-    mybarvars.refzone <- switch(input$bartype,
-                                'Demographic' = paste('us.avg.',names.d,sep=''),
-                                'Environmental' = paste('us.avg.',names.e,sep=''),
-                                'EJ' = names.ej
-    )
-    
-    if (input$barvartype=='pctile' | input$bartype=='EJ') {
-      mybarvars <- paste('pctile.', mybarvars, sep='')
-      # mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='') # removed since takes up space and already in header
-      mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
-    }
-    
-    mybarvars.sumstat <- c( 'Average site','Average person')
-    mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-    if (input$barvartype=='pctile' | input$bartype=='EJ') {
-      # use 50th percentile person as US overall benchmark
-      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
-                         rep(50, length(mybarvars.refzone)) ) 
-    } else {
-      # use actual US avg person's indicator score as US overall benchmark
-      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
-                         outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
-    }
-    
-    if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
-    if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
-    # as.character(input$barplot.title)  # was a way to just let user specify title
-    
-    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex,  
-             main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for avg site, for avg resident near any site, and in US overall',sep=' ' ) ,
-             col=c('yellow', 'green', 'blue'),
-             names.arg=mybarvars.friendly, 
-             ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
-    
-    legend(x='topright', legend=c(  'Average site here', 'Average person here', 'Avg. person in US'), fill=c('yellow', 'green', 'blue'), 
-           cex=bar.cex)
-    
-  }
-  
+  output$barplots <- renderPlot( barplots.react() )
 
   ##################################################################################################
   # HISTOGRAMS
@@ -631,7 +600,6 @@ shinyServer(function(input, output) {
   histogramkind <- reactive({
     paste(input$myvar.friendly.base, input$refstat, input$refzone, input$sites.or.people, sep='_' )
   })
-  
   
   histograms.react <- reactive({
     # e.g., draw histogram of selected variable's US percentiles, distribution over sites, vs expected distribution
@@ -714,7 +682,7 @@ shinyServer(function(input, output) {
   })
   
   output$histograms <- renderPlot( histograms.react() )
-  
+
   ##################################################################################################
   # MAPS
   
