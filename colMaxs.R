@@ -2,19 +2,30 @@ colMaxs <- function(df, na.rm=TRUE) {
   
   # Returns the max value in each column of a data.frame or matrix
   
-  # Note than max() and min() default to na.rm=FALSE, but this function defaults to na.rm=TRUE because that just seems more frequently useful
+  # ** Note than max() and min() default to na.rm=FALSE, but this function defaults to na.rm=TRUE because that just seems more frequently useful
   
-  # Note that as with max() and min(), cols that are factors make this fail, even if as.character() of the factor col would return a valid numeric vector
+  # Note if it were just as max() and min(), cols that are factors would make this fail, even if as.character() of the factor col would return a valid numeric vector
+  # To fix that, did this:
+  # if (is.factor(x)) {x<-as.numeric(as.character(x))}
+  
+  # based on how min() and max() behave, return Inf or -Inf if no non-missing arguments to min or max respectively?
+  # to call this and suppress that warning, use suppressWarnings( f(x) )
   
   # NOTE: max() and min() & this function will handle character elements by coercing all others to character (see the help for Comparison http://127.0.0.1:45798/help/library/base/help/Comparison)
   # which can be confusing -- e.g., note that min(c(8,10,'txt')) returns '10' not '8' and max returns 'txt'
   
   if (is.matrix(df)) {
-    return( apply(df, 2, function(x) max(x, na.rm=na.rm)) )
+    return( apply(df, 2, function(x) {
+      if (is.factor(x)) {x<-as.numeric(as.character(x))} # finds min of numbers or characters representing numbers, but stored as factors
+      max(x, na.rm=na.rm)
+    } ) )
   } else {
-    return( sapply(df, function(x) max(x, na.rm=na.rm)) )
+    return( sapply(df,   function(x) {
+      if (is.factor(x)) {x<-as.numeric(as.character(x))} # finds min of numbers or characters representing numbers, but stored as factors
+      max(x, na.rm=na.rm)
+    } ) )
   }
-
+  
   # Example: 
   if (1==0) {
     blah <- rbind(NA, data.frame(a=c(0, 0:8), b=c(0.1+(0:9)), c=c(1:10), d=c(rep(NA, 10)), e=TRUE, f=factor('factor'), g='words', stringsAsFactors=FALSE) )

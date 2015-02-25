@@ -8,12 +8,21 @@ rowMins <- function(df, na.rm=TRUE) {
   # Note than max() and min() default to na.rm=FALSE, but this function defaults to na.rm=TRUE because that just seems more frequently useful
   
   if (is.matrix(df)) {df <- data.frame(df, stringsAsFactors=FALSE)}
+  
   valid.cols <- sapply(df, function(x) { is.numeric(x) || is.logical(x) || is.character(x)})
   stopifnot(any(valid.cols))
+  # or could just return NA?:    
+  # if (!any(valid.cols)) {return(NA)}
   if (any(!valid.cols) ) {warning('using only numeric (double or integer) or logical or character columns -- ignoring other columns ')}
   
   result <- do.call(pmin, c(df[ , valid.cols], na.rm=na.rm))
+  
   # to mimic how min() and max() behave, return Inf or -Inf if no non-missing arguments to min or max respectively
+  # to call this and suppress that warning, use suppressWarnings( f(x) )
+  # to avoid that and get NA rather than Inf or -Inf, do this:
+  #   z=colMaxs(x, na.rm=na.rm)
+  #   z[is.infinite(z)] <- NA
+  
   result[nononmissing <- rowSums(!is.na(df[ , valid.cols]))==0] <- Inf
   if (any(nononmissing)) {warning('where no non-missing arguments, returning Inf')}
   return(result)

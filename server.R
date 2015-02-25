@@ -232,7 +232,8 @@ shinyServer(function(input, output) {
     fulltable
   })
   
-
+  #output$testout <- renderTable(fulltabler() )
+  
   #####################
   # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
 
@@ -300,20 +301,20 @@ shinyServer(function(input, output) {
   })
   
   mythreshnames <-  reactive({ 
-    c(list(usergroup=input$mythreshnames.in ), mythreshnames.default() )
+    mythreshnames.default()
+    # temporarily disable user defined names until code finished
+    #c(list(usergroup=input$mythreshnames.in ), mythreshnames.default() )
   })
   
   output$mythreshnames.toprint <- renderPrint( mythreshnames() )
   
   #####################  #####################
-  
- 
+
   namecolpixels <- reactive({
     namecolchars <- min(max.allowed, max(nchar(fulltabler()$name)) )
     namecolpixels <- pixels.per.char * namecolchars
     namecolpixels
   })
-  
   
   colfun.picked <- colfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
   rowfun.picked <- rowfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
@@ -389,35 +390,35 @@ shinyServer(function(input, output) {
 
   output$rowsout <- renderDataTable({
     
-    # prepare to display table of summary stats which is outlist()$rows, along with the full table of facility-specific batch results
+    # prepare to display table of summary stats which is outlist()$rows, 
+    # ideally along with the full table of facility-specific batch results
     
     x <- outlist()$rows
-    
+
     # FORMAT FOR DISPLAY
     stats.round2 <- c('Average site', 'Average person')
     x[ stats.round2, ] <- round( x[ stats.round2, ] , 2)
-
+    
     vars.round0 <- unique( c( names.d, grep('VSI.eo', mycolnames(), value=TRUE), grep('pct', mycolnames(), value=TRUE) ) ) # intended to find pctile and pct and VSI.eo to get the ones that are integer 0-100 
     x[ , vars.round0]  <- round( x[ , vars.round0 ] , 0)
     
-    vars.comma  <- 'pop'
-    x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',')
-
-    # widerows=c(4, which(=='name'))  # to be completed...
+    # TRYING TO USE COMMAS TO FORMAT THE POPULATION COUNTS, BUT THIS APPROACH FAILED:
+    # vars.comma  <- 'pop'
+    # x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',') # THIS DOESN'T WORK - 
+    # it CAUSES warnings like Warning in `[<-.factor`(`*tmp*`, ri, value = 1:42) :
+    # invalid factor level, NA generated
+    # and it deletes various cells in the table somehow.
     
-   # if (input$transpose.rowsout) {
-
-      # one row per indicator, one col per stat or site
-      cbind(
-        n=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
-        Category= varcategory(),
-        Type= vartype(),
-        Indicator=mycolnames.friendly(),
-        t(  rbind(   x, fulltabler() ))
-      )  
-    #} else {
-      # one col per indicator, one row per  site
-    #}
+    # widerows=c(4, which(=='name'))  # to be completed... ***
+    
+    # one row per indicator, one col per stat or site
+    cbind(
+      n=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
+      Category= varcategory(),
+      Type= vartype(),
+      Indicator=mycolnames.friendly(),
+      t(  rbind(   x, fulltabler() ))
+    )  
   }, options=list(
     scrollX= TRUE,
     scrollY= "440px", # 440px is enough for 12 rows on my browser

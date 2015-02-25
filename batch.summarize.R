@@ -16,11 +16,11 @@
 batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), 
                             threshold=list(80), threshnames=list(colnames(x)), threshgroup=list('variables'), 
                             na.rm=TRUE, rowfun.picked='all', colfun.picked='all') {
-
+  # cat('threshnames = '); print(threshnames)
   ############################################
   # Basic error checking
   ############################################
-
+  
   if (missing(x)) {stop('x must be a matrix or data.frame to be analyzed')}
   if (cols[1]=='all') {cols <- colnames(x)}
   if (any(!(cols %in% colnames(x)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(x)')}
@@ -39,45 +39,50 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   
   rowfuname <- vector()
   rowfun <- list()
-  
+  rowargs <- list()
   i=0
   
   ########
   
   # create a set of comparisons to threshold(s), one set per element/vector in the list
   
-  for (setnum in 1:length(threshold)) {
+  for (setnum in 1:length(threshgroup)) {
     
     # one set of thresholds, which are recycled as needed to match length of this threshnames[[threshnum]] vector
     
     i=i+1
     rowfuname[i]=paste('Max of', threshgroup[[setnum]])
-    rowfun[[i]]=function(x, ...) {
-      rowMaxs( x[ , threshnames[[setnum]] ], na.rm = na.rm)
+    rowfun[[i]]=function(x, varnames, na.rm=na.rm) {
+      rowMaxs.sofar <- suppressWarnings(rowMaxs( x[ , varnames ], na.rm=na.rm))
+      # replace negative infinity with NA, to handle cases where entire row was NA values so rowMaxs returned -Inf
+      rowMaxs.sofar[is.infinite(rowMaxs.sofar)] <- NA
+      return(rowMaxs.sofar)
     }
+    rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], na.rm=na.rm)
     
     i=i+1
     rowfuname[i]=paste('Are any', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
-    rowfun[[i]]=function(x, ...) {
-      0 < cols.above.count( x[ , threshnames[[setnum]] ], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm )
+    rowfun[[i]]= function(x, varnames, cutoff, or.tied, na.rm) {
+      0 < cols.above.count( x[ ,  varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm ) 
     }
+    rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
     
     i=i+1
     rowfuname[i]=paste('Number of', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
-    rowfun[[i]]=function(x, ...) {
-      cols.above.count( x[ , threshnames[[setnum]] ], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm )
+    rowfun[[i]]=function(x, varnames, cutoff, or.tied, na.rm) {
+      cols.above.count( x[ , varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm )
     }
-    
+    rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
   }
-
-
+  
+  
   #i=i+1
   #rowfuname[i]=''
   #rowfun[[i]]=function(x, ...) {
   #  f( x, na.rm = na.rm)
   #}
-
-    
+  
+  
   # RATIO TO AVERAGE IN ZONE, RATHER THAN JUST ABOVE/BELOW COMPARISON TO A THRESHOLD:
   #
   # possibly add functions here that create multiple cols, one per indicator, showing for each indicator at each site, 
@@ -96,7 +101,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   #i=i+1
   #rowfunames[i]='Ratio to State pop avg'
   #rowfun[i]=function(x, stateavgvalues, na.rm=TRUE) { x / stateavgvalues } # that is not how the math will work - just a placeholder
-
+  
   ############################################
   # SUMMARY ROWS (a summary of each column):
   ############################################
@@ -127,15 +132,25 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   colfun[[n]]=function(x, ...) {
     sapply(x, FUN=function(y) {wtd.quantile(y, probs=0.50, weights=wts, na.rm=na.rm)})
   }
-
-    
+  
+  
   n=n+1
   colfuname[n]='Min'
-  colfun[[n]]=function(x, ...) {colMins(x, na.rm=na.rm)}
+  colfun[[n]]=function(x, ...) {
+    # quiet warning about Inf or -Inf if no non-missing args and set those results to NA
+    z= suppressWarnings( colMins(x, na.rm=na.rm) ) 
+    z[is.infinite(z)] <- NA
+    return(z)
+    }
   
   n=n+1
   colfuname[n]='Max'
-  colfun[[n]]=function(x, ...) {colMaxs(x, na.rm=na.rm)}
+  colfun[[n]]=function(x, ...) {
+    # quiet warning about Inf or -Inf if no non-missing args and set those results to NA
+    z= suppressWarnings( colMaxs(x, na.rm=na.rm) )
+    z[is.infinite(z)] <- NA
+    return(z)
+    }
   
   n=n+1
   colfuname[n]='Sum'
@@ -149,12 +164,12 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   #n=n+1
   #   colfuname[n]='Number of unique values'
   #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
-
+  
   #n=n+1
   #  colfuname[n]='Standard Deviation'
   #  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
   
-
+  
   ############################################
   # THESE SUMMARY FUNCTIONS RETURN MULTIPLE ROWS EACH:
   # THAT REQUIRES A DIFFERENT APPROACH TO POPULATING THE RESULTS VARIABLE
@@ -201,17 +216,17 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   ############################################
   # Use those functions to get summary stats
   ############################################
-
+  
   colfuns.count.all <- length(colfun)
   rowfuns.count.all <- length(rowfun)
-
+  
   # for now, just pick all of them by default. later allow user to select perhaps.
   if (colfun.picked=='all') {
-      colfun.picked= rep(TRUE, colfuns.count.all)  
-      }
+    colfun.picked= rep(TRUE, colfuns.count.all)  
+  }
   if (rowfun.picked=='all') {
     rowfun.picked= rep(TRUE, rowfuns.count.all) 
-    }
+  }
   
   colfuns.count.picked <- sum(colfun.picked)
   rowfuns.count.picked <- sum(rowfun.picked)
@@ -219,10 +234,10 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   # preallocate space to store summary stats on only those picked
   summary.rows <- matrix(NA, nrow=colfuns.count.picked, ncol=ncol(x)) # rows with summary stats summarizing all the columns. This will hold 1 row per summary stat, and same # cols as original table of batch results
   summary.cols <- matrix(NA, nrow=nrow(x), ncol=rowfuns.count.picked ) # columns with summary stats summarizing all the rows
-
+  
   summary.rows.names<- vector()
   summary.cols.names<- vector()
-
+  
   # don't summarize character columns like name of site
   charcol <- sapply(x, class)=='character'
   
@@ -235,11 +250,11 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     fnum <- which(colfun.picked)[i]
     
     summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](x[ , !charcol]) )  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
-
+    
     # print('now summary.rows[i, ] all cols is '); print(summary.rows[i, ])
-
+    
     summary.rows.names[i] <- colfuname[fnum]
-
+    
     # could this have the wrong # of elements if na.rm=TRUE and it somehow doesn't return NA for one of the columns??
   }
   
@@ -250,8 +265,17 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   
   for (i in 1:rowfuns.count.picked) {
     fnum <- which(rowfun.picked)[i]
+    myargs <- rowargs[[fnum]]
+    myargs$x <- x
     
-    summary.cols[ , i] <- round( as.vector( rowfun[[fnum]](x) ),0) # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
+# print('rowargs[[fnum]]= ');print( rowargs[[fnum]] )
+#     cat('\n');cat('\n')
+# print('myargs: '); str(myargs); cat('\n');cat('\n')
+#     
+    summary.cols[ , i] <- round( as.vector( 
+      do.call(rowfun[[fnum]], args=myargs)
+    ), 0) 
+    
     summary.cols.names[ i] <- rowfuname[fnum]
   }
   
