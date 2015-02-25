@@ -121,9 +121,9 @@ shinyServer(function(input, output) {
     content = function(file) {
       #ggsave(file, plot=barplots(), device=png, width = 1200, height = 768, units = "px", pointsize = 12)
       png(filename=file, width = 1400, height = 768, units = "px", pointsize = 12)
-      print(barplots.react())
+      #print(barplots.react())
       # THIS WORKAROUND DOES WORK :
-      #      barplots.NONreactive()
+            barplots.NONreact()
       dev.off()
     }
   )
@@ -524,6 +524,7 @@ shinyServer(function(input, output) {
   })
   #as.character(input$barplot.title)
   
+  
   barplots.react <- reactive({
     
     # One set of bars per each of the myvars
@@ -589,10 +590,82 @@ shinyServer(function(input, output) {
     #       xlab( mybarvars.friendly ) + ylab(ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value')) + 
     #       ggtitle( paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
     
-    return(myplot) # but that won't return the legend
+    return(myplot) # but barplot() just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
   })
   
   output$barplots <- renderPlot( barplots.react() )
+  
+  # TEMPORARY WORKAROUND TO BE ABLE TO DOWNLOAD BARPLOT:
+  # ANOTHER OPTION IS TO RECREATE BARPLOT USING ggplot AND THEN CAN DOWNLOAD JUST LIKE HISTOGRAMS ARE DONE.
+  
+  barplots.NONreact <- function(){
+    
+    # One set of bars per each of the myvars
+    # *** possibly allow these to be set by user instead of hard-coded names:
+    mybarvars <- switch(input$bartype,
+                        'Demographic' = names.d,
+                        'Environmental' = names.e,
+                        'EJ' = names.ej
+    )
+    mybarvars.friendly <- switch(input$bartype,
+                                 'Demographic' = names.d.friendly,
+                                 'Environmental' = names.e.friendly,
+                                 'EJ' = names.ej.friendly
+    )
+    mybarvars.refzone <- switch(input$bartype,
+                                'Demographic' = paste('us.avg.',names.d,sep=''),
+                                'Environmental' = paste('us.avg.',names.e,sep=''),
+                                'EJ' = names.ej
+    )
+    
+    if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      mybarvars <- paste('pctile.', mybarvars, sep='')
+      # mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='') # removed since takes up space and already in header
+      mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
+    }
+    
+    if (input$barvarmean=='med') {
+      mybarvars.sumstat <- c( 'Median site','Median person')
+      mybarvars.refzone.row <- 'Median person'  # 'Median person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+      mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US')
+    } else {
+      # input$barvarmean=='avg'
+      mybarvars.sumstat <- c( 'Average site','Average person')
+      mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
+      mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
+    }
+    
+    if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      # use 50th percentile person as US overall benchmark in this case
+      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
+                         rep(50, length(mybarvars.refzone)) ) 
+    } else {
+      # use actual US avg person's indicator score as US overall benchmark
+      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
+                         outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
+    }
+    
+    if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
+    if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
+    # as.character(input$barplot.title)  # was a way to just let user specify title
+    
+    myplot=barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
+                    main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ) ,
+                    col=c('yellow', 'green', 'blue'),
+                    names.arg=mybarvars.friendly, 
+                    ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
+    legend(x='topright', legend=mylegend, fill=c('yellow', 'green', 'blue'), 
+           cex=bar.cex)
+    
+    #     myplot <- ggplot( plotdata, aes_string(  ) ) + 
+    #       geom_barplot(fill='white', colour='darkgreen') +
+    #       #geom_hline(aes_string(yintercept= )) +
+    #       xlab( mybarvars.friendly ) + ylab(ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value')) + 
+    #       ggtitle( paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
+    
+    return(myplot) # but barplot() just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
+  }
+  
 
   ##################################################################################################
   # HISTOGRAMS
