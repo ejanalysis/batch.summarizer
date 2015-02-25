@@ -1,16 +1,7 @@
 batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   
   # namesfile='keepnames' is one way to specify user wants to keep same names.
-  
-  ####################################################
-  # *** somehow add Env, EJ, Demog as varcategory at the end of this
-  ####################################################
-  # also should CHANGE THE ORDER OF THESE ROWS TO HAVE A MORE USEFUL ORGANIZATION TO THEM:
-  # 1. Sort on ID first, keeping 31 (or varcount.typical) rows together for a point/buffer/place
-  #  2. within a buffer/place, sort on nchar(fieldgroup) puts EJ first, env second, demog third
-  #   3. within each cluster of fieldnames, sort on fieldname is alpha (that seems fine)
-  ####################################################
-  
+
   if (missing(namesfile) & 1==sum(missing(oldcolnames) + missing(newcolnames) )) {
     stop('must specify either namesfile, or both oldcolnames and newcolnames')
   }
@@ -37,11 +28,6 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
     
     # use default fieldname changes if nothing is specified for column names
     namesfile <- 'map batchtool to gdb to R fieldnames.csv'
-
-    # ***** if i don't rename the headers in that csv, then must do this: (but I did rename them)
-    # namechanges <- read.csv(file=namesfile, stringsAsFactors = FALSE)
-    # myoldnames <- namechanges$batchoutputnames
-    # mynewnames <- namechanges$friendlynames
     
     # IMPROVE COLUMN ORDER
     x <- x[ , change.fieldnames(names(x), file=namesfile, sort=TRUE)]
