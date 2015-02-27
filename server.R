@@ -1,5 +1,6 @@
 # for debugging:
- options(shiny.trace=FALSE)
+options(shiny.reactlog=TRUE)
+options(shiny.trace=FALSE)
  options(error=NULL)
 # options(shiny.error=browser)
 
@@ -20,20 +21,18 @@ source("maphelpers.R")  # if we want percent choropleths of county data
 counties <- readRDS(file='data/counties.rds') # if we want county data
 counties$nonwhite <- round( 100 - counties$white, 1)
 
-# library(dplyr) # might not need this
-
 require(Hmisc) 
 require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist
-# ggplot2:  library(ggplot2); ggplot( fulltable(), aes(pm, weight=pop) ) + geom_histogram()
+# library(dplyr) # might not need this
 
-# Require a package or just source the code needed:
 # THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
+# Require a package or just source the code needed:
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
 source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
 source('count.above.R')        # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
 source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
-source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >80th %ile, for example), for each of many rows of a data.frame
+source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >50th or 80th or 95th%ile, for example), for each of many rows of a data.frame
 source('rowMaxs.R')     # returns Max of each row
 source('rowMins.R')     # returns Min of each row
 source('colMaxs.R')     # returns Max of each col
@@ -53,8 +52,11 @@ max.allowed=30 # max length of site name we want displayed before wrapping in si
 
 ##################################################################################################
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
   
+  #   # seems to need this to calculate barplot at start
+  updateTabsetPanel(session, "tabset1", selected = "Detailed settings")
+
   # User-defined name for this dataset / analysis
   
   mybatchname  <-  renderText(input$batchname)
@@ -65,9 +67,7 @@ shinyServer(function(input, output) {
   output$name5 <-  renderText(input$batchname)
   output$titletext <- renderText(paste("Batch Results Summarizer:", as.character(input$batchname)))
   
-
   # Code enabling Download of tables and charts
-  
 
   output$download.rowsout <- downloadHandler(
     filename = function() { 
@@ -262,43 +262,88 @@ shinyServer(function(input, output) {
   }
   ########
   
-
+  #####################  #####################
+  # comparisons to thresholds
+  #####################  #####################
+  
   #####################  #####################
   # Specify names of indicators (columns) that will be compared to the threshold when doing a threshold check, 
   # summarizing for each site how many of those indicators are at/above some specified threshold.
   # Let user specify these at some point via selectize multiple selections pull down on tab1, using renderUI or something to show list of current set of fields as options
   # make this the default but offer them ui that shows colnames(fulltabler()) and lets them hit multiple checkboxes or something to specify 3+ groups and thresholds for those.
-
-    mythreshnames.default <- reactive({
-      list( 
-        group1=grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
-        group2=grep('region.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
-        group3=grep('state.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) 
-      )
-    })
   
-  output$thresholdPICKS <- renderUI({
+  mythreshnames.default <- reactive({
+    list( 
+      group1=grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
+      group2=grep('region.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
+      group3=grep('state.pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) 
+    )
+  })
+  
+  # let user pick multiple fields to compare to user-defined thresholds
+  # must convert default raw names into friendly complete names to show as defaults selected at start in selected=
+  output$thresholdPICKS1 <- renderUI({
     mychoices <- mycolnames()
     names(mychoices) = mycolnames.friendly.complete()
     selectInput(
-      "mythreshnames.in", 
-      "Choose additional fields to compare to threshold(s):", 
+      "mythreshnames.in1", 
+      "Choose fields to compare to threshold(s):", 
       choices = mychoices,
       multiple = TRUE,
-      selected=mythreshnames.default()
-     )
+      selected= mythreshnames.default()[[1]]
+    )
   })
   
+  output$thresholdPICKS2 <- renderUI({
+    mychoices <- mycolnames()
+    names(mychoices) = mycolnames.friendly.complete()
+    selectInput(
+      "mythreshnames.in2", 
+      "Choose fields to compare to threshold(s):", 
+      choices = mychoices,
+      multiple = TRUE,
+      selected = mythreshnames.default()[[2]]
+      #       selected= change.fieldnames(  ( mythreshnames.default()[[2]] ), 
+      #        oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
+    )
+  })
+
+  output$thresholdPICKS3 <- renderUI({
+    mychoices <- mycolnames()
+    names(mychoices) = mycolnames.friendly.complete()
+    selectInput(
+      "mythreshnames.in3",
+      "Choose fields to compare to threshold(s):", 
+      choices = mychoices,
+      multiple = TRUE,
+      selected = mythreshnames.default()[[3]]
+      #       selected= change.fieldnames(  ( mythreshnames.default()[[3]] ), 
+      #        oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
+    )
+  })
+
   mythreshnames <-  reactive({ 
-    mythreshnames.default()
-    # temporarily disable user defined names until code finished
-    #c(list(usergroup=input$mythreshnames.in ), mythreshnames.default() )
+    #mythreshnames.default()
+    # temporarily disable user defined names until code finished ***
+    x=c(list(usergroup1=input$mythreshnames.in1,  usergroup2=input$mythreshnames.in2, usergroup3=input$mythreshnames.in3) )
+    names(x)= c(input$threshgroup1, input$threshgroup2, input$threshgroup3)
+    x
   })
   
+  mythreshgroups <- reactive({
+    list(input$threshgroup1, input$threshgroup2, input$threshgroup3)
+  })
+    
+  mythresholds <- reactive({
+    list(input$threshold1,  input$threshold2, input$threshold3 )
+  })
+  
+  # not yet used?
   output$mythreshnames.toprint <- renderPrint( mythreshnames() )
   
   #####################  #####################
-
+  #####################  #####################
+  
   namecolpixels <- reactive({
     namecolchars <- min(max.allowed, max(nchar(fulltabler()$name)) )
     namecolpixels <- pixels.per.char * namecolchars
@@ -317,10 +362,11 @@ shinyServer(function(input, output) {
   #   rows (rows of summary stats), & cols (columns of summary stats)
   
   outlist <- reactive({ 
+    
     x= batch.summarize(
       fulltabler(),
       wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
-      threshnames= mythreshnames(), threshold=list(input$threshold1, input$threshold2, input$threshold3), threshgroup=threshgroup.default,
+      threshnames= mythreshnames(), threshold=mythresholds(), threshgroup=mythreshgroups(),
       colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
       probs=as.numeric( input$probs ), na.rm=na.rm
     )
@@ -333,22 +379,27 @@ shinyServer(function(input, output) {
     # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
     if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename=fulltabler()$name, x$cols, stringsAsFactors=FALSE) }
     
+    
+    # ******** don't set anything to NA for plotting or downloading or mapping! only for onscreen display/sort/filter!
+        
     # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
     vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
     x$rows[ , vars.NA] <- NA
     vars.round0 <- 'pop'
     x$rows[ , vars.round0] <- round( x$rows[ , vars.round0], 0)
     
-     x$rows <- as.data.frame(x$rows, stringsAsFactors=FALSE)
     
-#     stats.round2 <- c('Average site', 'Average person')
-#     numeric.cols <- apply(x$rows, 2, class)=='numeric' # all should be now
-#     x$rows[ stats.round2, numeric.cols] <- round( x$rows[ stats.round2, numeric.cols] , 1)
+    x$rows <- as.data.frame(x$rows, stringsAsFactors=FALSE)
+
+    #     stats.round2 <- c('Average site', 'Average person')
+    #     numeric.cols <- apply(x$rows, 2, class)=='numeric' # all should be now
+    #     x$rows[ stats.round2, numeric.cols] <- round( x$rows[ stats.round2, numeric.cols] , 1)
     
-#    vars.comma  <- 'pop'
-#    x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',')
+    #    vars.comma  <- 'pop'
+    #    x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',')
     
     x
+
   })
   
   ###########################
@@ -416,11 +467,10 @@ shinyServer(function(input, output) {
       Category= varcategory(),
       Type= vartype(),
       Indicator=mycolnames.friendly(),
-     data.frame(  t(x), t(sites.data ), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
-      #t(  rbind(   x, fulltabler() )),
+      data.frame(  t(x), t(sites.data ), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
       stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE
     )
-    # , check.rows=FALSE, check.names=FALSE   # To avoid replacing spaces in colnames with a period . but there is some chance user will use invalid names for sites and that it might create a problem?
+    # , check.rows=FALSE, check.names=FALSE   # is to avoid replacing spaces in colnames with a period . but there is some chance user will use invalid names for sites and that it might create a problem?
     
     ##############################################
     # QUICK FIXES TO FORMATTING AND SORTING *** NOW THAT SUMSTATS AND SITES ARE TOGETHER
@@ -439,7 +489,7 @@ shinyServer(function(input, output) {
 # cat('\n\n')
 # print(z[1:100 , 1:35])
 # cat('\n\n')
-print(str(z))
+# print(str(z))
     
     z
     
@@ -510,15 +560,17 @@ print(str(z))
   
 
   ##################################################################################################
+
+  
+  ##################################################################################################
   # BARPLOTS
   
   # for use in name of file when saving plot
   barplotkind <- reactive({
     paste(input$bartype, input$barvartype, input$barvarmean, sep='_' )
   })
-  #as.character(input$barplot.title)
   
-  
+
   barplots.react <- reactive({
     
     # One set of bars per each of the myvars
@@ -533,51 +585,77 @@ print(str(z))
                                  'Environmental' = names.e.friendly,
                                  'EJ' = names.ej.friendly
     )
+    
     mybarvars.refzone <- switch(input$bartype,
-                                'Demographic' = paste('us.avg.',names.d,sep=''),
-                                'Environmental' = paste('us.avg.',names.e,sep=''),
-                                'EJ' = names.ej
+                                'Demographic' = paste('us.avg.', mybarvars,sep=''),
+                                'Environmental' = paste('us.avg.', mybarvars,sep=''),
+                                'EJ' = ''
     )
     
     if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      
+      # PERCENTILE VALUES WILL BE SHOWN
+      
       mybarvars <- paste('pctile.', mybarvars, sep='')
-      # mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='') # removed since takes up space and already in header
-      mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
-    }
-    
-    if (input$barvarmean=='med') {
-      mybarvars.sumstat <- c( 'Median site','Median person')
-      mybarvars.refzone.row <- 'Median person'  # 'Median person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-      mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US')
+      
+      if (input$barvarmean=='med') {
+        # MEDIAN PCTILE IS SELECTED
+        mybarvars.sumstat <- c( 'Median site','Median person')
+        mybarvars.refzone.row <- 'Median person'  # 'Median person' 
+        
+        # MEDIAN PERSON'S PCTILE IS just 50
+        mylegend <- c(  'Median site here', 'Median person here', 'Median person in US')
+        
+      } else {
+        # AVERAGE PCTILE IS SELECTED
+        mybarvars.sumstat <- c( 'Average site','Average person')
+        mybarvars.refzone.row <- 'Average person' 
+        
+        # AVERAGE PERSON'S PCTILE IS NOT AVAILABLE IN THIS DATASET CURRENTLY ******  just shows median of 50 for now ***
+        # 
+        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY mybarvars.refzone <- gsub('us.avg','us.avg.pctile', mybarvars.refzone) 
+        mylegend <- c(  'Average site here', 'Average person here', 'Median person in US (not avg.)')
+        
+      }
     } else {
-      # input$barvarmean=='avg'
-      mybarvars.sumstat <- c( 'Average site','Average person')
-      mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-      mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
-    }
+      
+      # RAW VALUES FOR DEMOG OR ENVT WILL BE SHOWN
+      
+      if (input$barvarmean=='med') {
+        # MEDIAN RAW IS SELECTED
+        mybarvars.sumstat <- c( 'Median site','Median person')
+        mybarvars.refzone.row <- 'Median person'  
+        
+        # MEDIAN PERSON'S RAW VALUE IS NOT IN THIS DATASET CURRENTLY ******** just shows avg person's raw for now ***
+        mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US (not median)')
+        
+        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY mybarvars.refzone <- gsub('us.avg', 'us.med', mybarvars.refzone)
+      } else {
+        # AVG RAW IS SELECTED      
+        mybarvars.sumstat <- c( 'Average site','Average person')
+        mybarvars.refzone.row <- 'Average person'  #
+        mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
+        
+        # AVERAGE PERSON'S RAW SCORE IS us.avg...  already defined mybarvars.refzone as that to start with.
+      }
+    } 
+    
     
     if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      # Percentile values for demog or envt indicators, or EJ picked which lacks raw values so must treat it as if plotting pctiles.
       # use 50th percentile person as US overall benchmark in this case
       plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
                          rep(50, length(mybarvars.refzone)) ) 
     } else {
-      # use actual US avg person's indicator score as US overall benchmark
-      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
-                         outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
+      # Raw values for demog or envt indicators.
+      # use actual US avg person's indicator score as US overall benchmark, even if medians are plotted
+      #  we don't store US median raw score here so can't display it, but we could get/store that info in a lookup table.
+      plotdata <- rbind( as.matrix( outlist()$rows[ mybarvars.sumstat, mybarvars ] ), 
+                         as.matrix( outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) )
     }
     
     plotdata <- as.matrix(plotdata)
     
-#     print('outlist()$rows subset to plot')
-#     cat('\n\n')
-#     print(outlist()$rows[ mybarvars.sumstat, mybarvars ])
-#     cat('\n\n')
-#     print('str(plotdata)');    cat('\n\n')
-#     print(str(plotdata));    cat('\n\n')
-#     print('plotdata');    cat('\n\n')
-#     print(plotdata);    cat('\n\n')
-#     
-#     
     if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
     if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
     # as.character(input$barplot.title)  # was a way to just let user specify title
@@ -618,37 +696,73 @@ print(str(z))
                                  'Environmental' = names.e.friendly,
                                  'EJ' = names.ej.friendly
     )
+    
     mybarvars.refzone <- switch(input$bartype,
-                                'Demographic' = paste('us.avg.',names.d,sep=''),
-                                'Environmental' = paste('us.avg.',names.e,sep=''),
-                                'EJ' = names.ej
+                                'Demographic' = paste('us.avg.', mybarvars,sep=''),
+                                'Environmental' = paste('us.avg.', mybarvars,sep=''),
+                                'EJ' = ''
     )
     
     if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      
+      # PERCENTILE VALUES WILL BE SHOWN
+      
       mybarvars <- paste('pctile.', mybarvars, sep='')
-      # mybarvars.friendly <- paste('US%ile ', mybarvars.friendly, sep='') # removed since takes up space and already in header
-      mybarvars.refzone <- paste('pctile.', mybarvars, sep='')
-    }
-    
-    if (input$barvarmean=='med') {
-      mybarvars.sumstat <- c( 'Median site','Median person')
-      mybarvars.refzone.row <- 'Median person'  # 'Median person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-      mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US')
+      
+      if (input$barvarmean=='med') {
+        # MEDIAN PCTILE IS SELECTED
+        mybarvars.sumstat <- c( 'Median site','Median person')
+        mybarvars.refzone.row <- 'Median person'  # 'Median person' 
+        
+        # MEDIAN PERSON'S PCTILE IS just 50
+        mylegend <- c(  'Median site here', 'Median person here', 'Median person in US')
+        
+      } else {
+        # AVERAGE PCTILE IS SELECTED
+        mybarvars.sumstat <- c( 'Average site','Average person')
+        mybarvars.refzone.row <- 'Average person' 
+        
+        # AVERAGE PERSON'S PCTILE IS NOT AVAILABLE IN THIS DATASET CURRENTLY ******  just shows median of 50 for now ***
+        # 
+        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY mybarvars.refzone <- gsub('us.avg','us.avg.pctile', mybarvars.refzone) 
+        mylegend <- c(  'Average site here', 'Average person here', 'Median person in US (not avg.)')
+        
+      }
     } else {
-      # input$barvarmean=='avg'
-      mybarvars.sumstat <- c( 'Average site','Average person')
-      mybarvars.refzone.row <- 'Average person'  # 'Average person' is just a convenient way to refer to a row that has the summary stat that is just the reference zone's value (average for the zone, same in various rows)
-      mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
-    }
+      
+      # RAW VALUES FOR DEMOG OR ENVT WILL BE SHOWN
+      
+      if (input$barvarmean=='med') {
+        # MEDIAN RAW IS SELECTED
+        mybarvars.sumstat <- c( 'Median site','Median person')
+        mybarvars.refzone.row <- 'Median person'  
+        
+        # MEDIAN PERSON'S RAW VALUE IS NOT IN THIS DATASET CURRENTLY ******** just shows avg person's raw for now ***
+        mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US (not median)')
+        
+        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY mybarvars.refzone <- gsub('us.avg', 'us.med', mybarvars.refzone)
+      } else {
+        # AVG RAW IS SELECTED      
+        mybarvars.sumstat <- c( 'Average site','Average person')
+        mybarvars.refzone.row <- 'Average person'  #
+        mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
+        
+        # AVERAGE PERSON'S RAW SCORE IS us.avg...  already defined mybarvars.refzone as that to start with.
+      }
+    } 
+    
     
     if (input$barvartype=='pctile' | input$bartype=='EJ') {
+      # Percentile values for demog or envt indicators, or EJ picked which lacks raw values so must treat it as if plotting pctiles.
       # use 50th percentile person as US overall benchmark in this case
       plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
                          rep(50, length(mybarvars.refzone)) ) 
     } else {
-      # use actual US avg person's indicator score as US overall benchmark
-      plotdata <- rbind( outlist()$rows[ mybarvars.sumstat, mybarvars ], 
-                         outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
+      # Raw values for demog or envt indicators.
+      # use actual US avg person's indicator score as US overall benchmark, even if medians are plotted
+      #  we don't store US median raw score here so can't display it, but we could get/store that info in a lookup table.
+      plotdata <- rbind( as.matrix( outlist()$rows[ mybarvars.sumstat, mybarvars ] ), 
+                         as.matrix( outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) )
     }
     
     plotdata <- as.matrix(plotdata)
@@ -658,10 +772,10 @@ print(str(z))
     # as.character(input$barplot.title)  # was a way to just let user specify title
     
     barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
-                    main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ) ,
-                    col=c('yellow', 'green', 'blue'),
-                    names.arg=mybarvars.friendly, 
-                    ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
+             main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ) ,
+             col=c('yellow', 'green', 'blue'),
+             names.arg=mybarvars.friendly, 
+             ylab=ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value') )
     legend(x='topright', legend=mylegend, fill=c('yellow', 'green', 'blue'), 
            cex=bar.cex)
     
@@ -819,7 +933,7 @@ print(str(z))
 #     #str(cbind(  outlist()$cols,  make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE) )
 #     #print(str(outlist()$cols))
 #     #print(head(outlist()$cols))
-#     
+     #print(mythreshgroups())
 #     #rownames(outlist()$rows)
 #     # head(outlist()$rows)
 #     (head(outlist()$rows,40))
@@ -830,8 +944,10 @@ print(str(z))
 #     #     
 #     #t( head(outlist()$rows, 30) )
 #   )
-  
-  
+
+  # need to force a "recalculation" of barplots.react() at start of this app so it can be displayed before user changes any data.
+  updateTabsetPanel(session, "tabset1", selected = "Barplots")
+
   
 })
 

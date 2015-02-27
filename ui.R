@@ -11,22 +11,52 @@ shinyUI(
     tabsetPanel(
       
       # tabPanel('test', tableOutput('testout') ),
-      
+      id='tabset1',
         
+      ####################################################################################
       tabPanel(
         
-        "Barplots", 
+        "Detailed settings",
         
-        plotOutput('barplots'),
-        downloadButton('download.barplot', 'Download'),
-        fluidRow(
-          h4('Barplot settings'),
-          column(4, radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))),
-          column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw'))),
-          column(3, radioButtons('barvarmean', 'Statistic', list('Average'='avg', 'Median'='med')))
+        h4('Specify which fields to compare to user-defined thresholds, in up to 3 groups of fields'),
+        
+        # ***  use dynamic ui to allow user to flexibly specify multiple thresholds in multiple groups,
+        # via selectize to specify groups of columns (threshnames list), groups of thresholds (threshold list), etc.
+        
+        column(
+          4,
+          #h5('Selected plus default variables to compare to thresholds:'),
+          #textOutput('mythreshnames.toprint'),
+          textInput('threshgroup1', label='Name for 1st set of comparisons', value=threshgroup.default[[1]]),
+          numericInput('threshold1', label='Threshold value(s) for 1st set of comparisons (e.g. %ile 1-100):', value=threshold.default[[1]][1]), 
+          wellPanel(
+            uiOutput('thresholdPICKS1', inline=FALSE) 
+          )
+        ),
+        
+        column(
+          4,
+          textInput('threshgroup2', label='Name for 2d set of comparisons', value=threshgroup.default[[2]]),
+          numericInput('threshold2', label='Threshold value(s) for 2d set of comparisons (e.g. %ile 1-100):', value=threshold.default[[2]][1]), 
+          wellPanel(
+            uiOutput('thresholdPICKS2', inline=FALSE) 
+          )
+          
+          
+        ),
+        
+        column(
+          4,
+          textInput('threshgroup3', label='Name for 3d set of comparisons', value=threshgroup.default[[3]]),
+          numericInput('threshold3', label='Threshold value(s) for 3d set of comparisons (e.g. %ile 1-100):', value=threshold.default[[3]][1]), 
+          wellPanel(
+            uiOutput('thresholdPICKS3', inline=FALSE) 
+          )
         )
+        
       ),
       
+      ####################################################################################
       tabPanel(
         
         "Upload/Settings",
@@ -49,40 +79,49 @@ shinyUI(
             4,
             h4('Analysis settings'),
             
-            # ***  use dynamic ui to allow user to flexibly specify multiple thresholds in multiple groups,
-            # via selectize to specify groups of columns (threshnames list), groups of thresholds (threshold list), etc.
-            wellPanel(
-              uiOutput('thresholdPICKS', inline=FALSE) 
-              ),
-            #h5('Selected plus default variables to compare to thresholds:'),
-            #textOutput('mythreshnames.toprint'),
-            numericInput('threshold1', label='Threshold value(s) for 1st set of comparisons (e.g. %ile 1-100):', value=threshold.default[[1]][1]), 
-            numericInput('threshold2', label='Threshold value(s) for 2d set of comparisons (e.g. %ile 1-100):', value=threshold.default[[2]][1]), 
-            numericInput('threshold3', label='Threshold value(s) for 3d set of comparisons (e.g. %ile 1-100):', value=threshold.default[[3]][1]), 
+            checkboxGroupInput('probs','Percentiles of sites & residents to calculate:', choices=probs.default.choices, 
+                               selected = probs.default)
             
-            checkboxGroupInput('probs','Percentiles of sites & residents to calculate:', choices=probs.default.choices, selected = probs.default.choices)
+            # can add settings here, e.g.
             #         checkboxInput('header', 'Header', TRUE),
             #         radioButtons('sep', 'Separator',
             #                      c(Comma=',', Semicolon=';', Tab='\t'), ','),
             #         radioButtons('quote', 'Quote',
             #                      c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"'), 
+            
           )
         ),
         tags$hr()
       ),
       
+      ####################################################################################
+      tabPanel(
+        
+        "Barplots", 
+        
+        plotOutput('barplots'),
+        downloadButton('download.barplot', 'Download'),
+        fluidRow(
+          h4('Barplot settings'),
+          column(4, radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))),
+          column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw'))),
+          column(3, radioButtons('barvarmean', 'Statistic', list('Average'='avg', 'Median'='med')))
+        )
+      ),
       
+      ####################################################################################
       tabPanel(
         
         "Summary Stats", 
         
         downloadButton('download.rowsout', 'Download'),
         dataTableOutput("rowsout"),
-        h5('Tip: Enter text (e.g., EJ, Env, statepctile, etc. for the Type column) in the filter boxes at the bottoms of columns to limit view to certain rows.'),
-        h5('Tip: Click a heading (e.g., Type) twice to sort descending, then Shift-click another column (e.g., Average person) twice for descending secondary sort (to sort on 2d col within each group in 1st col)'),
-        h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON')
+        h5('Tip: Enter text (e.g., Demog, EJ, Env for Category column, and pctile, state, statepctile, etc. for the Type column) in the filter boxes at the bottoms of columns to limit view to certain rows.'),
+        h5('Tip: Click a heading (e.g., Type) twice to sort descending, then Shift-click another column (e.g., Average person) twice for descending secondary sort (to sort on 2d col within each group in 1st col)')
+        #h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON')
       ),
       
+      ####################################################################################
       tabPanel(
         
         "Individual Sites", 
@@ -93,6 +132,7 @@ shinyUI(
         h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.')
       ), 
       
+      ####################################################################################
       tabPanel(
         
         "Stat Tests", 
@@ -112,7 +152,8 @@ shinyUI(
         downloadButton('download.table3', 'Download Table 3')
       ), 
       
-     tabPanel(
+      ####################################################################################
+      tabPanel(
         
         "Histograms", 
         
@@ -151,6 +192,7 @@ shinyUI(
         )
       ),
       
+      ####################################################################################
       tabPanel(
         
         "Maps", 
@@ -166,13 +208,15 @@ shinyUI(
                     min = 0, max = 100, value = c(0, 100)),
         
         plotOutput("map")
-      )  #, 
+      )  # , 
      
-#      tabPanel(
+      ####################################################################################
+      #      tabPanel(
 #        textInput(  "plotly.search",  "Search what to plot",  '' ),
 #        graphOutput("plotly.chart") 
 #      ),
      
+####################################################################################
 #      tabPanel(
 #        'debug',
 #        verbatimTextOutput('debugginginfo')

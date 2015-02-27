@@ -11,7 +11,7 @@
 
 # allow user to specify user-specified # of groups of user-specified fields to compare to user-specified thresholds.
 # Initially, just the 3 thresholds can be altered, not which fields are compared or how many groups or what the groups are called.
-threshold.default  <- list(80, 80, 80)  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
+threshold.default  <- list(50, 50, 50)  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
 threshgroup.default <- list('EJ US pctiles', 'EJ Region pctiles', 'EJ State pctiles')
 # server.R creates threshold names at the moment
 # threshnames.default <- list( 
@@ -93,8 +93,10 @@ bar.cex <- 1.10
 
 # defaults for quantiles summary stats, with character string version used in ui to present options in checkboxes
 # (probs of 0, 0.50, 1 are redundant since min, median, max are already separately shown)
-probs.default.choices <- c('0','0.25','0.50','0.75','0.80','0.90','0.95','0.99','1.00') 
-probs.default  <- as.numeric(probs.default.choices) # c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1) 
+probs.default.choices <- c('0','0.25','0.50','0.75','0.80','0.90','0.95','0.99','1.00')
+probs.default  <- c(0.25,0.75,0.95) 
+  # as.numeric(probs.default.choices) # to have it default to all of these summary stats of the distributions across sites and people
+# c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1) 
 
 # defaults for which of the predefined functions to use for summary stats (logical vector or vector of names?)
 colfun.picked.default = 'all'
