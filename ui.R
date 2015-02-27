@@ -12,6 +12,7 @@ shinyUI(
       
       # tabPanel('test', tableOutput('testout') ),
       
+        
       tabPanel(
         
         "Barplots", 
@@ -28,7 +29,7 @@ shinyUI(
       
       tabPanel(
         
-        "Upload a batch",
+        "Upload/Settings",
         
         br(),
         #h4(textOutput("name1", container = span)),
@@ -89,8 +90,7 @@ shinyUI(
         downloadButton('download.colsout', 'Download'),
         dataTableOutput("colsout"),
         h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
-        h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.'),
-        h5('NOTE: SORTING DOES NOT WORK YET - NUMBERS ARE SORTED AS IF THEY WERE TEXT... TO BE FIXED SOON')
+        h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.')
       ), 
       
       tabPanel(
@@ -166,7 +166,18 @@ shinyUI(
                     min = 0, max = 100, value = c(0, 100)),
         
         plotOutput("map")
-      )
+      )  #, 
+     
+#      tabPanel(
+#        textInput(  "plotly.search",  "Search what to plot",  '' ),
+#        graphOutput("plotly.chart") 
+#      ),
+     
+#      tabPanel(
+#        'debug',
+#        verbatimTextOutput('debugginginfo')
+#      )
+     
     )
   )
 )

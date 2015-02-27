@@ -60,12 +60,13 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     }
     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], na.rm=na.rm)
     
-    i=i+1
-    rowfuname[i]=paste('Are any', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
-    rowfun[[i]]= function(x, varnames, cutoff, or.tied, na.rm) {
-      0 < cols.above.count( x[ ,  varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm ) 
-    }
-    rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
+# NOT ESSENTIAL ONCE YOU HAVE THE NUMBER OF SITES AT/ABOVE:
+#     i=i+1
+#     rowfuname[i]=paste('Are any', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
+#     rowfun[[i]]= function(x, varnames, cutoff, or.tied, na.rm) {
+#       0 < cols.above.count( x[ ,  varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm ) 
+#     }
+#     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
     
     i=i+1
     rowfuname[i]=paste('Number of', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
@@ -247,6 +248,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   ############################################
   
   for (i in 1:colfuns.count.picked) {
+    
     fnum <- which(colfun.picked)[i]
     
     summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](x[ , !charcol]) )  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
@@ -268,10 +270,6 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     myargs <- rowargs[[fnum]]
     myargs$x <- x
     
-# print('rowargs[[fnum]]= ');print( rowargs[[fnum]] )
-#     cat('\n');cat('\n')
-# print('myargs: '); str(myargs); cat('\n');cat('\n')
-#     
     summary.cols[ , i] <- round( as.vector( 
       do.call(rowfun[[fnum]], args=myargs)
     ), 0) 
@@ -279,7 +277,10 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     summary.cols.names[ i] <- rowfuname[fnum]
   }
   
+  ############################################
   # create useful rownames and colnames for the outputs
+  ############################################
+  
   rownames(summary.rows) <- summary.rows.names
   colnames(summary.rows) <- colnames(x)
   

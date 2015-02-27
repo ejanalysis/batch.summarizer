@@ -1,9 +1,15 @@
 # for debugging:
-# options(shiny.trace=FALSE)
-# options(error=browser)
+ options(shiny.trace=FALSE)
+ options(error=NULL)
 # options(shiny.error=browser)
 
 library(shiny) # http://shiny.rstudio.com
+
+# example of plotly code:
+# df = read.csv('311_150k.csv') # use 311_100.csv for development, as it is much smaller
+# df$Created.Date <- strptime(df$Created.Date, format="%m/%d/%Y %H:%M:%S")
+# most_common_complaints = sort(table(df$Complaint.Type), decreasing=TRUE)  # this is default initial value?
+
 
 # to DISPLAY A SIMPLE COUNTY CHOROPLETH MAP
 # http://shiny.rstudio.com/tutorial/lesson5/
@@ -18,7 +24,7 @@ counties$nonwhite <- round( 100 - counties$white, 1)
 
 require(Hmisc) 
 require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist
-# ggplot2:  library(ggplot2); ggplot( fulltable, aes(pm, weight=pop) ) + geom_histogram()
+# ggplot2:  library(ggplot2); ggplot( fulltable(), aes(pm, weight=pop) ) + geom_histogram()
 
 # Require a package or just source the code needed:
 # THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
@@ -140,23 +146,6 @@ shinyServer(function(input, output) {
       dev.off()
     }
   )
-  
-  # Notes on how shiny handles rendering plots, downloading them, and reactive expressions: 
-  #    TO DRAW AND/OR DOWNLOAD PLOTS, NOTE:
-  #    must say
-  #        myplot <- reactive(  ....   p <- barplot(); return(p)   ); then in download handler, do 
-  #          content = function(file) {
-  #          ggsave(file, plot=PLOT1(), device=png, width=800, height=800, limitsize=FALSE)
-  #          }
-  #    In general, plot rendering is not something you want to do in a reactive expression; 
-  #    the reason is because reactive expressions cache their calculated values and 
-  #    only actually re-execute when one of the reactive inputs they depend on change.
-  #    So if you are calling the same reactive that does a plot from two places in your code,
-  #    then only one of those will have the behavior you want and the other will not get a plot rendered.
-  #       The changes that Stéphane recommended ensure that the "side effect free" calculations happen inside the reactive, while the operations that have side effects (printing a ggplot object) only occurs in the output and content functions where they always belong.
-  #    see https://groups.google.com/forum/#!searchin/shiny-discuss/Error$20opening$20file/shiny-discuss/79fiwAp80S4/SVibuhZTO4oJ
-  #    and see https://groups.google.com/forum/#!msg/shiny-discuss/u7gwXc8_vyY/IZK_o7b7I8gJ 
-  #    and see http://stackoverflow.com/questions/26764481/downloading-png-from-shiny-r
   
   
   #############################
@@ -329,25 +318,36 @@ shinyServer(function(input, output) {
   
   outlist <- reactive({ 
     x= batch.summarize(
-      fulltabler(), 
+      fulltabler(),
       wts=fulltabler()[ , mywtsname], cols=mycolnames(), 
       threshnames= mythreshnames(), threshold=list(input$threshold1, input$threshold2, input$threshold3), threshgroup=threshgroup.default,
       colfun.picked=colfun.picked, rowfun.picked=rowfun.picked,
       probs=as.numeric( input$probs ), na.rm=na.rm
     )
     
+    # THIS FIXES BUG IN SORTING/ FORMATTING cols RESULTS AS NUMERIC VS CHARACTER
+    x$cols <- as.data.frame(x$cols, stringsAsFactors=FALSE)
+    # but can't do this here WHILE STRINGS ARE IN SOME CELLS: 
+    # x$rows <- as.data.frame(x$rows, stringsAsFactors=FALSE)
+
     # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
-    if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename=fulltabler()$name, x$cols) }
+    if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename=fulltabler()$name, x$cols, stringsAsFactors=FALSE) }
     
     # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
     vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
     x$rows[ , vars.NA] <- NA
     vars.round0 <- 'pop'
-    x$rows[ , vars.round0] <- round( x$rows[ , vars.round0], 0) 
-    # stats.round2 <- c('Average site', 'Average person')
-    #x$rows[ stats.round2, ] <- round( x$rows[ stats.round2, ] , 2)
-    #vars.comma  <- 'pop'
-    #x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',') 
+    x$rows[ , vars.round0] <- round( x$rows[ , vars.round0], 0)
+    
+     x$rows <- as.data.frame(x$rows, stringsAsFactors=FALSE)
+    
+#     stats.round2 <- c('Average site', 'Average person')
+#     numeric.cols <- apply(x$rows, 2, class)=='numeric' # all should be now
+#     x$rows[ stats.round2, numeric.cols] <- round( x$rows[ stats.round2, numeric.cols] , 1)
+    
+#    vars.comma  <- 'pop'
+#    x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',')
+    
     x
   })
   
@@ -356,69 +356,93 @@ shinyServer(function(input, output) {
   # this recreates the output cols AND rows each time any inputs/settings change, which might be slow for a huge dataset,
   # but it is unlikely you would ever want to recalculate ONLY the colsout, so not a big deal
   
+  ###########################  ###########################  ###########################
+  ###########################  ###########################  ###########################
   ###########################
-  # one summary stat per site
+  # one summary stat per site  # RENDER THE SUMMARY *COLS* AS AN INTERACTIVE DATA TABLE FOR WEB
   ###########################
+  ###########################  ###########################  ###########################
+  ###########################  ###########################  ###########################
 
-    # RENDER THE SUMMARY *COLS* AS AN INTERACTIVE DATA TABLE FOR WEB
-  
   output$colsout <- renderDataTable( 
-    
-    cbind(outlist()$cols, make.colnames.friendly.complete( fulltabler()  ) ), 
+    {
+      z <- cbind( outlist()$cols, make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE)
+      #print(str(z[ , grepl('Number of', colnames(z))] ))
+      #print((z[ , grepl('Number of', colnames(z))] ))
+      # z[ , grepl('Number of', colnames(z))] <- sapply(z[ , grepl('Number of', colnames(z))], as.numeric)
+      z
+    }, 
     options=list(
       lengthMenu = list(c(10, 100, -1), c('10', '100', 'All')),
       pageLength = 100,  # -1 loads all the rows into page 1, which might be too slow if huge # of sites is uploaded
       scrollX= TRUE,
       scrollY= "340px", # 440px is enough for 12 rows on my browser but headers wrap to use up lots of space
       dom = 'rtip',
-      columnDefs = list(list(width="420px", targets=list(0, length(outlist()$cols[1,]) + 
+      # ** INTERIM attempted SOLUTION TO ADDRESS JUST ABOUT 180 FIELDS, within columnDefs, but it doesn't seem to have desired impact.
+      #     list(type='natural', targets=0:178), 
+      columnDefs = list(  list(width="420px", targets=list(0, length(outlist()$cols[1,]) + 
                                                            which(mycolnames()=='name')
                                                          -1))),  # makes the 1st column wide & the one called name
-      scrollCollapse= TRUE   #, 
-      # callback = "function(oTable) {}"    # work in progress - see same issue on FixedColumns in rowsout, below
-      #     columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!?  # Right now this worked for one view but not as well for transposed view... quick workaround is to add a col to transposed one
-      #     #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
-      #     #callback = "function(table) {}"  # work in progress
+      scrollCollapse= TRUE
     )
   )
   
+  ###########################  ###########################  ###########################
+  ###########################  ###########################  ###########################
   ###########################
-  # one summary stat per indicator
+  # one summary stat per indicator  # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
   ###########################
+  ###########################  ###########################  ###########################
+  ###########################  ###########################  ###########################
   
-  # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
-
   output$rowsout <- renderDataTable({
     
     # prepare to display table of summary stats which is outlist()$rows, 
     # ideally along with the full table of facility-specific batch results
     
     x <- outlist()$rows
-
-    # FORMAT FOR DISPLAY
-    stats.round2 <- c('Average site', 'Average person')
-    x[ stats.round2, ] <- round( x[ stats.round2, ] , 2)
     
-    vars.round0 <- unique( c( names.d, grep('VSI.eo', mycolnames(), value=TRUE), grep('pct', mycolnames(), value=TRUE) ) ) # intended to find pctile and pct and VSI.eo to get the ones that are integer 0-100 
-    x[ , vars.round0]  <- round( x[ , vars.round0 ] , 0)
-    
-    # TRYING TO USE COMMAS TO FORMAT THE POPULATION COUNTS, BUT THIS APPROACH FAILED:
-    # vars.comma  <- 'pop'
-    # x[ , vars.comma]  <- format( x[ , vars.comma], big.mark=',') # THIS DOESN'T WORK - 
-    # it CAUSES warnings like Warning in `[<-.factor`(`*tmp*`, ri, value = 1:42) :
-    # invalid factor level, NA generated
-    # and it deletes various cells in the table somehow.
-    
-    # widerows=c(4, which(=='name'))  # to be completed... ***
-    
+    ##############################################
+    # PUT SUMMARY STATS AND INDIVIDUAL SITES DATA TOGETHER
     # one row per indicator, one col per stat or site
-    cbind(
+    ##############################################
+    
+    charcols <- c("FACID", "name", "ST", "statename", 'lat', 'lon' )  #  "pop", "radius.miles", are ok. 'FACID' would be nice to sort on as # if it is that, but will need to assume it is character just in case.
+    sites.data <- fulltabler()
+    sites.data[ , charcols] <- NA  # MUST REMOVE CHARACTER FIELD INFO LIKE NAME/FACID/ST/STATENAME TO BE ABLE TO TRANSPOSE THIS INTO A DATA.FRAME AND SORT ONE FACILITY BY ALL ITS INDICATORS FOR EXAMPLE
+    
+    z = data.frame(
       n=lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
       Category= varcategory(),
       Type= vartype(),
       Indicator=mycolnames.friendly(),
-      t(  rbind(   x, fulltabler() ))
-    )  
+     data.frame(  t(x), t(sites.data ), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
+      #t(  rbind(   x, fulltabler() )),
+      stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE
+    )
+    # , check.rows=FALSE, check.names=FALSE   # To avoid replacing spaces in colnames with a period . but there is some chance user will use invalid names for sites and that it might create a problem?
+    
+    ##############################################
+    # QUICK FIXES TO FORMATTING AND SORTING *** NOW THAT SUMSTATS AND SITES ARE TOGETHER
+    # REPLACED THE STRING CHARACTER CELLS WITH NA SO THAT SORTING BY NUMBER WILL WORK CORRECTLY
+    ##############################################
+    
+    entirely.string.fields <- c('n' , 'Category', 'Type', 'Indicator') # can't just say sapply(mydf, class) I think
+    # indicators to round to zero decimal places, but not for the string fields of those indicators:
+    vars.round0 <- unique( c( 'pop', names.d, grep('VSI.eo', mycolnames(), value=TRUE), grep('pct', mycolnames(), value=TRUE) ) ) # intended to find pctile and pct and VSI.eo to get the ones that are integer 0-100 
+    fields.to.round <- colnames(z)[!(colnames(z) %in% entirely.string.fields)]
+    # round all to 2 decimals, then just some to zero decimals
+    z[             , fields.to.round ] <- round( z[             , fields.to.round ] , 2)
+    z[  vars.round0, fields.to.round ] <- round( z[  vars.round0, fields.to.round ] , 0)
+
+# print('head z after round zero ')
+# cat('\n\n')
+# print(z[1:100 , 1:35])
+# cat('\n\n')
+print(str(z))
+    
+    z
+    
   }, options=list(
     scrollX= TRUE,
     scrollY= "440px", # 440px is enough for 12 rows on my browser
@@ -427,42 +451,12 @@ shinyServer(function(input, output) {
     scrollCollapse= TRUE,
     dom = 'rtip',
     columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!? 
-    #callback = I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
-    #callback = "function(table) {}"  # work in progress
   )
   )
-  
-  # notes on trying to get FixedColumns plugin for DataTable to work in shiny:
-  #
-  #https://github.com/DataTables/FixedColumns/blob/master/README.md
-  #
-  # callback = "function(oTable) {}",   
-  # is the example in shiny documentation
-  # from stack.exchange:
-  #   I("new $.fn.dataTable.FixedColumns( table, {leftColumns: 5} );")
-  # 
-  #
-  # https://datatables.net/release-datatables/extensions/FixedColumns/examples/two_columns.html
-  # The example of javascript is:
-  #     new $.fn.dataTable.FixedColumns( table, {
-  #       leftColumns: 2
-  #     } );
-  #
-  # https://datatables.net/extensions/fixedcolumns/
-  # The example of javascript is:
-  #     /*
-  #       * Example initialisation
-  #     */
-  #       $(document).ready( function () {
-  #         var table = $('#example').DataTable( {
-  #           "scrollY": "300px",
-  #           "scrollX": "100%",
-  #           "scrollCollapse": true,
-  #           "paging": false
-  #         } );
-  #         new $.fn.dataTable.FixedColumns( table );
-  #       } );
-  #     
+  ###########################################  ###########################################
+  ###########################################  ###########################################
+  ###########################################  ###########################################
+
   
   ###########################################
   # Create some summary tables of summary statistics & significance testing, comparing sites to US etc.
@@ -572,11 +566,23 @@ shinyServer(function(input, output) {
                          outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
     }
     
+    plotdata <- as.matrix(plotdata)
+    
+#     print('outlist()$rows subset to plot')
+#     cat('\n\n')
+#     print(outlist()$rows[ mybarvars.sumstat, mybarvars ])
+#     cat('\n\n')
+#     print('str(plotdata)');    cat('\n\n')
+#     print(str(plotdata));    cat('\n\n')
+#     print('plotdata');    cat('\n\n')
+#     print(plotdata);    cat('\n\n')
+#     
+#     
     if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
     if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
     # as.character(input$barplot.title)  # was a way to just let user specify title
     
-    myplot=barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
+    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
              main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ) ,
              col=c('yellow', 'green', 'blue'),
              names.arg=mybarvars.friendly, 
@@ -590,7 +596,7 @@ shinyServer(function(input, output) {
     #       xlab( mybarvars.friendly ) + ylab(ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value')) + 
     #       ggtitle( paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
     
-    return(myplot) # but barplot() just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
+    # barplot() has side effect of printing, but it just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
   })
   
   output$barplots <- renderPlot( barplots.react() )
@@ -645,11 +651,13 @@ shinyServer(function(input, output) {
                          outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) 
     }
     
+    plotdata <- as.matrix(plotdata)
+    
     if ( input$barvartype=='raw' & input$bartype=='Environmental') {myylims <- NULL} else {myylims <-  c(0, 100) }
     if ( input$bartype %in% c('Environmental', 'EJ')) {mycex=bar.cex * 0.7} else {mycex=bar.cex} # to see the long labels
     # as.character(input$barplot.title)  # was a way to just let user specify title
     
-    myplot=barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
+    barplot( plotdata, beside=TRUE, ylim=myylims, cex.axis = bar.cex, cex.names=mycex, 
                     main= paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ) ,
                     col=c('yellow', 'green', 'blue'),
                     names.arg=mybarvars.friendly, 
@@ -663,7 +671,7 @@ shinyServer(function(input, output) {
     #       xlab( mybarvars.friendly ) + ylab(ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value')) + 
     #       ggtitle( paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
     
-    return(myplot) # but barplot() just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
+    # barplot() has side effect of printing, but it just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
   }
   
 
@@ -783,6 +791,47 @@ shinyServer(function(input, output) {
   #   #allmap$zipcode <- formatC(allzips$zipcode, width=5, format="d", flag="0")
   #   row.names(allmap) <- allmap$zipcode
   #   cleantable <- allmap[ , c('ST', 'lat', 'lon', 'pop', names.d, )]
+  
+  ##################################################################################################
+  # plotly interactive graphic
+#   
+#   output$plotly.chart <- renderGraph({
+#     
+#     #matched_complaints <- subset(df, grepl(input$search, df$Complaint.Type))
+#     #most_common_complaints = sort(table(matched_complaints$Complaint.Type), decreasing=TRUE) 
+#     df <- data.frame(a=1:100, b=501:600, c=c("blue",'green','orange','yellow'),d=c('high', 'low') )
+#     col.to.search='c'
+#     plotly.data <- subset(df, grepl(input$plotly.search, df[ , col.to.search]))
+#       
+#     list(
+#       #message = c(most_common_complaints)
+#       message = c(table(plotly.data))
+#     )
+#     
+#   })
+#   
 
+  # ***** SHOW IN A DEBUGGING TAB:
+  
+#   output$debugginginfo <- renderPrint( 
+#     # need one and only one line of output in this renderPrint()
+#     # print('DEBUGGING INFORMATION') 
+#     #str(cbind(  outlist()$cols,  make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE) )
+#     #print(str(outlist()$cols))
+#     #print(head(outlist()$cols))
+#     
+#     #rownames(outlist()$rows)
+#     # head(outlist()$rows)
+#     (head(outlist()$rows,40))
+#     #     chr [1:179, 1:74] "001" "002" "003" "004" "005" "006" "007" "008" "009" "010" "011" "012" "013" ...
+#     #     - attr(*, "dimnames")=List of 2
+#     #     ..$ : chr [1:179] "OBJECTID" "FACID" "name" "lat" ...
+#     #     ..$ : chr [1:74] "n" "Category" "Type" "Indicator" ...
+#     #     
+#     #t( head(outlist()$rows, 30) )
+#   )
+  
+  
+  
 })
 

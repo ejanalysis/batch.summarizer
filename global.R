@@ -1,3 +1,6 @@
+
+#source("plotlyGraphWidget.R")
+
 #############################
 # DEFAULT VALUES - possibly could recode to allow user to change them
 #############################
