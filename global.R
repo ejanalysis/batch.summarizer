@@ -1,3 +1,15 @@
+#############################
+# might need to define these here until latest version of leaflet package is on cran
+#############################
+
+leafletOutput = function(outputId, width = "100%", height = 400) {
+  htmlwidgets::shinyWidgetOutput(outputId, "leaflet", width, height, "leaflet")
+}
+
+renderLeaflet = function(expr, env = parent.frame(), quoted = FALSE) {
+  if (!quoted) expr = substitute(expr)  # force quoted
+  htmlwidgets::shinyRenderWidget(expr, leafletOutput, env, quoted = TRUE)
+}
 
 #source("plotlyGraphWidget.R")
 
