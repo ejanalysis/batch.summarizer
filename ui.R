@@ -97,6 +97,19 @@ shinyUI(
       ####################################################################################
       tabPanel(
         
+        'Map of sites',
+        
+        h4('Map of uploaded sites and circular buffers'),
+        tags$hr(),
+        leafletOutput('map.sites'),
+        tags$hr(),
+        h5('Zoom in to see buffers around sites.'),
+        h5('Hover over point to see site name. Click on point to see basic site information.')
+      ),
+      
+      ####################################################################################
+      tabPanel(
+        
         "Barplots", 
         
         plotOutput('barplots'),
@@ -105,14 +118,34 @@ shinyUI(
           h4('Barplot settings'),
           column(4, radioButtons('bartype', h5('Indicator type'), list('Demographic'='Demographic', 'Environmental'='Environmental','EJ'='EJ'))),
           column(3, radioButtons('barvartype', 'Data Type', list('Percentile of population'='pctile', 'Raw data'='raw'))),
-          column(3, radioButtons('barvarmean', 'Statistic', list('Average'='avg', 'Median'='med')))
+          column(3, radioButtons('barvarmean', 'Statistic', list('Median'='med', 'Average'='avg')))
         )
       ),
       
       ####################################################################################
       tabPanel(
         
-        "Summary Stats", 
+        "Summary tables", 
+        
+        #h4(textOutput("name3", container = span)),
+        br(),
+        h4('Table 1. Does the population near these sites as a whole have demographics above the US average?'),
+        tableOutput("table1"),
+        downloadButton('download.table1', 'Download Table 1'),
+        tags$hr(),
+        h4('Table 2. Does the average site have demographics above the US average?'),
+        tableOutput("table2"),
+        downloadButton('download.table2', 'Download Table 2'),
+        tags$hr(),
+        h4('Table 3. Do most of these sites have demographics above the US average?'),
+        tableOutput("table3"),
+        downloadButton('download.table3', 'Download Table 3')
+      ), 
+      
+     ####################################################################################
+      tabPanel(
+        
+        "Detailed Stats", 
         
         downloadButton('download.rowsout', 'Download'),
         dataTableOutput("rowsout"),
@@ -130,26 +163,6 @@ shinyUI(
         dataTableOutput("colsout"),
         h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
         h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.')
-      ), 
-      
-      ####################################################################################
-      tabPanel(
-        
-        "Stat Tests", 
-        
-        #h4(textOutput("name3", container = span)),
-        br(),
-        h4('Table 1. Does the population near these sites as a whole have demographics above the US average?'),
-        tableOutput("table1"),
-        downloadButton('download.table1', 'Download Table 1'),
-        tags$hr(),
-        h4('Table 2. Does the average site have demographics above the US average?'),
-        tableOutput("table2"),
-        downloadButton('download.table2', 'Download Table 2'),
-        tags$hr(),
-        h4('Table 3. Do most of these sites have demographics above the US average?'),
-        tableOutput("table3"),
-        downloadButton('download.table3', 'Download Table 3')
       ), 
       
       ####################################################################################
@@ -195,7 +208,7 @@ shinyUI(
       ####################################################################################
       tabPanel(
         
-        "Maps", 
+        "Map counties", 
         
         h3('US County Map, Census 2010'),
         

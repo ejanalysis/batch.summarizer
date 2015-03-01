@@ -37,8 +37,8 @@ source('rowMaxs.R')     # returns Max of each row
 source('rowMins.R')     # returns Min of each row
 source('colMaxs.R')     # returns Max of each col
 source('colMins.R')     # returns Min of each col
-source('lead.zeroes.R')
 source('wtd.colMeans.R')     # returns wtd.mean of each col
+source('lead.zeroes.R')
 source('change.fieldnames.R')  # updated function that helps change or resort fieldnames using a map file mapping old to new names
 source('wilcoxon.pvalues.r')  # for statistical significance testing
 
@@ -375,19 +375,18 @@ shinyServer(function(input, output, session) {
     x$cols <- as.data.frame(x$cols, stringsAsFactors=FALSE)
     # but can't do this here WHILE STRINGS ARE IN SOME CELLS: 
     # x$rows <- as.data.frame(x$rows, stringsAsFactors=FALSE)
-
+    
     # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
     if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename=fulltabler()$name, x$cols, stringsAsFactors=FALSE) }
     
-    
     # ******** don't set anything to NA for plotting or downloading or mapping! only for onscreen display/sort/filter!
-        
+    
+    
     # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
     vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
     x$rows[ , vars.NA] <- NA
     vars.round0 <- 'pop'
     x$rows[ , vars.round0] <- round( x$rows[ , vars.round0], 0)
-    
     
     x$rows <- as.data.frame(x$rows, stringsAsFactors=FALSE)
 
@@ -418,9 +417,6 @@ shinyServer(function(input, output, session) {
   output$colsout <- renderDataTable( 
     {
       z <- cbind( outlist()$cols, make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE)
-      #print(str(z[ , grepl('Number of', colnames(z))] ))
-      #print((z[ , grepl('Number of', colnames(z))] ))
-      # z[ , grepl('Number of', colnames(z))] <- sapply(z[ , grepl('Number of', colnames(z))], as.numeric)
       z
     }, 
     options=list(
@@ -484,12 +480,6 @@ shinyServer(function(input, output, session) {
     # round all to 2 decimals, then just some to zero decimals
     z[             , fields.to.round ] <- round( z[             , fields.to.round ] , 2)
     z[  vars.round0, fields.to.round ] <- round( z[  vars.round0, fields.to.round ] , 0)
-
-# print('head z after round zero ')
-# cat('\n\n')
-# print(z[1:100 , 1:35])
-# cat('\n\n')
-# print(str(z))
     
     z
     
@@ -906,6 +896,72 @@ shinyServer(function(input, output, session) {
   #   row.names(allmap) <- allmap$zipcode
   #   cleantable <- allmap[ , c('ST', 'lat', 'lon', 'pop', names.d, )]
   
+  
+  ############################################
+  # BASIC DATA FRAME MAPPING VIA leaflet
+  ############################################
+  
+  #   mypoints = data.frame(
+  #     lat = rnorm(100),
+  #     lng = rnorm(100),
+  #     size = runif(100, 5, 20),
+  #     color = sample(colors(), 100)
+  #   )
+  
+  output$map.sites <- renderLeaflet({
+    
+    mypoints = data.frame(
+      long=fulltabler()$lon, 
+      lat= fulltabler()$lat,
+      pop= fulltabler()$pop,
+      name= fulltabler()$name,
+      n=fulltabler()$OBJECTID,
+      pctmin=fulltabler()$pctmin,
+      pctlowinc=fulltabler()$pctlowinc
+    )
+    
+    ## population near site as scaled from 1 to 20, where min site is 1, max is 20
+    # popratio = mypoints$pop / min(mypoints$pop, na.rm=TRUE)
+    # popratio = 1+( (popratio -1) * (( 20-1) / max(popratio-1)  ))
+
+    m = leaflet(mypoints) %>% addTiles()
+    # m = m %>% setView(mypoints$long[1], mypoints$lat[1], zoom = 4)
+    
+    m = m %>% addMarkers(
+      popup = (  paste(
+        'Site #', mypoints$n, '<br>', 
+        'Name: ', mypoints$name, '<br>', 
+        'Pop= ', mypoints$pop, '<br>', 
+        mypoints$pctlowinc, '% low-income', '<br>', 
+        mypoints$pctmin, '% minority', 
+        sep='') 
+      ), 
+      options = markerOptions(title = mypoints$name)
+    )
+    
+    meters.per.mile = 1609.34
+    m = m %>% addCircles(radius = fulltabler()$radius.miles[1] * meters.per.mile, color = 'black', fill = FALSE)
+    
+    # to show open popups
+    # popuptext <- paste('Site ', 1:length(mypoints$lat), sep='')
+    # m = m %>% addPopups(mypoints$long, mypoints$lat, popuptext)
+    
+
+    # set view that shows all the points and a margin around their range
+    lat.diff = abs(diff(range( mypoints$lat  )))
+    lon.diff = abs(diff(range( mypoints$long )))
+    lat.lowerleft = min(mypoints$lat)  #- (1.1 * lat.diff)
+    lon.lowerleft = min(mypoints$long) #- (1.1 * lon.diff)
+    lat.upright = max(mypoints$lat)  #+   (1.1 * lat.diff)
+    lon.upright = max(mypoints$long) #+   (1.1 * lon.diff)
+     m %>% fitBounds( lon.lowerleft, lat.lowerleft, lon.upright, lat.upright)
+#    m %>% fitBounds( L.latLngBounds() ) # doing this directly in leaflet might be easier
+#    clearBounds(m)
+  cat(lon.lowerleft, lat.lowerleft, 'and', lon.upright, lat.upright, ' are bounds \n' )
+    m
+    
+  })
+  
   ##################################################################################################
   # plotly interactive graphic
 #   
@@ -946,8 +1002,8 @@ shinyServer(function(input, output, session) {
 #   )
 
   # need to force a "recalculation" of barplots.react() at start of this app so it can be displayed before user changes any data.
-  updateTabsetPanel(session, "tabset1", selected = "Barplots")
-
+#  updateTabsetPanel(session, "tabset1", selected = "Barplots")
+  updateTabsetPanel(session, "tabset1", selected = "Map of sites")
   
 })
 
