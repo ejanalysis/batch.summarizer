@@ -104,7 +104,13 @@ shinyUI(
         leafletOutput('map.sites'),
         tags$hr(),
         h5('Zoom in to see buffers around sites.'),
-        h5('Hover over point to see site name. Click on point to see basic site information.')
+        h5('Hover over point to see site name. Click on point to see basic site information.'),
+        textOutput('sitecount.text'),
+        radioButtons('markertype', label='Marker style', choices= list('Large (easier to click but sites overlap)' = 'big', 'Small' = 'small'), 
+                     selected = 'big' # default for example dataset which is small set so use big markers
+        )
+        #                      
+        #         uiOutput('markertype.ui')
       ),
       
       ####################################################################################

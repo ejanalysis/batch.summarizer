@@ -226,8 +226,36 @@ shinyServer(function(input, output, session) {
     fulltable
   })
   
-  #output$testout <- renderTable(fulltabler() )
-  
+    sitecount <- reactive({
+      length(fulltabler()[,1])
+    })
+    
+    #output$sitecount <- renderPrint({ sitecount() })
+    
+    output$sitecount.text <- renderText({
+      paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
+    })
+    
+    # updateRadioButtons(session, 'markertype', selected='small')
+    
+#     markertype.ui <- renderUI({
+#       )
+#     })
+    
+    # try to specify initial state of ui for map of points
+    # but updates aren't executed at client until after all observers including outputs are finished running so this didn't help
+    # updateRadioButtons(session, 'markertype', selected='big')
+    # updateRadioButtons(session, 'markertype', selected=ifelse(sitecount() < 30, 'big', 'small'))
+    # workaround to recalculate markertype at start of app:
+    # updateTabsetPanel(session, "tabset1", selected = "Map of sites")
+    #
+    #     observe({
+    #       input$markertype
+    #       sitecount()
+    #       
+    #     })
+    
+    
   #####################
   # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
 
@@ -932,17 +960,32 @@ shinyServer(function(input, output, session) {
     m = leaflet(mypoints) %>% addTiles()
     # m = m %>% setView(mypoints$long[1], mypoints$lat[1], zoom = 4)
     
-    m = m %>% addMarkers(
-      popup = (  paste(
-        'Site #', mypoints$n, '<br>', 
-        'Name: ', mypoints$name, '<br>', 
-        'Pop= ', mypoints$pop, '<br>', 
-        mypoints$pctlowinc, '% low-income', '<br>', 
-        mypoints$pctmin, '% minority', 
-        sep='') 
-      ), 
-      options = markerOptions(title = mypoints$name)
-    )
+    if (input$markertype == 'big') {
+      m = m %>% addMarkers(
+        popup = (  paste(
+          'Site #', mypoints$n, '<br>', 
+          'Name: ', mypoints$name, '<br>', 
+          'Pop= ', mypoints$pop, '<br>', 
+          mypoints$pctlowinc, '% low-income', '<br>', 
+          mypoints$pctmin, '% minority', 
+          sep='') 
+        ), 
+        options = markerOptions(title = mypoints$name)
+      )
+    } else {
+      m = m %>% addCircleMarkers( 
+        radius=3,
+        popup = (  paste(
+          'Site #', mypoints$n, '<br>', 
+          'Name: ', mypoints$name, '<br>', 
+          'Pop= ', mypoints$pop, '<br>', 
+          mypoints$pctlowinc, '% low-income', '<br>', 
+          mypoints$pctmin, '% minority', 
+          sep='') 
+        ), 
+        options = markerOptions(title = mypoints$name)
+      )
+    }
     
     meters.per.mile = 1609.34
     m = m %>% addCircles(radius = fulltabler()$radius.miles[1] * meters.per.mile, color = 'black', fill = FALSE)
