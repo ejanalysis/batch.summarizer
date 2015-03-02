@@ -12,7 +12,7 @@ shinyUI(
       
       # tabPanel('test', tableOutput('testout') ),
       id='tabset1',
-        
+      
       ####################################################################################
       tabPanel(
         
@@ -66,8 +66,12 @@ shinyUI(
         fluidRow(
           column(
             4,
-            h4(fileInput('file1', 'Select file of batch results to upload and summarize',
-                         accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))),
+            wellPanel(
+              h4(fileInput('file1', 'Select file of batch results to upload and summarize',
+                           accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')))              
+            ),
+            textOutput('sitecount.text2'),
+            tags$hr(),
             h5(fileInput('file2', 'Select file of fieldname mapping to rename fields to other than defaults',
                          accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')))
           ),
@@ -103,14 +107,26 @@ shinyUI(
         tags$hr(),
         leafletOutput('map.sites'),
         tags$hr(),
-        h5('Zoom in to see buffers around sites.'),
-        h5('Hover over point to see site name. Click on point to see basic site information.'),
-        textOutput('sitecount.text'),
-        radioButtons('markertype', label='Marker style', choices= list('Large (easier to click but sites overlap)' = 'big', 'Small' = 'small'), 
-                     selected = 'big' # default for example dataset which is small set so use big markers
+        fluidRow(
+          column(
+            4,
+            wellPanel(
+              textOutput('sitecount.text')
+            )
+          ),
+          column(
+            4,
+            h5('Hover over large marker for site name.'),
+            h5('Click on point for site info.'),
+            h5('Zoom in to see buffers around sites.')
+          ),
+          column(
+            4,
+            radioButtons('markertype', label='Marker style', choices= list('Large (easier to click but sites overlap)' = 'big', 'Small' = 'small'), 
+                         selected = 'big' # default for example dataset which is small set so use big markers
+            )
+          )
         )
-        #                      
-        #         uiOutput('markertype.ui')
       ),
       
       ####################################################################################

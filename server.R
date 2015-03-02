@@ -230,9 +230,10 @@ shinyServer(function(input, output, session) {
       length(fulltabler()[,1])
     })
     
-    #output$sitecount <- renderPrint({ sitecount() })
-    
     output$sitecount.text <- renderText({
+      paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
+    })
+    output$sitecount.text2 <- renderText({
       paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
     })
     
@@ -905,6 +906,10 @@ shinyServer(function(input, output, session) {
   ##################################################################################################
   # MAPS
   
+  ############################################
+  # MAP COUNTY CHOROPLETHS
+  ############################################
+  
   output$map <- renderPlot({
     args <- switch(input$mapvar,
                    "Percent Non-White" = list(counties$nonwhite, "darkblue", "% Non-White"),
@@ -920,36 +925,19 @@ shinyServer(function(input, output, session) {
     do.call(percent_map, args)
   })
   
-  # notes from superzip map example... work in progress
-  #   allzips <- readRDS("data/superzip.rds")
-  #   allmap$latitude <- jitter(fulltabler()$lat)
-  #   allmap$longitude <- jitter(fulltabler()$lon)
-  #   #allmap$college <- allzips$college * 100
-  #   #allmap$zipcode <- formatC(allzips$zipcode, width=5, format="d", flag="0")
-  #   row.names(allmap) <- allmap$zipcode
-  #   cleantable <- allmap[ , c('ST', 'lat', 'lon', 'pop', names.d, )]
-  
-  
   ############################################
-  # BASIC DATA FRAME MAPPING VIA leaflet
+  # MAP SITES AS POINTS
   ############################################
-  
-  #   mypoints = data.frame(
-  #     lat = rnorm(100),
-  #     lng = rnorm(100),
-  #     size = runif(100, 5, 20),
-  #     color = sample(colors(), 100)
-  #   )
-  
+
   output$map.sites <- renderLeaflet({
     
     mypoints = data.frame(
       long=fulltabler()$lon, 
       lat= fulltabler()$lat,
+      n=   fulltabler()$OBJECTID,
+      name=fulltabler()$name,
       pop= fulltabler()$pop,
-      name= fulltabler()$name,
-      n=fulltabler()$OBJECTID,
-      pctmin=fulltabler()$pctmin,
+      pctmin=   fulltabler()$pctmin,
       pctlowinc=fulltabler()$pctlowinc
     )
     
@@ -960,52 +948,52 @@ shinyServer(function(input, output, session) {
     m = leaflet(mypoints) %>% addTiles()
     # m = m %>% setView(mypoints$long[1], mypoints$lat[1], zoom = 4)
     
+    mypopup = paste(
+      'Site #', mypoints$n, '<br>', 
+      'Name: ', mypoints$name, '<br>', 
+      'Pop= ', mypoints$pop, '<br>', 
+      mypoints$pctlowinc, '% low-income', '<br>', 
+      mypoints$pctmin, '% minority', 
+      sep='')
+    
     if (input$markertype == 'big') {
       m = m %>% addMarkers(
-        popup = (  paste(
-          'Site #', mypoints$n, '<br>', 
-          'Name: ', mypoints$name, '<br>', 
-          'Pop= ', mypoints$pop, '<br>', 
-          mypoints$pctlowinc, '% low-income', '<br>', 
-          mypoints$pctmin, '% minority', 
-          sep='') 
-        ), 
+        popup = mypopup, 
         options = markerOptions(title = mypoints$name)
       )
     } else {
       m = m %>% addCircleMarkers( 
-        radius=3,
-        popup = (  paste(
-          'Site #', mypoints$n, '<br>', 
-          'Name: ', mypoints$name, '<br>', 
-          'Pop= ', mypoints$pop, '<br>', 
-          mypoints$pctlowinc, '% low-income', '<br>', 
-          mypoints$pctmin, '% minority', 
-          sep='') 
-        ), 
+        radius=circle.marker.radius,
+        popup = mypopup,
         options = markerOptions(title = mypoints$name)
       )
     }
     
-    meters.per.mile = 1609.34
     m = m %>% addCircles(radius = fulltabler()$radius.miles[1] * meters.per.mile, color = 'black', fill = FALSE)
     
-    # to show open popups
-    # popuptext <- paste('Site ', 1:length(mypoints$lat), sep='')
-    # m = m %>% addPopups(mypoints$long, mypoints$lat, popuptext)
-    
-
-    # set view that shows all the points and a margin around their range
+    ## Zoom out to see all the points
+    ## set view that shows all the points and a margin around their range
+    ## m %>% fitBounds( L.latLngBounds() ) # doing this directly in leaflet might be easier
     lat.diff = abs(diff(range( mypoints$lat  )))
     lon.diff = abs(diff(range( mypoints$long )))
-    lat.lowerleft = min(mypoints$lat)  #- (1.1 * lat.diff)
-    lon.lowerleft = min(mypoints$long) #- (1.1 * lon.diff)
-    lat.upright = max(mypoints$lat)  #+   (1.1 * lat.diff)
-    lon.upright = max(mypoints$long) #+   (1.1 * lon.diff)
-     m %>% fitBounds( lon.lowerleft, lat.lowerleft, lon.upright, lat.upright)
-#    m %>% fitBounds( L.latLngBounds() ) # doing this directly in leaflet might be easier
-#    clearBounds(m)
-  cat(lon.lowerleft, lat.lowerleft, 'and', lon.upright, lat.upright, ' are bounds \n' )
+    lat.lowerleft = min(mypoints$lat)  #- (1.01 * lat.diff)
+    lon.lowerleft = min(mypoints$long) #- (1.01 * lon.diff)
+    lat.upright =   max(mypoints$lat)  #+ (1.01 * lat.diff)
+    lon.upright =   max(mypoints$long) #+ (1.01 * lon.diff)
+    
+    #cat(lon.lowerleft, lat.lowerleft, lon.upright, lat.upright)
+    m = m %>% fitBounds( lon.lowerleft, lat.lowerleft, lon.upright, lat.upright )
+    #       m = m %>% fitBounds( -90, 33, -60, 46 )
+    # clearBounds(m)
+    # cat(lon.lowerleft, lat.lowerleft, 'and', lon.upright, lat.upright, ' are bounds \n' )
+    
+    # Possibly offer other layers
+    #     myattribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+    #     m %>% addTiles(
+    #       paste(mapserver1, '/tile/{z}/{y}/{x}',sep='') #,
+    #       # attribution = myattribution
+    #     ) 
+    
     m
     
   })
@@ -1013,6 +1001,7 @@ shinyServer(function(input, output, session) {
   ##################################################################################################
   # plotly interactive graphic
 #   
+# example:
 #   output$plotly.chart <- renderGraph({
 #     
 #     #matched_complaints <- subset(df, grepl(input$search, df$Complaint.Type))
@@ -1029,7 +1018,7 @@ shinyServer(function(input, output, session) {
 #   })
 #   
 
-  # ***** SHOW IN A DEBUGGING TAB:
+  # ***** TO SHOW IN A DEBUGGING TAB:
   
 #   output$debugginginfo <- renderPrint( 
 #     # need one and only one line of output in this renderPrint()
@@ -1050,7 +1039,7 @@ shinyServer(function(input, output, session) {
 #   )
 
   # need to force a "recalculation" of barplots.react() at start of this app so it can be displayed before user changes any data.
-#  updateTabsetPanel(session, "tabset1", selected = "Barplots")
+  #  updateTabsetPanel(session, "tabset1", selected = "Barplots")
   updateTabsetPanel(session, "tabset1", selected = "Map of sites")
   
 })

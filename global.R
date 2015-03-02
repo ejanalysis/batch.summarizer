@@ -11,6 +11,31 @@ renderLeaflet = function(expr, env = parent.frame(), quoted = FALSE) {
   htmlwidgets::shinyRenderWidget(expr, leafletOutput, env, quoted = TRUE)
 }
 
+#########
+# Useful open map layers
+
+# layer.admin <- 'OpenMapSurfer.AdminBounds'   # neighborhoods, counties, etc.
+# layer.houses <- 'HERE.hybridDay'
+# layer.street1 <- 'Esri.WorldStreetMap'
+# layer.street2 <- 'OpenStreetMap.HOT'
+# layer.street3 <- 'Stamen.TonerHybrid'
+# layer.topo <- 'Esri.WorldTopoMap'
+# layer.delorme <- 'Esri.DeLorme'
+# layer.natgeo <- 'Esri.NatGeoWorldMap'
+# layer.sat1 <- 'Esri.WorldImagery'
+# layer.sat2 <- 'MapQuestOpen.Aerial'
+# layer.esrigray <- 'Esri.WorldGrayCanvas'
+
+mapserver1= 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer'
+mapserver2= 'http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer'
+
+# var MapQuestOpen_Aerial = L.tileLayer('http://oatile{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg', {
+#   attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency',
+#   subdomains: '1234'
+# });
+
+
+
 #source("plotlyGraphWidget.R")
 
 #############################
@@ -102,6 +127,10 @@ names(us.counts) <- names.d
 
 # define scaling for text on barplot
 bar.cex <- 1.10 
+
+# size of marker for sites on map
+circle.marker.radius <- 6
+meters.per.mile = 1609.34
 
 # defaults for quantiles summary stats, with character string version used in ui to present options in checkboxes
 # (probs of 0, 0.50, 1 are redundant since min, median, max are already separately shown)
