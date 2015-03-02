@@ -1,37 +1,25 @@
 # for debugging:
-options(shiny.reactlog=FALSE)
-options(shiny.trace=FALSE)
-options(error=NULL)
+# options(shiny.reactlog=TRUE)
+# options(shiny.trace=TRUE)
+# options(error=NULL)
 # options(shiny.error=browser)
 
 library(shiny) # http://shiny.rstudio.com
-library(leaflet)
 
-
-
-
-
-# example of plotly code:
-# df = read.csv('311_150k.csv') # use 311_100.csv for development, as it is much smaller
-# df$Created.Date <- strptime(df$Created.Date, format="%m/%d/%Y %H:%M:%S")
-# most_common_complaints = sort(table(df$Complaint.Type), decreasing=TRUE)  # this is default initial value?
-
-
-# to DISPLAY A SIMPLE COUNTY CHOROPLETH MAP
-# http://shiny.rstudio.com/tutorial/lesson5/
-library(maps)
+library(leaflet) # for interactive maps
+library(maps) # for static maps; choropleth of counties, etc.
 library(mapproj)
-# need to load gomap.js ??
 source("maphelpers.R")  # if we want percent choropleths of county data
 counties <- readRDS(file='data/counties.rds') # if we want county data
 counties$nonwhite <- round( 100 - counties$white, 1)
+# load gomap.js ??
 
-require(Hmisc) 
-require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist
+# source("plotlyGraphWidget.R")  # for interactive plots/charts/graphs
 # library(dplyr) # might not need this
+require(Hmisc) # various useful functions for data analysis
+require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist
 
-# THESE FUNCTIONS MUST BE IN THE SHINY APP'S BASE DIRECTORY
-# Require a package or just source the code needed:
+# CUSTOM FUNCTIONS USED HERE: REQUIRE AS A PACKAGE, OR SOURCE FROM THE SHINY APP'S BASE DIRECTORY:
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
 source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
@@ -52,8 +40,6 @@ source('batch.clean.R')
 source('batch.summarize.R')
 
 ##################################################################################################
-pixels.per.char <- 10 #????
-max.allowed=30 # max length of site name we want displayed before wrapping in sites table
 
 ##################################################################################################
 

@@ -1,5 +1,8 @@
+
+# DEFINE GLOBAL VARIABLES FOR USE IN server or ui - default values, etc.
+
 #############################
-# might need to define these here until latest version of leaflet package is on cran
+# For leaflet maps, might need to define these here until latest version of leaflet package is on cran:
 #############################
 
 leafletOutput = function(outputId, width = "100%", height = 400) {
@@ -34,13 +37,12 @@ mapserver2= 'http://services.arcgisonline.com/ArcGIS/rest/services/Reference/Wor
 #   subdomains: '1234'
 # });
 
-
-
-#source("plotlyGraphWidget.R")
-
 #############################
 # DEFAULT VALUES - possibly could recode to allow user to change them
 #############################
+
+pixels.per.char <- 10 #????
+max.allowed=30 # max length of site name we want displayed before wrapping in sites table
 
 #############################
 # WHICH FIELDS TO COMPARE TO THRESHOLDS
