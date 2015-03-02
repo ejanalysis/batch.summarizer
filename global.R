@@ -50,9 +50,9 @@ max.allowed=30 # max length of site name we want displayed before wrapping in si
 
 # allow user to specify user-specified # of groups of user-specified fields to compare to user-specified thresholds.
 # Initially, just the 3 thresholds can be altered, not which fields are compared or how many groups or what the groups are called.
-threshold.default  <- list(50, 50, 50)  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
+threshold.default   <- list(50, 50, 50)  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
 threshgroup.default <- list('EJ US pctiles', 'EJ Region pctiles', 'EJ State pctiles')
-# server.R creates threshold names at the moment
+# NOTE:  server.R creates threshold names at the moment
 # threshnames.default <- list( 
 #   grep('^pctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 
 #   grep('regionpctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) , 

@@ -152,27 +152,64 @@ shinyUI(
         br(),
         h4('Executive Summary'),
         tags$hr(),
+        h4(textOutput('popsitecounts.out2')),
         fluidRow(
           column(
-            5,
+            4,
             wellPanel(
               h4('Demographic:'),
               br(),
               h5(textOutput('execsum1')),
-              br(),
+              # br(),
               h5(textOutput('execsum2')),
               br(),
               h5(textOutput('execsum3')),
+              numericInput('execsum.threshold.d', 'Percentile threshold:', 95, min=0,max=100,step=5),
               br(),
-              h5(textOutput('execsum4')),
-              br(),
+              h5(textOutput('execsum4'))
+              
+            )
+          ),
+          column(
+            4,
+            wellPanel(
               h4('Environmental:'),
               br(),
               h5(textOutput('execsum5'))
             )
+          ),
+          column(
+            4,
+            wellPanel(
+              h4('EJ:'),
+              br(),
+              h5(textOutput('execsum6')),
+              numericInput('execsum.threshold', 'Percentile threshold:', 95, min=0,max=100,step=5)
+            ),
+            h6('** Note: More precisely, they reside in buffer zones near these sites where the average person in the buffer zone has a block group indicator value that is at/above the block group values of the specified % of the US population.')
           )
         )
       ), 
+      
+      ####################################################################################
+      tabPanel(
+        
+        "States", 
+        
+        br(),
+        h4(textOutput('popsitecounts.out')),
+        tags$hr(),
+        fluidRow(
+          column(
+            5,
+            dataTableOutput('counts.by.state.out')
+          ),
+          column(
+            5,
+           dataTableOutput('counts.by.region.out')
+          )
+        )
+      ),
       
       ####################################################################################
       tabPanel(
@@ -273,19 +310,21 @@ shinyUI(
                     min = 0, max = 100, value = c(0, 100)),
         
         plotOutput("map")
-      )  # , 
+      )                       # , 
      
-      ####################################################################################
-      #      tabPanel(
-#        textInput(  "plotly.search",  "Search what to plot",  '' ),
-#        graphOutput("plotly.chart") 
-#      ),
+     ####################################################################################
+     #      tabPanel(
+     #        textInput(  "plotly.search",  "Search what to plot",  '' ),
+     #        graphOutput("plotly.chart") 
+     #      ),
+     ####################################################################################
      
-####################################################################################
-#      tabPanel(
-#        'debug',
-#        verbatimTextOutput('debugginginfo')
-#      )
+     ####################################################################################
+     #      tabPanel(
+     #        'debug',
+     #        verbatimTextOutput('debugginginfo')
+     #      )
+     ####################################################################################
      
     )
   )

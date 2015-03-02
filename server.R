@@ -212,35 +212,73 @@ shinyServer(function(input, output, session) {
     fulltable
   })
   
-    sitecount <- reactive({
-      length(fulltabler()[,1])
-    })
-    
-    output$sitecount.text <- renderText({
+  #####################
+  
+  popcount <- reactive({
+    sum(fulltabler()$pop, na.rm=TRUE)
+  })
+  
+  sitecount <- reactive({
+    length(fulltabler()[,1])
+  })
+  
+  output$sitecount.text <- renderText({
       paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
     })
-    output$sitecount.text2 <- renderText({
-      paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
-    })
+  
+  output$sitecount.text2 <- renderText({
+    paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
+  })
+  
+  output$popsitecounts.out <- renderText({
+    paste("Total population is ", format(popcount(), big.mark=',', scientific=FALSE), " at ", sitecount(), " sites.", sep='')
+  })
     
-    # updateRadioButtons(session, 'markertype', selected='small')
-    
-#     markertype.ui <- renderUI({
-#       )
-#     })
-    
-    # try to specify initial state of ui for map of points
-    # but updates aren't executed at client until after all observers including outputs are finished running so this didn't help
-    # updateRadioButtons(session, 'markertype', selected='big')
-    # updateRadioButtons(session, 'markertype', selected=ifelse(sitecount() < 30, 'big', 'small'))
-    # workaround to recalculate markertype at start of app:
-    # updateTabsetPanel(session, "tabset1", selected = "Map of sites")
-    #
-    #     observe({
-    #       input$markertype
-    #       sitecount()
-    #       
-    #     })
+  output$popsitecounts.out2 <- renderText({
+    paste("Total population is ", format(popcount(), big.mark=',', scientific=FALSE), " at ", sitecount(), " sites.", sep='')
+  })
+  
+  counts.by.state <- reactive({
+    id=isolate( fulltabler()$OBJECTID )
+    state=isolate( fulltabler()$statename )
+    x=aggregate.data.frame(id, by=list(state), FUN=length)
+    # #x=bystats(id, state)[,'N']
+    # #x=bystats[-length(x)] # if want to remove the "ALL" column
+    names(x) <- c('State', 'Site count')
+    popcounts <- aggregate.data.frame(fulltabler()$pop, by=list(fulltabler()$statename), FUN=function(z) sum(z, na.rm = TRUE))
+    names(popcounts) <- c('State', 'Population count')
+    x= merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all states with a length even if sum is NA
+    # x = rbind(x, colSums(x,na.rm=TRUE))
+  })  
+  
+  output$counts.by.state.out <- renderDataTable({
+    counts.by.state()
+  }, 
+  options=list(paging=FALSE, searching=FALSE)
+  )
+  
+  ## same but by region:
+  
+  counts.by.region <- reactive({
+    id=isolate( fulltabler()$OBJECTID )
+    REGION=isolate( fulltabler()$REGION )
+    x=aggregate.data.frame(id, by=list(REGION), FUN=length)
+    # #x=bystats(id, state)[,'N']
+    # #x=bystats[-length(x)] # if want to remove the "ALL" column
+    names(x) <- c('Region', 'Site count')
+    popcounts <- aggregate.data.frame(fulltabler()$pop, by=list(fulltabler()$REGION), FUN=function(z) sum(z, na.rm = TRUE))
+    names(popcounts) <- c('Region', 'Population count')
+    x= merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all zones with a length even if sum is NA
+    # x = rbind(x, colSums(x,na.rm=TRUE))
+  })  
+  
+  output$counts.by.region.out <- renderDataTable({
+    counts.by.region()
+  }, 
+  options=list(paging=FALSE, searching=FALSE)
+  )
+  
+  #####################
     
     
   #####################
@@ -604,7 +642,7 @@ shinyServer(function(input, output, session) {
           round(max.ratio.to.us.d(), 1), ' times as likely to be ', 
           tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ) ,' as the average person in the US (', 
           round(outlist()$rows['Average person', max.ratio.to.us.d.name()], 0)   ,'% vs. ', 
-          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.d.name(), sep='')], 0), '%).', sep='')
+          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.d.name(), sep='')], 0), '%). The other demographic indicators have lower ratios.', sep='')
   })
   
   execsum2.txt <- reactive({
@@ -615,9 +653,18 @@ shinyServer(function(input, output, session) {
   })
   
   execsum3.txt <- reactive({
-    paste(sum(fulltabler()$pop[ fulltabler()[ , paste('pctile.', max.ratio.to.us.d.name(), sep='')] >= 95 ] , na.rm = TRUE) , 
-          '% of the residents near these sites are in the top 5% of ',
-          tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), ' values nationwide.', sep='')
+    mypctiles <-  fulltabler()[ , paste('pctile.', max.ratio.to.us.d.name(), sep='')]
+    mypctiles[is.na(mypctiles)] <- 0 # treat as zero if NA (missing) so stats come out right.
+    paste( 
+      format( sum( fulltabler()$pop[ mypctiles >= input$execsum.threshold.d ] , na.rm = TRUE), scientific=FALSE, big.mark = ','),
+      ' people (',
+      round( 100 * sum(fulltabler()$pop[ mypctiles >= input$execsum.threshold.d ] , na.rm = TRUE) / popcount(), 0) , 
+      '% of all residents), who live near ',
+      length(fulltabler()$pop[ mypctiles >= input$execsum.threshold.d ] ),
+      ' (',
+      round(100* length(fulltabler()$pop[ mypctiles >= input$execsum.threshold.d ] ) / sitecount(), 0),
+      '%) of these sites, are in the top ', 100-input$execsum.threshold.d,'% of ',
+      tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), ' values nationwide**.', sep='')
   })
   
   execsum4.txt <- reactive({
@@ -627,21 +674,36 @@ shinyServer(function(input, output, session) {
   })
   
   execsum5.txt <- reactive({
-    paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),' sites have ', 
+    paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),' sites have, on average, ', 
           round(max.ratio.to.us.e(), 1), ' times as high indicator values for ', 
           ( mycolnames.friendly()[match( max.ratio.to.us.e.name(), mycolnames() )] ) ,' as the average person in the US (', 
           round(outlist()$rows['Average person', max.ratio.to.us.e.name()], 2)   ,' vs. ', 
-          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.e.name(), sep='')], 2), ').', sep='')
+          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.e.name(), sep='')], 2), '). The other environmental indicators have lower ratios.', sep='')
     
   })
   
+  execsum6.txt <- reactive({
+    pctile = input$execsum.threshold
+    mypctiles <- fulltabler()[ , paste('pctile.', names.ej, sep='')]
+    mypctiles[is.na(mypctiles)] <- 0 # treat it as zero if it is missing, so tally of # at/above will count all if set cutoff to zero
+    paste(
+      format( sum( fulltabler()$pop[0 < cols.above.count(mypctiles, pctile, or.tied=TRUE )] , na.rm=TRUE), scientific=FALSE, big.mark = ','),
+      ' people (',
+      round(100* sum( fulltabler()$pop[0 < cols.above.count(mypctiles, pctile, or.tied=TRUE )] , na.rm=TRUE) / popcount() , 0),
+      '% of all residents), who live near ',
+      sum( 0 < cols.above.count(mypctiles, pctile, or.tied=TRUE ) , na.rm=TRUE),
+      ' (',
+      round(100* sum( 0 < cols.above.count(mypctiles, pctile, or.tied=TRUE ) , na.rm=TRUE) / sitecount() , 0),
+      '%) of the sites, have one or more EJ Indexes in the top ', 100-pctile,'% of values nationwide**.', 
+      sep='')
+  })
   
-
   output$execsum1 <- renderText( execsum1.txt() )
   output$execsum2 <- renderText( execsum2.txt() )
   output$execsum3 <- renderText( execsum3.txt() )
   output$execsum4 <- renderText( execsum4.txt() )
   output$execsum5 <- renderText( execsum5.txt() )
+  output$execsum6 <- renderText( execsum6.txt() )
   
   ##################################################################################################
   # BARPLOTS
@@ -1077,24 +1139,25 @@ shinyServer(function(input, output, session) {
 
   # ***** TO SHOW IN A DEBUGGING TAB:
   
-#   output$debugginginfo <- renderPrint( 
-#     # need one and only one line of output in this renderPrint()
-#     # print('DEBUGGING INFORMATION') 
-#     #str(cbind(  outlist()$cols,  make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE) )
-#     #print(str(outlist()$cols))
-#     #print(head(outlist()$cols))
-     #print(mythreshgroups())
-#     #rownames(outlist()$rows)
-#     # head(outlist()$rows)
-#     (head(outlist()$rows,40))
-#     #     chr [1:179, 1:74] "001" "002" "003" "004" "005" "006" "007" "008" "009" "010" "011" "012" "013" ...
-#     #     - attr(*, "dimnames")=List of 2
-#     #     ..$ : chr [1:179] "OBJECTID" "FACID" "name" "lat" ...
-#     #     ..$ : chr [1:74] "n" "Category" "Type" "Indicator" ...
-#     #     
-#     #t( head(outlist()$rows, 30) )
-#   )
-
+  output$debugginginfo <- renderPrint( 
+    #     # need one and only one line of output in this renderPrint()
+    #     # print('DEBUGGING INFORMATION') 
+    #     #str(cbind(  outlist()$cols,  make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE) )
+    #     #print(str(outlist()$cols))
+    print(str(fulltabler()[,paste('pctile.',names.ej, sep='')]))
+    #     #print(head(outlist()$cols))
+    #print(mythreshgroups())
+    #     #rownames(outlist()$rows)
+    #     # head(outlist()$rows)
+    #     (head(outlist()$rows,40))
+    #     #     chr [1:179, 1:74] "001" "002" "003" "004" "005" "006" "007" "008" "009" "010" "011" "012" "013" ...
+    #     #     - attr(*, "dimnames")=List of 2
+    #     #     ..$ : chr [1:179] "OBJECTID" "FACID" "name" "lat" ...
+    #     #     ..$ : chr [1:74] "n" "Category" "Type" "Indicator" ...
+    #     #     
+    #     #t( head(outlist()$rows, 30) )
+  )
+  
   # need to force a "recalculation" of barplots.react() at start of this app so it can be displayed before user changes any data.
   #  updateTabsetPanel(session, "tabset1", selected = "Barplots")
   updateTabsetPanel(session, "tabset1", selected = "Map of sites")
