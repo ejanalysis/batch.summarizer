@@ -1,7 +1,7 @@
 # for debugging:
-options(shiny.reactlog=TRUE)
+options(shiny.reactlog=FALSE)
 options(shiny.trace=FALSE)
- options(error=NULL)
+options(error=NULL)
 # options(shiny.error=browser)
 
 library(shiny) # http://shiny.rstudio.com
@@ -529,6 +529,11 @@ shinyServer(function(input, output, session) {
   )
   ###########################################  ###########################################
   ###########################################  ###########################################
+  
+  radius.miles <- reactive({
+    fulltabler()$radius.miles[1]
+  })
+  
   ###########################################  ###########################################
 
   
@@ -585,6 +590,72 @@ shinyServer(function(input, output, session) {
 
   ##################################################################################################
 
+  
+  ##################################################################################################
+  # EXECUTIVE SUMMARY TEXT
+  
+  ratio.to.us.d <- reactive({ outlist()$rows['Average person', names.d] /  fulltabler()[ 1, paste('us.avg.', names.d, sep='')] })
+  ratio.to.us.e <- reactive({ outlist()$rows['Average person', names.e] /  fulltabler()[ 1, paste('us.avg.', names.e, sep='')] })
+  
+  max.ratio.to.us.d <- reactive({
+    max( ratio.to.us.d(), na.rm=TRUE)
+  })
+  
+  max.ratio.to.us.e <- reactive({
+    max( ratio.to.us.e(), na.rm=TRUE)
+  })
+  
+  max.ratio.to.us.d.name <- reactive({
+    names.d[ which(ratio.to.us.d() == max.ratio.to.us.d() ) ]
+  })
+
+  max.ratio.to.us.e.name <- reactive({
+    names.e[ which(ratio.to.us.e() == max.ratio.to.us.e() ) ]
+  })
+  
+  execsum1.txt <- reactive({
+    paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),' sites are ', 
+          round(max.ratio.to.us.d(), 1), ' times as likely to be ', 
+          tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ) ,' as the average person in the US (', 
+          round(outlist()$rows['Average person', max.ratio.to.us.d.name()], 0)   ,'% vs. ', 
+          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.d.name(), sep='')], 0), '%).', sep='')
+  })
+  
+  execsum2.txt <- reactive({
+    paste('They are ', 
+          round( outlist()$rows['Average person', max.ratio.to.us.d.name()] /  fulltabler()[ 1, paste('state.avg.', max.ratio.to.us.d.name(), sep='')], 1) ,
+          ' times as likely to be ', 
+          tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ), ' as the average person in the State they live in.', sep='')
+  })
+  
+  execsum3.txt <- reactive({
+    paste(sum(fulltabler()$pop[ fulltabler()[ , paste('pctile.', max.ratio.to.us.d.name(), sep='')] >= 95 ] , na.rm = TRUE) , 
+          '% of the residents near these sites are in the top 5% of ',
+          tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), ' values nationwide.', sep='')
+  })
+  
+  execsum4.txt <- reactive({
+    paste('The median (50th percentile) site here is at the ',
+          round(fulltabler()[ 1, paste('pctile.', max.ratio.to.us.d.name(), sep='')], 0), ' percentile of all US residents for ',
+          tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), '.', sep='')
+  })
+  
+  execsum5.txt <- reactive({
+    paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),' sites have ', 
+          round(max.ratio.to.us.e(), 1), ' times as high indicator values for ', 
+          ( mycolnames.friendly()[match( max.ratio.to.us.e.name(), mycolnames() )] ) ,' as the average person in the US (', 
+          round(outlist()$rows['Average person', max.ratio.to.us.e.name()], 2)   ,' vs. ', 
+          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.e.name(), sep='')], 2), ').', sep='')
+    
+  })
+  
+  
+
+  output$execsum1 <- renderText( execsum1.txt() )
+  output$execsum2 <- renderText( execsum2.txt() )
+  output$execsum3 <- renderText( execsum3.txt() )
+  output$execsum4 <- renderText( execsum4.txt() )
+  output$execsum5 <- renderText( execsum5.txt() )
   
   ##################################################################################################
   # BARPLOTS
@@ -969,7 +1040,7 @@ shinyServer(function(input, output, session) {
       )
     }
     
-    m = m %>% addCircles(radius = fulltabler()$radius.miles[1] * meters.per.mile, color = 'black', fill = FALSE)
+    m = m %>% addCircles(radius = radius.miles() * meters.per.mile, color = 'black', fill = FALSE)
     
     ## Zoom out to see all the points
     ## set view that shows all the points and a margin around their range

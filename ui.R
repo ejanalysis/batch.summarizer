@@ -147,6 +147,36 @@ shinyUI(
       ####################################################################################
       tabPanel(
         
+        "Exec sum", 
+        
+        br(),
+        h4('Executive Summary'),
+        tags$hr(),
+        fluidRow(
+          column(
+            5,
+            wellPanel(
+              h4('Demographic:'),
+              br(),
+              h5(textOutput('execsum1')),
+              br(),
+              h5(textOutput('execsum2')),
+              br(),
+              h5(textOutput('execsum3')),
+              br(),
+              h5(textOutput('execsum4')),
+              br(),
+              h4('Environmental:'),
+              br(),
+              h5(textOutput('execsum5'))
+            )
+          )
+        )
+      ), 
+      
+      ####################################################################################
+      tabPanel(
+        
         "Summary tables", 
         
         #h4(textOutput("name3", container = span)),
