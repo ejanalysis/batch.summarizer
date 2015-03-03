@@ -2,6 +2,18 @@ library(shiny) # http://shiny.rstudio.com
 
 shinyUI(
   fluidPage(
+    
+    # http://datatables.net/release-datatables/extensions/FixedColumns/js/dataTables.fixedColumns.js
+    
+    tagList(
+      singleton(tags$head(tags$script(src='//cdn.datatables.net/fixedcolumns/3.0.0/js/dataTables.fixedColumns.js',type='text/javascript'))),
+      singleton(tags$head(tags$link(href='//cdn.datatables.net/fixedcolumns/3.0.0/css/dataTables.fixedColumns.css',rel='stylesheet',type='text/css')))
+    ),
+
+#     tagList(
+#       singleton(tags$head(tags$script(src='//cdn.datatables.net/fixedheader/2.1.2/js/dataTables.fixedHeader.min.js',type='text/javascript'))),
+#       singleton(tags$head(tags$link(href='//cdn.datatables.net/fixedheader/2.1.2/css/dataTables.fixedHeader.css',rel='stylesheet',type='text/css')))
+#     ),
 
     titlePanel(
       h2(textOutput('titletext')),
@@ -237,6 +249,7 @@ shinyUI(
         "Detailed Stats", 
         
         downloadButton('download.rowsout', 'Download'),
+        
         dataTableOutput("rowsout"),
         h5('Tip: Enter text (e.g., Demog, EJ, Env for Category column, and pctile, state, statepctile, etc. for the Type column) in the filter boxes at the bottoms of columns to limit view to certain rows.'),
         h5('Tip: Click a heading (e.g., Type) twice to sort descending, then Shift-click another column (e.g., Average person) twice for descending secondary sort (to sort on 2d col within each group in 1st col)')

@@ -153,13 +153,13 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     return(z)
     }
   
-  n=n+1
-  colfuname[n]='Sum'
-  colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
+#   n=n+1
+#   colfuname[n]='Sum'
+#   colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
   
-  n=n+1
-  colfuname[n]='Count of sites'
-  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
+#   n=n+1
+#   colfuname[n]='Count of sites'
+#   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
   
   # manually removed this stat because colfun.picked is hard to use as currently written
   #n=n+1

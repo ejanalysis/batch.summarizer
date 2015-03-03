@@ -107,7 +107,7 @@ popus <-  309138711 # 309,138,711 is from http://factfinder2.census.gov/bkmk/tab
 # 307727594 was in sample reports # MUST BE UPDATED WHEN NEW ACS DATA IS USED ! 307727594 is from ???  
 us.percents <- 100 * c(0.35015068301904, 0.337245110039133, 0.363056255998945, 
                        0.147948736834136, 0.0514480674233393, 0.0651419032409694, 0.131563727067491)
-us.counts <- us.percents * popus
+us.counts <- popus * (us.percents / 100)
 names(us.percents) <- names.d
 names(us.counts) <- names.d
 

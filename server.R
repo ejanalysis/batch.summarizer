@@ -212,7 +212,8 @@ shinyServer(function(input, output, session) {
     fulltable
   })
   
-  #####################
+  ####################################################################################
+  # TALLIES
   
   popcount <- reactive({
     sum(fulltabler()$pop, na.rm=TRUE)
@@ -248,6 +249,8 @@ shinyServer(function(input, output, session) {
     popcounts <- aggregate.data.frame(fulltabler()$pop, by=list(fulltabler()$statename), FUN=function(z) sum(z, na.rm = TRUE))
     names(popcounts) <- c('State', 'Population count')
     x= merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all states with a length even if sum is NA
+    x[ , 'Population count'] <- format(x[ , 'Population count'], scientific=FALSE, big.mark = ',')
+    x
     # x = rbind(x, colSums(x,na.rm=TRUE))
   })  
   
@@ -269,6 +272,8 @@ shinyServer(function(input, output, session) {
     popcounts <- aggregate.data.frame(fulltabler()$pop, by=list(fulltabler()$REGION), FUN=function(z) sum(z, na.rm = TRUE))
     names(popcounts) <- c('Region', 'Population count')
     x= merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all zones with a length even if sum is NA
+    x[ , 'Population count'] <- format(x[ , 'Population count'], scientific=FALSE, big.mark = ',')
+    x
     # x = rbind(x, colSums(x,na.rm=TRUE))
   })  
   
@@ -478,17 +483,34 @@ shinyServer(function(input, output, session) {
       z
     }, 
     options=list(
+      dom = 'rtip',
       lengthMenu = list(c(10, 100, -1), c('10', '100', 'All')),
       pageLength = 100,  # -1 loads all the rows into page 1, which might be too slow if huge # of sites is uploaded
       scrollX= TRUE,
       scrollY= "340px", # 440px is enough for 12 rows on my browser but headers wrap to use up lots of space
-      dom = 'rtip',
-      # ** INTERIM attempted SOLUTION TO ADDRESS JUST ABOUT 180 FIELDS, within columnDefs, but it doesn't seem to have desired impact.
-      #     list(type='natural', targets=0:178), 
-      columnDefs = list(  list(width="420px", targets=list(0, length(outlist()$cols[1,]) + 
-                                                           which(mycolnames()=='name')
-                                                         -1))),  # makes the 1st column wide & the one called name
-      scrollCollapse= TRUE
+      scrollCollapse= TRUE,
+      
+      # FREEZE FIRST COLUMN AND HEADER:
+      #       initComplete = I("function(settings, json){
+      #         new $.fn.dataTable.FixedHeader(this, {
+      #           left:   true
+      #         } );
+      #       }"),
+      
+      # THIS WORKS TO FIX COLUMNS FOR SCROLLING TO RIGHT, BUT IT BREAKS THE FILTER OPTION for the frozen column, AT THE BOTTOM OF THE TABLE ?!
+      # so you can't filter on site name in this case *** but that isn't essential for now, espec since can filter on duplicate column that also has site name.
+      initComplete = I("function(settings, json){
+                new $.fn.dataTable.FixedColumns(this, {
+                  leftColumns: 1
+                } );
+      }"),
+
+      columnDefs = list(list(width="420px", 
+                        # targets=list(0,1,2)
+                        targets=list(0, length(outlist()$cols[1,]) + 
+                                       which(mycolnames()=='name')
+                                     -1))
+      ) # makes the 1st column wide & the one called name
     )
   )
   
@@ -503,7 +525,8 @@ shinyServer(function(input, output, session) {
   output$rowsout <- renderDataTable({
     
     # prepare to display table of summary stats which is outlist()$rows, 
-    # ideally along with the full table of facility-specific batch results
+    # ideally along with the full table of facility-specific batch results, but it slows display if long list and it isn't useful without fixed cols/ freeze panes, which are hard to do while maintaining filtering.
+    # but still will provide full site list for download with these summary stats even if not displayed in onscreen table.
     
     x <- outlist()$rows
     
@@ -521,7 +544,9 @@ shinyServer(function(input, output, session) {
       Category= varcategory(),
       Type= vartype(),
       Indicator=mycolnames.friendly(),
-      data.frame(  t(x), t(sites.data ), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
+      # data.frame(  t(x), t(sites.data ), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
+      # without sites data for onscreen display:
+      data.frame(  t(x), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
       stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE
     )
     # , check.rows=FALSE, check.names=FALSE   # is to avoid replacing spaces in colnames with a period . but there is some chance user will use invalid names for sites and that it might create a problem?
@@ -541,16 +566,75 @@ shinyServer(function(input, output, session) {
     
     z
     
-  }, options=list(
+  }, 
+  options=list(
     scrollX= TRUE,
     scrollY= "440px", # 440px is enough for 12 rows on my browser
+    scrollCollapse= TRUE,
     lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
     pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window
-    scrollCollapse= TRUE,
     dom = 'rtip',
-    columnDefs = list(list(width="440px", targets=list(3))) #,  # *** ??? this doesn't seem to get applied until after filter is used!? 
+    # *** ??? this doesn't seem to get applied until after filter is used!? 
+    columnDefs = list(list(width="280px", targets=list(3))) #,  
+    #columns = ???
+    
+    ## Try FixedHeader approach to FREEZE HEADER AND LEFT COLUMN: - but this as written doesn't freeze 1st 4 cols which is needed and makes it harder to set colwidths and scroll down within a window
+    #     initComplete = I("function(settings, json){
+    #       new $.fn.dataTable.FixedHeader(this, {
+    #         left:   true
+    #       } );
+    #     }"),
+    
+    ## Try FixedColumns approach -- THIS WORKS TO FIX 4 COLUMNS FOR SCROLLING TO RIGHT, BUT 
+    ## IT BREAKS THE FILTER OPTION in frozen cols AT THE BOTTOM OF THE TABLE !?
+    #     initComplete = I("function(settings, json){
+    #         new $.fn.dataTable.FixedColumns(this, {
+    #           leftColumns: 4 ,
+    #           serverSide: true
+    #         } );
+    #     }"),
+    
+    # Try to get fixedcolumns and filtering at same time: 
+    # *** It still won't filter on the fixed columns using shiny's renderDataTable() here, but does in their pure JS example...
+    # see http://datatables.net/release-datatables/extensions/FixedColumns/examples/col_filter.html
+    #
+    #     initComplete = I("function(settings, json){
+    # // Setup - add a text input to each footer cell
+    # $('#example tfoot th').each( function () { 
+    #   var title = $('#example thead th').eq( $(this).index() ).text();
+    #   $(this).html( '<input type=\"text\" placeholder=\"Search '+title+'\" />' );
+    # } );
+    # 
+    # // DataTable
+    # var table = $('#example').DataTable( {
+    #   scrollY:        \"440px\",
+    #   scrollX:        true,
+    #   scrollCollapse: true,
+    #   paging:         false
+    # } );
+    # 
+    # // Apply the filter
+    # table.columns().indexes().each( function (idx) {
+    # $( 'input', table.column( idx ).footer() ).on( 'keyup change', function () {
+    #   table
+    #   .column( idx )
+    #   .search( this.value )
+    #   .draw();
+    #   } );
+    # } );
+    # 
+    # new $.fn.dataTable.FixedColumns(this, {
+    #   leftColumns: 4 ,
+    #   serverSide: true
+    # } );
+    # 
+    # table.fnUpdate();
+    # }")
+    #
+    
   )
   )
+  
   ###########################################  ###########################################
   ###########################################  ###########################################
   
@@ -566,18 +650,20 @@ shinyServer(function(input, output, session) {
   
   table1 <- reactive({
     # table summarizing demog stats nearby and in US overall
-    popnear = outlist()$rows[ 'Sum', mywtsname]
+    popnear = popcount()
     mytable <- cbind(
       Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall', 'Avg person, ratio to US'), 
-      Pop= c(format( c(popnear,  popus, popnear, popus), big.mark=','), round(popnear/popus,4))
+      Pop= c(format( c(popnear, popus, popnear, popus), big.mark=','), round(popnear/popus,4))
       )
-    othercols <- rbind( format(outlist()$rows['Sum', names.d ], big.mark = ','), 
-                        format(us.counts[names.d], big.mark=','),
+    othercols <- rbind( format( popnear * 0.01 * outlist()$rows['Average person', names.d ] , big.mark = ',', digits=0, scientific=FALSE), 
+                        format(us.counts[names.d] / 100, big.mark=',', digits=0, scientific=FALSE),
                         paste( round(row3<-outlist()$rows['Average person' , names.d], 0), '%',sep=''),
                         paste( round(row4<-us.percents[names.d], 0), '%',sep=''),
                         format( round(row3/row4,2)))
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
+    rownames(mytable) <- NULL
+    mytable
   })
   
   table2 <- reactive({
@@ -590,6 +676,8 @@ shinyServer(function(input, output, session) {
                         round( row1 / us.percents[names.d],2))
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
+    rownames(mytable) <- NULL
+    mytable
   })
 
   table3 <- reactive({
@@ -605,6 +693,8 @@ shinyServer(function(input, output, session) {
                         0 ) # p value ***
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
+    rownames(mytable) <- NULL
+    mytable
   })
   
   output$table1 <- renderTable({table1()} )
