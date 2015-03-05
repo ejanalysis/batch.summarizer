@@ -2,7 +2,7 @@
 # options(shiny.reactlog=TRUE)
 # options(shiny.trace=TRUE)
 # options(error=NULL)
-# options(shiny.error=browser)
+ # options(shiny.error=browser)
 
 library(shiny) # http://shiny.rstudio.com
 
@@ -17,7 +17,8 @@ counties$nonwhite <- round( 100 - counties$white, 1)
 # source("plotlyGraphWidget.R")  # for interactive plots/charts/graphs
 # library(dplyr) # might not need this
 require(Hmisc) # various useful functions for data analysis
-require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist
+library(plotrix) # for better weighted.hist than ggplot2 can provide.
+require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist, but better.
 
 # CUSTOM FUNCTIONS USED HERE: REQUIRE AS A PACKAGE, OR SOURCE FROM THE SHINY APP'S BASE DIRECTORY:
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
@@ -133,7 +134,7 @@ shinyServer(function(input, output, session) {
     content = function(file) {
       #ggsave(file, plot=histograms.react(), device=png, width = 12.00, height = 7.68, units = "cm") # width = 1200, height = 768, units = "mm",
       png(filename=file, width = 1200, height = 768, units = "px", pointsize = 12)
-      print(histograms.react())
+#      print(histograms.react())
       dev.off()
     }
   )
@@ -1082,7 +1083,7 @@ shinyServer(function(input, output, session) {
       popcount <- outlist()$rows[ 'Sum','pop' ]
     }
     
-    mybincount <- input$bincount # (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
+    mybincount <- input$bincount # e.g. default (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
     expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount?!
     expected.pop.per.bin=   popcount  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
     
@@ -1096,18 +1097,41 @@ shinyServer(function(input, output, session) {
         geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+      return(myplot)
       
     } else {
       
       # *** hard coded to use mywtsname as weights for now:
+      # BUT, ggplot approach to weighted hist is NOT the same as what we want, which plotrix package CAN do:
+      # print(fulltabler()[ , myvar.full])    
+      h = fulltabler()[ , myvar.full ]
+      wts=fulltabler()[ , mywtsname  ]
+      wts=wts[!is.na(h)] # but what if wts is na???
+      h= h[!is.na(h)]
+      if (myrefstat=='raw' ) {
+        mybreaks <- 0
+      }
+
+      weighted.hist(
+        x = h,
+        w = wts,
+        # breaks = seq(0, 100, 100 / mybincount),  # nice if demog raw, or any pctiles, are being plotted
+        breaks = mybincount,  # needed if raw E being plotted
+        main = paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''),
+        # names.arg=myvar.friendly.full,
+        ylab=input$sites.or.people
+      )
+      # abline(h=expected.pop.per.bin)
       
-      myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
-        geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
-        #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
-        xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-        ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+#       myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
+#         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+#         #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
+#         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+#         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+#      return(myplot)
+      
     }
-    return(myplot)
+    
   })
   
   output$histograms <- renderPlot( histograms.react() )
