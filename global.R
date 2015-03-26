@@ -1,6 +1,9 @@
 
 # DEFINE GLOBAL VARIABLES FOR USE IN server or ui - default values, etc.
 
+# for interactive plots/charts/graphs
+source("plotlyGraphWidget.R") 
+
 #############################
 # For leaflet maps, might need to define these here until latest version of leaflet package is on cran:
 #############################

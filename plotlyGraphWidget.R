@@ -5,7 +5,7 @@ graphOutput <- function(inputId, width="100%", height="550px") {
     singleton(tags$head(
       tags$script(src="plotlyGraphWidget.js")
     )),
-    tags$iframe(id=inputId, src="https://plot.ly/~playground/7",
+    tags$iframe(id=inputId, src="https://plot.ly/~ejanalyst/31",
                 class="graphs", seamless=TRUE, width=width, height=height)
   )
 }
