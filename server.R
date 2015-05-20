@@ -6,7 +6,11 @@
 
 library(shiny) # http://shiny.rstudio.com
 
+# TO OBTAIN THE leaflet PACKAGE (NOT ON CRAN):
+#  devtools::install_github("rstudio/leaflet")
 library(leaflet) # for interactive maps
+#library(leafletR) # for interactive maps (a different package than leaflet)
+
 library(maps) # for static maps; choropleth of counties, etc.
 library(mapproj)
 source("maphelpers.R")  # if we want percent choropleths of county data
