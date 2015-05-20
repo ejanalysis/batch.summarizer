@@ -14,7 +14,6 @@ counties <- readRDS(file='data/counties.rds') # if we want county data
 counties$nonwhite <- round( 100 - counties$white, 1)
 # load gomap.js ??
 
-# source("plotlyGraphWidget.R")  # for interactive plots/charts/graphs
 # library(dplyr) # might not need this
 require(Hmisc) # various useful functions for data analysis
 library(plotrix) # for better weighted.hist than ggplot2 can provide.
@@ -1097,6 +1096,10 @@ shinyServer(function(input, output, session) {
         geom_hline(aes_string(yintercept=expected.sites.per.bin)) +
         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+      
+      py <- plotly()
+      myplot2 <- py$ggplotly()
+      
       return(myplot)
       
     } else {
@@ -1121,7 +1124,9 @@ shinyServer(function(input, output, session) {
         # names.arg=myvar.friendly.full,
         ylab=input$sites.or.people
       )
-      # abline(h=expected.pop.per.bin)
+      print('blah')
+      abline(h=expected.pop.per.bin)
+      curve(dnorm(x, mean=Hmisc::wtd.mean(h, wts), sd=sqrt(Hmisc::wtd.var(h,wts))), add=TRUE, col="darkblue", lwd=2)
       
 #       myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
 #         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
