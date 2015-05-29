@@ -5,6 +5,8 @@ shinyUI(
     
     # http://datatables.net/release-datatables/extensions/FixedColumns/js/dataTables.fixedColumns.js
     
+    # # BUT NOW SEE http://rstudio.github.io/DT/  
+
     tagList(
       singleton(tags$head(tags$script(src='//cdn.datatables.net/fixedcolumns/3.0.0/js/dataTables.fixedColumns.js',type='text/javascript'))),
       singleton(tags$head(tags$link(href='//cdn.datatables.net/fixedcolumns/3.0.0/css/dataTables.fixedColumns.css',rel='stylesheet',type='text/css')))
