@@ -24,6 +24,8 @@ library(plotrix) # for better weighted.hist than ggplot2 can provide.
 require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist, but better.
 
 # CUSTOM FUNCTIONS USED HERE: REQUIRE AS A PACKAGE, OR SOURCE FROM THE SHINY APP'S BASE DIRECTORY:
+# These will be made public as parts of packages called analyze.stuff and ejanalysis, 
+# at http://ejanalysis.github.io
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
 source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
 #source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
