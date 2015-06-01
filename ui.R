@@ -82,7 +82,8 @@ shinyUI(
             4,
             wellPanel(
               h4(fileInput('file1', 'Select file of batch results to upload and summarize',
-                           accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')))              
+                           accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))
+                 )
             ),
             textOutput('sitecount.text2'),
             tags$hr(),
