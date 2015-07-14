@@ -74,6 +74,7 @@ mynamesfile.default <- 'map batch to friendly fieldnames v1.csv'
 
 # file that has default example of export of batch results, for use in testing/demonstrating summarizer:
 mydemofile <- 'Export_Output_Example2.txt' 
+# mydemofile <- 'path/hugebatchoutput.csv' if running local copy for huge file too large for upload limit
 
 # *** after reading defaults or user versions from the default or specified map names file - read into lookup.filenames() ***
 # BUT note these friendly names aren't same as longname in default lookup.fieldnames() and 

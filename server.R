@@ -39,6 +39,7 @@ source('colMins.R')     # returns Min of each col
 source('wtd.colMeans.R')     # returns wtd.mean of each col
 source('lead.zeroes.R')
 source('change.fieldnames.R')  # updated function that helps change or resort fieldnames using a map file mapping old to new names
+
 source('wilcoxon.pvalues.r')  # for statistical significance testing
 
 source('batch.read.R')
@@ -725,29 +726,63 @@ shinyServer(function(input, output, session) {
     max( ratio.to.us.e(), na.rm=TRUE)
   })
   
+  # user-specified E
+  my.ratio.to.us.e.name.friendly <-  reactive({
+    input$execsum.e.selected
+  })
+  my.ratio.to.us.e.name <- reactive({
+    names.e[ which(names.e.friendly == my.ratio.to.us.e.name.friendly() ) ]
+  })
+#  my.ratio.to.us.e <- 999
+  my.ratio.to.us.e <- reactive({
+    ratio.to.us.e()[ which(names.e == my.ratio.to.us.e.name() ) ]
+  })
+
+  # NOTE: this might pick the wrong one if there is a tie??
   max.ratio.to.us.d.name <- reactive({
     names.d[ which(ratio.to.us.d() == max.ratio.to.us.d() ) ]
   })
 
+  # NOTE: this might pick the wrong one if there is a tie??
   max.ratio.to.us.e.name <- reactive({
     names.e[ which(ratio.to.us.e() == max.ratio.to.us.e() ) ]
   })
   
+  
+  # DEMOGRAPHICS VS USA
+  # e.g., "Key demographic factor: minority population. People who live near (within 1 miles of any of) these 12757 sites are 1.6
+  # times as likely to be linguistically isolated population as 
+  # the average person in the US (8% vs. 5%). The other demographic indicators have
+  # lower ratios.
+  
   execsum1.txt <- reactive({
-    paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),' sites are ', 
+    paste('Key demographic factor: ', tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ) ,
+          '.
+          
+           People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),' sites are ', 
           round(max.ratio.to.us.d(), 1), ' times as likely to be ', 
-          tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ) ,' as the average person in the US (', 
+          tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ) ,
+          ' as the average person in the US (', 
           round(outlist()$rows['Average person', max.ratio.to.us.d.name()], 0)   ,'% vs. ', 
           round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.d.name(), sep='')], 0), '%). The other demographic indicators have lower ratios.', sep='')
   })
+  
+  # DEMOGRAPHICS VS STATE
+  # e.g., "They are 4 times as likely to be linguistically isolated population 
+  # as the average person in the State they live in."
   
   execsum2.txt <- reactive({
     paste('They are ', 
           round( outlist()$rows['Average person', max.ratio.to.us.d.name()] /  fulltabler()[ 1, paste('state.avg.', max.ratio.to.us.d.name(), sep='')], 1) ,
           ' times as likely to be ', 
-          tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ), ' as the average person in the State they live in.', sep='')
+          tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ), 
+          ' as the average person in the State they live in.', sep='')
   })
   
+  # DEMOGRAPHICS %ILE
+  # e.g., "2,278,542 people (7% of all residents), who live near 293 (2%) of these sites,
+  # are in the top 5% of linguistically isolated population values nationwide**."
+
   execsum3.txt <- reactive({
     mypctiles <-  fulltabler()[ , paste('pctile.', max.ratio.to.us.d.name(), sep='')]
     mypctiles[is.na(mypctiles)] <- 0 # treat as zero if NA (missing) so stats come out right.
@@ -760,23 +795,60 @@ shinyServer(function(input, output, session) {
       ' (',
       round(100* length(fulltabler()$pop[ mypctiles >= input$execsum.threshold.d ] ) / sitecount(), 0),
       '%) of these sites, are in the top ', 100-input$execsum.threshold.d,'% of ',
-      tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), ' values nationwide**.', sep='')
+      tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), 
+      ' values nationwide**.', sep='')
   })
+  
+  # DEMOGRAPHICS AT MEDIAN SITE
+  # e.g., "The median (50th percentile) site here is at the 46 percentile of all US
+  # residents for linguistically isolated population."
   
   execsum4.txt <- reactive({
     paste('The median (50th percentile) site here is at the ',
-          round(fulltabler()[ 1, paste('pctile.', max.ratio.to.us.d.name(), sep='')], 0), ' percentile of all US residents for ',
+          round(fulltabler()[ 1, paste('pctile.', max.ratio.to.us.d.name(), sep='')], 0),
+           ' percentile of all US residents for ',
           tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), '.', sep='')
   })
   
+  # ENVIRONMENTAL
+  # e.g., "Key environmental factor: TSDF Proximity (facility count/km distance). People who live near (within 1 miles of any of) these 12757 sites have, on
+  # average, 5.2 times as high indicator values for RMP Proximity (facility count/km distance) 
+  # as the average person in the US (1.61 vs. 0.31). The other environmental indicators have
+  # lower ratios."
+  
   execsum5.txt <- reactive({
-    paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),' sites have, on average, ', 
+    paste('Key environmental factor: ', ( mycolnames.friendly()[match( max.ratio.to.us.e.name(), mycolnames() )] ),
+          '.
+          
+           People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),
+           ' sites have, on average, ', 
           round(max.ratio.to.us.e(), 1), ' times as high indicator values for ', 
-          ( mycolnames.friendly()[match( max.ratio.to.us.e.name(), mycolnames() )] ) ,' as the average person in the US (', 
+          ( mycolnames.friendly()[match( max.ratio.to.us.e.name(), mycolnames() )] ) ,
+           ' as the average person in the US (', 
           round(outlist()$rows['Average person', max.ratio.to.us.e.name()], 2)   ,' vs. ', 
-          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.e.name(), sep='')], 2), '). The other environmental indicators have lower ratios.', sep='')
-    
+          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.e.name(), sep='')], 2),
+           '). The other environmental indicators have lower ratios.', sep='')
   })
+
+  # ENVIRONMENTAL
+  # e.g., "People who live near (within 1 miles of any of) these ___ sites have, on
+  # average, ___ times as high indicator values for _______
+  # as the average person in the US (x___ vs. y__)."
+  
+  execsum5b.txt <- reactive({
+    paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),
+          ' sites have, on average, ', 
+          round(my.ratio.to.us.e(), 1), ' times as high indicator values for ', 
+          ( mycolnames.friendly()[match( my.ratio.to.us.e.name(), mycolnames() )] ) ,
+          ' as the average person in the US (', 
+          round(outlist()$rows['Average person', my.ratio.to.us.e.name()], 2)   ,' vs. ', 
+          round(fulltabler()[ 1, paste('us.avg.', my.ratio.to.us.e.name(), sep='')], 2),
+          ').', sep='')
+  })
+  
+  # EJ INDEXES
+  # e.g., "12,412,746 people (40% of all residents), who live near 1883 (15%)
+  # of the sites, have one or more EJ Indexes in the top 5% of values nationwide**."
   
   execsum6.txt <- reactive({
     pctile = input$execsum.threshold
@@ -799,6 +871,7 @@ shinyServer(function(input, output, session) {
   output$execsum3 <- renderText( execsum3.txt() )
   output$execsum4 <- renderText( execsum4.txt() )
   output$execsum5 <- renderText( execsum5.txt() )
+  output$execsum5b <- renderText( execsum5b.txt() )
   output$execsum6 <- renderText( execsum6.txt() )
   
   ##################################################################################################

@@ -195,7 +195,12 @@ shinyUI(
             wellPanel(
               h4('Environmental:'),
               br(),
-              h5(textOutput('execsum5'))
+              h5(textOutput('execsum5')),
+              br(),
+              h5(textOutput('execsum5b')),
+              selectInput('execsum.e.selected', h5('Environmental factor:'), 
+                          names.e.friendly,
+                          selected=1)
             )
           ),
           column(
