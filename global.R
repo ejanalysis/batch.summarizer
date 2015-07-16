@@ -3,9 +3,11 @@
 
 # for interactive plots/charts/graphs
 source("plotlyGraphWidget.R") 
+# see https://plot.ly/r/getting-started/
 
 #############################
-# For leaflet maps, might need to define these here until latest version of leaflet package is on cran:
+# For leaflet maps, might need to define these here 
+# until latest version of leaflet package is on cran:
 #############################
 
 leafletOutput = function(outputId, width = "100%", height = 400) {
@@ -17,7 +19,8 @@ renderLeaflet = function(expr, env = parent.frame(), quoted = FALSE) {
   htmlwidgets::shinyRenderWidget(expr, leafletOutput, env, quoted = TRUE)
 }
 
-#########
+#############################################
+
 # Useful open map layers
 
 # layer.admin <- 'OpenMapSurfer.AdminBounds'   # neighborhoods, counties, etc.
