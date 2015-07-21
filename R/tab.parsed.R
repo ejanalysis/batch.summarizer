@@ -1,10 +1,11 @@
-# This is based on old code in parsed.rows.R
-
+#' @export
 tab.parsed <- function(myfile, folder=getwd(), skip=2, 
                        wordsbeforefips.bg=2,    wordsbeforestate.bg=3, wordsafterstate.bg=5, wordsafterregion.bg=2, wordsafterpop.bg=0, 
                        wordsbeforemiles.ring=0, wordsbeforestate.ring=7, wordsafterstate.ring=5, wordsafterregion.ring=2, wordsafterpop.ring=0,
                        wordsbeforelon.ring=6, wordsbeforelat.ring=5) {
   
+  # This is based on old code in parsed.rows.R
+
   # input is myfile, a csv of saved tabular data from a buffer standard report in EJSCREEN
   # and it will be imported as a data.frame plus info from the 1st two rows, using read.csv(file, as.is=TRUE, skip=2) 
   

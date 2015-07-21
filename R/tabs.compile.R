@@ -1,3 +1,4 @@
+#' @export
 tabs.compile <- function(files, folder=getwd(), ...) {
   
   # based on code from make.fulltable.R

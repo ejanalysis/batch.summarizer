@@ -1,3 +1,4 @@
+#' @export
 tab.to.batch <- function(files, folder=getwd(), ...) {
   
   # could recode to have this function write.csv() the finaltable

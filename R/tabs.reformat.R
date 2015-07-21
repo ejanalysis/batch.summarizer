@@ -1,3 +1,4 @@
+#' @export
 tabs.reformat <- function(fulltable, folder=getwd(), colcount=17 ) {
   
   # input is fulltable, a set of tabular data from a buffer standard report in EJSCREEN
@@ -6,7 +7,8 @@ tabs.reformat <- function(fulltable, folder=getwd(), colcount=17 ) {
 
   
   
-warning(' # DOESN'T WORK YET -- IT IS CREATING PAIRS OF ROWS INSTEAD OF 2 COLS, ONE FOR EACH BUFFER REPORT I USED:') 
+warning(' # DOES NOT WORK YET -- IT IS CREATING PAIRS OF ROWS INSTEAD OF 2 COLS, ONE FOR EACH BUFFER REPORT I USED:') 
+
 #
 #     > t(batchout)
 #   [,1]                                           [,2]                                                                 
