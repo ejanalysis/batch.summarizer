@@ -97,7 +97,8 @@ tabs.compile <- function(files, folder=getwd(), ...) {
   names(fulltable) <- gsub("X.ile.in.EPA.Region","regionpctile",names(fulltable))
   names(fulltable) <- gsub("USA.Avg.","usavg",names(fulltable))
   names(fulltable) <- gsub("X.ile.in.USA","uspctile",names(fulltable))
-  names(fulltable) <- gsub("X.","rownum",names(fulltable))
+  names(fulltable) <- gsub("X.","rownum",names(fulltable)) # drop this actually... doesnt help and causes problem in tabs.reformat since unique() fails
+  fulltable$rownum <- NULL
   names(fulltable) <- gsub("Category","category",names(fulltable))
   fulltable$category <- gsub('EJ Index', 'EJ', fulltable$category)
   fulltable$category <- gsub('Environmental', 'Env', fulltable$category)
@@ -121,7 +122,7 @@ tabs.compile <- function(files, folder=getwd(), ...) {
   #   [5] "State"       
   #   [6] "REGION"      
   #   [7] "pop"         
-  #   [8] "rownum"      
+  #   [8] "rownum"      THIS WAS DROPPED NOW
   #   [9] "fieldgroup"  
   #   [10] "fieldname"   
   #   [11] "raw"         

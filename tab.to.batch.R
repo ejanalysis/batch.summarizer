@@ -17,10 +17,17 @@ tab.to.batch <- function(files, folder=getwd(), ...) {
   
   # compile parsed tabular reports into a tall format
   fulltable  <- tabs.compile(files=files, folder=folder, ...)
+  colcount <- dim(fulltable)[2] # how many columns- differs for circular buffer reports vs block group reports etc.
   
   # convert tall format into wide format, which is what batch.summarizer reads
-  finaltable <- tabs.reformat(fulltable=fulltable, folder=folder)
+  finaltable <- tabs.reformat(fulltable=fulltable, folder=folder, colcount=colcount)
   
   return(finaltable)
 
+  # To view results so far:
+  # t(head(finaltable,2))
+  
+  # example: 
+  #   batchout = tab.to.batch(c('ejscreenbuffersavedfromtabular1.csv', 'ejscreenbuffersavedfromtabular1.csv'))
+  #   write.csv(batchout, row.names=FALSE, file='batch_for_summarizer.csv')
 }
