@@ -16,12 +16,12 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
   ## Place data wrangling code in here
   ## and pass the result to the client
   ## to be graphed.
-  
+
   installExprFunction(expr, "func", env, quoted)
-  
+
   function(){
     data = func();
-    
+
     ## this function returns a list of named lists that descripe
     ## valid postMessage commands to be sent to the embedded iframe.
     ## see binding.renderValue for the receiving JS side of this function
@@ -31,11 +31,11 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
     ## it can also pass non-valid postMessage commands with the task "custom",
     ## which will have custom, user-provided handling code, see plotlyGraphWidget.js
     ## `parseAndRelayMessages`
-    
+
     ## In this case, I couldn't figure out how JSON-ify the R data structures into a
     ## correct postMessage format, so I set up the data structure "as is" and then
     ## parsed it on the JS side after the JSON was parsed
-    
+
     return(list(
       list(
         id="mychart",
