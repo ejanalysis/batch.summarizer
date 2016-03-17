@@ -1,4 +1,4 @@
-batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
+batch.clean <- function(x, namesfile='map batch to friendly fieldnames v1.csv', oldcolnames, newcolnames) {
   
   # namesfile='keepnames' is one way to specify user wants to keep same names.
 
@@ -20,14 +20,14 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
     
     # IMPROVE COLUMN ORDER
     x <- x[ , change.fieldnames(names(x), oldnames=oldcolnames, sort=TRUE)]
-    # RENAME FIELDS TO FRIENDLIUER NEW NAMES
+    # RENAME FIELDS TO FRIENDLIER NEW NAMES
     names(x) <- change.fieldnames(names(x), oldnames=oldcolnames, newnames=newcolnames)
   }
   
   if (missing(namesfile) & missing(oldcolnames) & missing(newcolnames) ) {
     
     # use default fieldname changes if nothing is specified for column names
-    namesfile <- 'map batchtool to gdb to R fieldnames.csv'
+    #namesfile <- 'map batchtool to gdb to R fieldnames.csv' #'map batch to friendly fieldnames v1.csv'
     
     # IMPROVE COLUMN ORDER
     x <- x[ , change.fieldnames(names(x), file=namesfile, sort=TRUE)]
@@ -43,10 +43,10 @@ batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
   return(x)
 }
 
-# # default is to use the mapping in this file:  'map batchtool to gdb to R fieldnames.csv'
-# setwd('~/Dropbox/......./batch summary')
-# y= names( read.csv('SAMPLE OUTPUT OF BATCH TOOL 2015.csv', stringsAsFactors = FALSE) )
-# x=    read.csv('map batchtool to gdb to R fieldnames.csv', stringsAsFactors = FALSE)
+# # default is to use the mapping in this file:  'map batch to friendly fieldnames v1.csv'
+# setwd('C:/Users/xyz/Documents/GitHub/batch.summarizer')
+# y = names(read.csv(file='Export_Output_Example2.csv', stringsAsFactors = FALSE))
+# x=    read.csv('map batch to friendly fieldnames v1.csv', stringsAsFactors = FALSE)
 # cbind(batchoutputnames=y, friendlynames=x$Rfieldname[match(y, x$batchname)]) 
 #   batchoutputnames  friendlynames                                  
 #   [1,] "OBJECTID"        "OBJECTID"                                     
