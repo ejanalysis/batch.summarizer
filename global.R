@@ -13,7 +13,7 @@
 # To specify a local large custom file:
 # 
 # mydemofile <- 'path/hugebatchoutput.csv' # for example
-mydemofile <- 'C:/Users/MCorrale/Dropbox/DD/contracts/WA 4-113 Pre-ejscreen Abt/deliverables/R/ejtest2.csv'
+mydemofile <- 'ejtest2.csv'
 # 
 # Default example of export of batch results, for use in testing/demonstrating summarizer:
 if (!exists('mydemofile')) {mydemofile <- 'Export_Output_Example2.txt'}
