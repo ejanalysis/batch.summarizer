@@ -252,23 +252,42 @@ shinyServer(function(input, output, session) {
   
   fulltabler <- reactive({
     
+    # observeEvent(
+    #   input$browsedfilebutton, 
+    #   {
+    #     if (!is.null(inFile)) {
+    #       if (file.exists(browsedfilename)) {try( fulltable <- read.csv(browsedfilename, stringsAsFactors = FALSE) )}
+    #     }
+    #   }
+    # )
+    # 
+    # observeEvent(
+    #   input$localbigfilename, 
+    #   {
+    #     if (input$localbigfilename != ' ') {
+    #       if (file.exists(input$localbigfilename)) {try( fulltable <- read.csv(input$localbigfilename, stringsAsFactors = FALSE) )}
+    #     }
+    #   }
+    # )
+
     # input$file1 will be NULL initially, or can use the example file and preload it?
     # After the user selects and uploads a file, it will be a data frame with 
     # 'name', 'size', 'type', and 'datapath' columns. 
     # The 'datapath' column will contain the local filenames where the data can be found.
     inFile <- input$file1
-    if (is.null(inFile)) {
-      myfile <- mydemofile # e.g.  Export_Output_Example2.csv
-    } else {
-      myfile <- inFile$datapath
-      output$infilename <- renderText(inFile$name)
-    }
+#    if (is.null(inFile) & input$localbigfilename == ' ') {
+      #mydemofile # e.g.  Export_Output_Example2.csv
+      fulltable <- read.csv(mydemofile, stringsAsFactors = FALSE)
+#    } else {
+#   if (!is.null(inFile)) {
+#     browsedfilename <- inFile$datapath
+#     output$infilename <- renderText(inFile$name)
+#   }
+# }
     
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     # To allow user to specify parameters of upload file format:
     #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
-    
-    fulltable <- read.csv(myfile, stringsAsFactors = FALSE)
     
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)

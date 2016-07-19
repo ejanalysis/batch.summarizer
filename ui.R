@@ -82,13 +82,14 @@ shinyUI(
             4,
             wellPanel(
               
-              h4(fileInput('file1', 'Browse to specify file of batch results to upload and summarize',
-                           accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))
-              )#,
-#               h4('OR'),
-#               
-#               h4(textInput('localbigfilename', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', ' ')),
-#               submitButton(text = 'Upload')
+              h4(fileInput('file1', 'Browse to specify file of batch results to summarize',
+                           accept=c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))),
+              actionButton('browsedfilebutton', 'Upload browsed filename'),
+              h4('OR'),
+              
+              h4(textInput('localbigfilename', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', ' ')),
+              submitButton(text = 'Upload entered filename')
+              #actionButton('localfilebutton', 'Upload entered filename')
               # actionButton('localfilebutton', 'Upload')
             ),
             textOutput('sitecount.text2'),
