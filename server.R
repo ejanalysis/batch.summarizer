@@ -2,7 +2,7 @@
 # options(shiny.reactlog=TRUE)
 # options(shiny.trace=TRUE)
 # options(error=NULL)
- # options(shiny.error=browser)
+# options(shiny.error=browser)
 
 library(shiny) # http://shiny.rstudio.com
 
@@ -54,7 +54,7 @@ shinyServer(function(input, output, session) {
   
   #   # seems to need this to calculate barplot at start
   updateTabsetPanel(session, "tabset1", selected = "Detailed settings")
-
+  
   # User-defined name for this dataset / analysis
   
   mybatchname  <-  renderText(input$batchname)
@@ -66,7 +66,7 @@ shinyServer(function(input, output, session) {
   output$titletext <- renderText(paste("Batch Results Summarizer:", as.character(input$batchname)))
   
   # Code enabling Download of tables and charts
-
+  
   output$download.rowsout <- downloadHandler(
     filename = function() { 
       paste(mybatchname(), 'summary stats on each indicator -plus site data.csv')
@@ -96,7 +96,17 @@ shinyServer(function(input, output, session) {
       write.csv( table1(), file)
     }
   )
-
+  
+  output$download.table1e <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Table 1e Envt Summary.csv')
+    },
+    contentType='text/csv',
+    content = function(file) {
+      write.csv( table1e(), file)
+    }
+  )
+  
   output$download.table2 <- downloadHandler(
     filename = function() { 
       paste(mybatchname(), 'Table 2 Demographic Summary.csv')
@@ -104,6 +114,16 @@ shinyServer(function(input, output, session) {
     contentType='text/csv',
     content = function(file) {
       write.csv( table2(), file)
+    }
+  )
+  
+  output$download.table2e <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Table 2e Envt Summary.csv')
+    },
+    contentType='text/csv',
+    content = function(file) {
+      write.csv( table2e(), file)
     }
   )
   
@@ -116,7 +136,17 @@ shinyServer(function(input, output, session) {
       write.csv( table3(), file)
     }
   )
-    
+  
+  output$download.table3e <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Table 3e Envt Summary.csv')
+    },
+    contentType='text/csv',
+    content = function(file) {
+      write.csv( table3e(), file)
+    }
+  )
+  
   output$download.barplot <- downloadHandler(
     filename = function() { 
       paste(mybatchname(), barplotkind(), 'barplot comparing sites to US.png')
@@ -127,7 +157,7 @@ shinyServer(function(input, output, session) {
       png(filename=file, width = 1400, height = 768, units = "px", pointsize = 12)
       #print(barplots.react())
       # THIS WORKAROUND DOES WORK :
-            barplots.NONreact()
+      barplots.NONreact()
       dev.off()
     }
   )
@@ -140,7 +170,7 @@ shinyServer(function(input, output, session) {
     content = function(file) {
       #ggsave(file, plot=histograms.react(), device=png, width = 12.00, height = 7.68, units = "cm") # width = 1200, height = 768, units = "mm",
       png(filename=file, width = 1200, height = 768, units = "px", pointsize = 12)
-#      print(histograms.react())
+      #      print(histograms.react())
       dev.off()
     }
   )
@@ -185,12 +215,39 @@ shinyServer(function(input, output, session) {
     }
   })
   
- 
+  
   
   ##################################################################################################
   # UPLOADED DATASET AS A TABLE
-
-    # This (the reactive expression called fulltabler) is the uploaded dataset that 
+  
+  #   infilepathname.reactive <- reactive({
+  #     
+  #     #     # update overall infilepathname.reactive if either of these changes:
+  #     #     x=input$localbigfilename # local file read
+  #     y <- input$file1 # from picker
+  #     #     cat('input file1 is ', y$name, '\n')
+  #     #     cat('input local big is ', x,  '\n')
+  #     # if ( is.null(y) & x == ' ') {cat('yes\n'); myfile <- mydemofile}
+  #     if ( is.null(y) ) {
+  #       myfile <- mydemofile
+  #     } else {
+  #       myfile <- y$datapath
+  #       #myfilename <- y$name
+  #     }  
+  #     #    cat('myfile at first is now is', myfile,'\n')
+  #     
+  #     # input$file1 will be NULL initially, or can use the example file and preload it?
+  #     # After the user selects and uploads a file, it will be a data frame with 
+  #     # 'name', 'size', 'type', and 'datapath' columns. 
+  #     # The 'datapath' column will contain the local filenames where the data can be found.
+  #     
+  #     # set to default at first
+  #     # myfile <- mydemofile  # e.g.  Export_Output_Example2.csv
+  #     # cat(mydemofile, ' is the default input file used \n')
+  #     myfile
+  #   })
+  
+  # This (the reactive expression called fulltabler) is the uploaded dataset that 
   # is the output of the batch processing and input to the batch summarizer:
   
   fulltabler <- reactive({
@@ -201,17 +258,18 @@ shinyServer(function(input, output, session) {
     # The 'datapath' column will contain the local filenames where the data can be found.
     inFile <- input$file1
     if (is.null(inFile)) {
-      myfile <- mydemofile
+      myfile <- mydemofile # e.g.  Export_Output_Example2.csv
     } else {
       myfile <- inFile$datapath
+      output$infilename <- renderText(inFile$name)
     }
-    
-    output$infilename <- renderText(inFile$name)
     
     # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
     # To allow user to specify parameters of upload file format:
     #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
+    
     fulltable <- read.csv(myfile, stringsAsFactors = FALSE)
+    
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
     fulltable <- batch.clean(fulltable, oldcolnames=lookup.fieldnames()$oldnames, newcolnames=lookup.fieldnames()$newnames )
@@ -231,8 +289,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$sitecount.text <- renderText({
-      paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
-    })
+    paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
+  })
   
   output$sitecount.text2 <- renderText({
     paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
@@ -241,7 +299,7 @@ shinyServer(function(input, output, session) {
   output$popsitecounts.out <- renderText({
     paste("Total population is ", format(popcount(), big.mark=',', scientific=FALSE), " at ", sitecount(), " sites.", sep='')
   })
-    
+  
   output$popsitecounts.out2 <- renderText({
     paste("Total population is ", format(popcount(), big.mark=',', scientific=FALSE), " at ", sitecount(), " sites.", sep='')
   })
@@ -291,11 +349,11 @@ shinyServer(function(input, output, session) {
   )
   
   #####################
-    
-    
+  
+  
   #####################
   # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
-
+  
   mycolnames <- reactive({ colnames(fulltabler()) })
   # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
@@ -377,7 +435,7 @@ shinyServer(function(input, output, session) {
       #        oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
     )
   })
-
+  
   output$thresholdPICKS3 <- renderUI({
     mychoices <- mycolnames()
     names(mychoices) = mycolnames.friendly.complete()
@@ -391,7 +449,7 @@ shinyServer(function(input, output, session) {
       #        oldnames= lookup.fieldnames()$newname, newnames = paste(lookup.fieldnames()$longname, lookup.fieldnames()$vartype) )
     )
   })
-
+  
   mythreshnames <-  reactive({ 
     #mythreshnames.default()
     # temporarily disable user defined names until code finished ***
@@ -403,7 +461,7 @@ shinyServer(function(input, output, session) {
   mythreshgroups <- reactive({
     list(input$threshgroup1, input$threshgroup2, input$threshgroup3)
   })
-    
+  
   mythresholds <- reactive({
     list(input$threshold1,  input$threshold2, input$threshold3 )
   })
@@ -459,7 +517,7 @@ shinyServer(function(input, output, session) {
     x$rows[ , vars.round0] <- round( x$rows[ , vars.round0], 0)
     
     x$rows <- as.data.frame(x$rows, stringsAsFactors=FALSE)
-
+    
     #     stats.round2 <- c('Average site', 'Average person')
     #     numeric.cols <- apply(x$rows, 2, class)=='numeric' # all should be now
     #     x$rows[ stats.round2, numeric.cols] <- round( x$rows[ stats.round2, numeric.cols] , 1)
@@ -468,7 +526,7 @@ shinyServer(function(input, output, session) {
     #    x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',')
     
     x
-
+    
   })
   
   ###########################
@@ -483,7 +541,7 @@ shinyServer(function(input, output, session) {
   ###########################
   ###########################  ###########################  ###########################
   ###########################  ###########################  ###########################
-
+  
   output$colsout <- renderDataTable( 
     {
       z <- cbind( outlist()$cols, make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE)
@@ -511,12 +569,12 @@ shinyServer(function(input, output, session) {
                   leftColumns: 1
                 } );
       }"),
-
+      
       columnDefs = list(list(width="420px", 
-                        # targets=list(0,1,2)
-                        targets=list(0, length(outlist()$cols[1,]) + 
-                                       which(mycolnames()=='name')
-                                     -1))
+                             # targets=list(0,1,2)
+                             targets=list(0, length(outlist()$cols[1,]) + 
+                                            which(mycolnames()=='name')
+                                          -1))
       ) # makes the 1st column wide & the one called name
     )
   )
@@ -650,7 +708,7 @@ shinyServer(function(input, output, session) {
   })
   
   ###########################################  ###########################################
-
+  
   
   ###########################################
   # Create some summary tables of summary statistics & significance testing, comparing sites to US etc.
@@ -659,9 +717,9 @@ shinyServer(function(input, output, session) {
     # table summarizing demog stats nearby and in US overall
     popnear = popcount()
     mytable <- cbind(
-      Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall', 'Avg person, ratio to US'), 
+      Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall', 'Avg person nearby, ratio to avg person in US'), 
       Pop= c(format( c(popnear, popus, popnear, popus), big.mark=','), round(popnear/popus,4))
-      )
+    )
     othercols <- rbind( format( popnear * 0.01 * outlist()$rows['Average person', names.d ] , big.mark = ',', digits=0, scientific=FALSE), 
                         format(us.counts[names.d] / 100, big.mark=',', digits=0, scientific=FALSE),
                         paste( round(row3<-outlist()$rows['Average person' , names.d], 0), '%',sep=''),
@@ -673,9 +731,33 @@ shinyServer(function(input, output, session) {
     mytable
   })
   
+  table1e <- reactive({
+    # table summarizing ENVT stats nearby and in US overall
+    popnear = popcount()
+    mytable <- cbind(
+      #Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall', 'Avg person nearby, ratio to avg person in US'), 
+      Location=c(          'Overall near these sites (avg. person)',  'US overall', 'Avg person nearby, ratio to avg person in US'), 
+      #Pop= c(format( c(popnear, popus, popnear, popus), big.mark=','), round(popnear/popus,4))
+      Pop= c(format(                  c(popnear, popus), big.mark=','), round(popnear/popus,4))
+    )
+    othercols <- rbind( 
+      #       format( popnear * 0.01 * outlist()$rows['Average person', names.e ] , big.mark = ',', digits=0, scientific=FALSE), 
+      #       #format(us.counts[names.e] / 100, big.mark=',', digits=0, scientific=FALSE),
+      paste( round(row3 <- outlist()$rows['Average person' , names.e], 1), ' ',sep=''),
+      #       #paste( round(row4 <- us.percents[names.e], 0), 'xxx',sep=''),
+      #paste( round(row4 <- outlist()$rows['US overall' , names.e], 0), ' ',sep = ''), #us.envavg[names.e], 0), ' ',sep=''),
+      paste( round(row4 <- fulltabler()[ 1, paste('us.avg.', names.e, sep='')], 1), ' ',sep = ''),
+      
+      format( round(row3 / row4, 2)))
+    colnames(othercols) <- names.e.friendly
+    mytable <- cbind(mytable, othercols)
+    rownames(mytable) <- NULL
+    mytable
+  })
+  
   table2 <- reactive({
     # table of significance tests for avg site's D being above US avg
-    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value from Wilcoxon test', 'Avg site, ratio to US'))
+    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value from Wilcoxon test', 'Avg site, ratio to avg person in US'))
     othercols <- rbind( paste( round(row1<- outlist()$rows['Average site', names.d ], 0), '%',sep = ''), 
                         round(sapply(fulltabler()[ , names.d], FUN=function(x) sd(x,na.rm=TRUE)), 2),
                         0, # t stat ***
@@ -686,7 +768,21 @@ shinyServer(function(input, output, session) {
     rownames(mytable) <- NULL
     mytable
   })
-
+  
+  table2e <- reactive({
+    # table of significance tests for avg site's E being above US avg
+    mytable <- cbind(Statistic=c('At the average site', 'standard deviation', 't-statistic',  'p-value from Wilcoxon test', 'Avg site, ratio to avg person in US'))
+    othercols <- rbind( paste( round(row1<- outlist()$rows['Average site', names.e ], 0), ' ', popupunits[ popupunits$evar == names.e, 'units'], sep = ''), 
+                        round(sapply(fulltabler()[ , names.e], FUN=function(x) sd(x,na.rm=TRUE)), 2),
+                        0, # t stat ***
+                        0, #  wilcoxon.test(x= , n=length(fulltabler()[,1]) ) , # p value ***
+                        round( row1 /   fulltabler()[ 1, paste('us.avg.', names.e, sep='')]         ,2))
+    colnames(othercols) <- names.e.friendly
+    mytable <- cbind(mytable, othercols)
+    rownames(mytable) <- NULL
+    mytable
+  })
+  
   table3 <- reactive({
     # table of significance tests for # of sites with D above US avg
     pct.above.usavg <- pct.above(fulltabler()[ , names.d ], benchmarks=us.percents[names.d], benchnames='cutoff', na.rm=TRUE, or.tied=FALSE, below=FALSE, wts=1, of.what='all')
@@ -704,13 +800,35 @@ shinyServer(function(input, output, session) {
     mytable
   })
   
+  table3e <- reactive({
+    # table of significance tests for # of sites with ENVT above US avg
+    print(str(fulltabler()[ 1, paste('us.avg.', names.e, sep='')]))
+    print(str(fulltabler()[ , names.e ]))
+    pct.above.usavg <- pct.above(fulltabler()[ , names.e ], benchmarks=fulltabler()[ 1, paste('us.avg.', names.e, sep=''), drop=TRUE]     , benchnames='cutoff', na.rm=TRUE, or.tied=FALSE, below=FALSE, wts=1, of.what='all')
+    count.above.usavg <- count.above(fulltabler()[ , names.e ], benchmarks=fulltabler()[ 1, paste('us.avg.', names.e, sep=''), drop=TRUE], benchnames='cutoff',              or.tied=FALSE, below=FALSE, wts=1)
+    # sum( fulltabler()[ , names.e ] > us.percents[names.e]) / length(fulltablr()[,1]
+    mytable <- cbind(Statistic=c(paste('% (#) of sites where ENVT > US avg. (of ', length(outlist()$cols[,1] ),'sites)'), 'standard deviation', 't-statistic',  'p-value'))
+    othercols <- rbind( paste( round( 100*  pct.above.usavg   , 0), '% (', count.above.usavg,')',sep = ''), 
+                        #round(sapply( fulltabler()[ , names.e], FUN=function(x) sd(x,na.rm=TRUE)), 2),
+                        0, # need standard deviation that is relevant to this statistic...
+                        0, # t stat ***
+                        0 ) # p value ***
+    colnames(othercols) <- names.e.friendly
+    mytable <- cbind(mytable, othercols)
+    rownames(mytable) <- NULL
+    mytable
+  })
+  
   output$table1 <- renderTable({table1()} )
   output$table2 <- renderTable({table2()} )
   output$table3 <- renderTable({table3()} )
   
-
+  output$table1e <- renderTable({table1e()} )
+  output$table2e <- renderTable({table2e()} )
+  output$table3e <- renderTable({table3e()} )
+  
   ##################################################################################################
-
+  
   
   ##################################################################################################
   # EXECUTIVE SUMMARY TEXT
@@ -733,16 +851,16 @@ shinyServer(function(input, output, session) {
   my.ratio.to.us.e.name <- reactive({
     names.e[ which(names.e.friendly == my.ratio.to.us.e.name.friendly() ) ]
   })
-#  my.ratio.to.us.e <- 999
+  #  my.ratio.to.us.e <- 999
   my.ratio.to.us.e <- reactive({
     ratio.to.us.e()[ which(names.e == my.ratio.to.us.e.name() ) ]
   })
-
+  
   # NOTE: this might pick the wrong one if there is a tie??
   max.ratio.to.us.d.name <- reactive({
     names.d[ which(ratio.to.us.d() == max.ratio.to.us.d() ) ]
   })
-
+  
   # NOTE: this might pick the wrong one if there is a tie??
   max.ratio.to.us.e.name <- reactive({
     names.e[ which(ratio.to.us.e() == max.ratio.to.us.e() ) ]
@@ -782,7 +900,7 @@ shinyServer(function(input, output, session) {
   # DEMOGRAPHICS %ILE
   # e.g., "2,278,542 people (7% of all residents), who live near 293 (2%) of these sites,
   # are in the top 5% of linguistically isolated population values nationwide**."
-
+  
   execsum3.txt <- reactive({
     mypctiles <-  fulltabler()[ , paste('pctile.', max.ratio.to.us.d.name(), sep='')]
     mypctiles[is.na(mypctiles)] <- 0 # treat as zero if NA (missing) so stats come out right.
@@ -806,7 +924,7 @@ shinyServer(function(input, output, session) {
   execsum4.txt <- reactive({
     paste('The median (50th percentile) site here is at the ',
           round(fulltabler()[ 1, paste('pctile.', max.ratio.to.us.d.name(), sep='')], 0),
-           ' percentile of all US residents for ',
+          ' percentile of all US residents for ',
           tolower(mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )]), '.', sep='')
   })
   
@@ -821,15 +939,15 @@ shinyServer(function(input, output, session) {
           '.
           
            People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),
-           ' sites have, on average, ', 
+          ' sites have, on average, ', 
           round(max.ratio.to.us.e(), 1), ' times as high indicator values for ', 
           ( mycolnames.friendly()[match( max.ratio.to.us.e.name(), mycolnames() )] ) ,
-           ' as the average person in the US (', 
+          ' as the average person in the US (', 
           round(outlist()$rows['Average person', max.ratio.to.us.e.name()], 2)   ,' vs. ', 
           round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.e.name(), sep='')], 2),
-           '). The other environmental indicators have lower ratios.', sep='')
+          '). The other environmental indicators have lower ratios.', sep='')
   })
-
+  
   # ENVIRONMENTAL
   # e.g., "People who live near (within 1 miles of any of) these ___ sites have, on
   # average, ___ times as high indicator values for _______
@@ -845,6 +963,12 @@ shinyServer(function(input, output, session) {
           round(fulltabler()[ 1, paste('us.avg.', my.ratio.to.us.e.name(), sep='')], 2),
           ').', sep='')
   })
+  
+  # COULD ADD MORE, ON ALL E HERE
+  
+  
+  
+  
   
   # EJ INDEXES
   # e.g., "12,412,746 people (40% of all residents), who live near 1883 (15%)
@@ -882,7 +1006,7 @@ shinyServer(function(input, output, session) {
     paste(input$bartype, input$barvartype, input$barvarmean, sep='_' )
   })
   
-
+  
   barplots.react <- reactive({
     
     # One set of bars per each of the myvars
@@ -1100,7 +1224,7 @@ shinyServer(function(input, output, session) {
     # barplot() has side effect of printing, but it just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
   }
   
-
+  
   ##################################################################################################
   # HISTOGRAMS
   
@@ -1193,7 +1317,7 @@ shinyServer(function(input, output, session) {
       if (myrefstat=='raw' ) {
         mybreaks <- 0
       }
-
+      
       weighted.hist(
         x = h,
         w = wts,
@@ -1207,19 +1331,19 @@ shinyServer(function(input, output, session) {
       abline(h=expected.pop.per.bin)
       curve(dnorm(x, mean=Hmisc::wtd.mean(h, wts), sd=sqrt(Hmisc::wtd.var(h,wts))), add=TRUE, col="darkblue", lwd=2)
       
-#       myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
-#         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
-#         #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
-#         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-#         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
-#      return(myplot)
+      #       myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
+      #         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
+      #         #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
+      #         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
+      #         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
+      #      return(myplot)
       
     }
     
   })
   
   output$histograms <- renderPlot( histograms.react() )
-
+  
   ##################################################################################################
   # MAPS
   
@@ -1245,7 +1369,7 @@ shinyServer(function(input, output, session) {
   ############################################
   # MAP SITES AS POINTS
   ############################################
-
+  
   output$map.sites <- renderLeaflet({
     
     mypoints = data.frame(
@@ -1261,7 +1385,7 @@ shinyServer(function(input, output, session) {
     ## population near site as scaled from 1 to 20, where min site is 1, max is 20
     # popratio = mypoints$pop / min(mypoints$pop, na.rm=TRUE)
     # popratio = 1+( (popratio -1) * (( 20-1) / max(popratio-1)  ))
-
+    
     m = leaflet(mypoints) %>% addTiles()
     # m = m %>% setView(mypoints$long[1], mypoints$lat[1], zoom = 4)
     
@@ -1317,24 +1441,24 @@ shinyServer(function(input, output, session) {
   
   ##################################################################################################
   # plotly interactive graphic
-#   
-# example:
-#   output$plotly.chart <- renderGraph({
-#     
-#     #matched_complaints <- subset(df, grepl(input$search, df$Complaint.Type))
-#     #most_common_complaints = sort(table(matched_complaints$Complaint.Type), decreasing=TRUE) 
-#     df <- data.frame(a=1:100, b=501:600, c=c("blue",'green','orange','yellow'),d=c('high', 'low') )
-#     col.to.search='c'
-#     plotly.data <- subset(df, grepl(input$plotly.search, df[ , col.to.search]))
-#       
-#     list(
-#       #message = c(most_common_complaints)
-#       message = c(table(plotly.data))
-#     )
-#     
-#   })
-#   
-
+  #   
+  # example:
+  #   output$plotly.chart <- renderGraph({
+  #     
+  #     #matched_complaints <- subset(df, grepl(input$search, df$Complaint.Type))
+  #     #most_common_complaints = sort(table(matched_complaints$Complaint.Type), decreasing=TRUE) 
+  #     df <- data.frame(a=1:100, b=501:600, c=c("blue",'green','orange','yellow'),d=c('high', 'low') )
+  #     col.to.search='c'
+  #     plotly.data <- subset(df, grepl(input$plotly.search, df[ , col.to.search]))
+  #       
+  #     list(
+  #       #message = c(most_common_complaints)
+  #       message = c(table(plotly.data))
+  #     )
+  #     
+  #   })
+  #   
+  
   # ***** TO SHOW IN A DEBUGGING TAB:
   
   output$debugginginfo <- renderPrint( 
