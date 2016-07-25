@@ -134,7 +134,6 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     sapply(x, FUN=function(y) {wtd.quantile(y, probs=0.50, weights=wts, na.rm=na.rm)})
   }
   
-  
   n=n+1
   colfuname[n]='Min'
   colfun[[n]]=function(x, ...) {
