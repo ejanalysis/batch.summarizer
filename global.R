@@ -18,7 +18,10 @@ suppressWarnings(rm(mydemofile)) # just in case testing and had already specifie
 # mydemofile <- 'ejtest2.csv'
 # 
 # Default example of export of batch results, for use in testing/demonstrating summarizer:
-if (!exists('mydemofile')) {mydemofile <- 'Export_Output_Example2.csv'}
+#
+if (!exists('mydemofile'))     {mydemofile     <- 'Export_Output_Example2.csv'} # should update to 2016 format
+if (!exists('mydemofile.pop')) {mydemofile.pop <- 'Export_Output_Example2.pop.csv'} # not realistic - just smaller pop numbers
+
 
 # Required format for input file (***for 2015 version):
 #  ***  These seem to be all out of order ***:
@@ -163,6 +166,7 @@ mapserver2= 'http://services.arcgisonline.com/ArcGIS/rest/services/Reference/Wor
 
 pixels.per.char <- 10 #????
 max.allowed=30 # max length of site name we want displayed before wrapping in sites table
+default.tab <- 'Upload/Settings'
 
 #############################
 # WHICH FIELDS TO COMPARE TO THRESHOLDS
@@ -361,11 +365,13 @@ us.percents <- us.percents.2016
 us.counts.names <- paste(gsub('pct', '', names.d.batch), '.US', sep='')
 us.counts.names <- gsub('min.US', 'mins.US', us.counts.names)
 us.counts <- sapply(us.counts.names, get)
-
+#print('structure of us.counts now is '); print(str(us.counts))
+#
 # for count of VSI.eo.US, do we want true count or pct * pop? or is VSI.eo.US count even used here at all?
-# us.counts$VSI.eo.US <- mins.US + lowinc.US # ???
-us.counts$VSI.eo.US <- VSI.eo.US * pop.US    # ???
+# us.counts['VSI.eo.US'] <- mins.US + lowinc.US # ???
+us.counts['VSI.eo.US'] <- VSI.eo.US * pop.US   # ???
 #us.counts <- popus *  us.percents   # was the prior version's approach
+#
 # rename them because later code refers to them using the simple names.d or names.d.batch, not with .US on the names
 names(us.percents) <- names.d.batch 
 names(us.counts) <- names.d.batch 
