@@ -66,9 +66,10 @@ shinyServer(function(input, output, session) {
   output$name3 <-  renderText(input$batchname)
   output$name4 <-  renderText(input$batchname)
   output$name5 <-  renderText(input$batchname)
-
+  
   output$titletext <- renderText(input$batchname)
-
+  output$titletext2 <- renderText(input$batchname)
+  
   # Code enabling Download of tables and charts
   
   output$download.rowsout <- downloadHandler(
@@ -194,6 +195,7 @@ shinyServer(function(input, output, session) {
     inFile2 <- input$file2
     if (is.null(inFile2)) {
       myfile <- mynamesfile.default
+      # e.g.,  "map batch to friendly fieldnames v1.csv"
     } else {
       myfile <- inFile2$datapath
     }
@@ -280,39 +282,39 @@ shinyServer(function(input, output, session) {
     # The 'datapath' column will contain the local filenames where the data can be found.
     
     inFile <- input$file1
-    if (testing) {cat('inFile is null:', is.null(inFile), '\n'); print(input$localbigfilename) 
-    if (is.null(inFile) & input$localbigfilename == '') {
-      #mydemofile # e.g.  Export_Output_Example2.csv
-      cat('READING DEMO FULLTABLE \n'); cat('GETWD: ', getwd(), '\n')
-      fulltable <- read.csv(mydemofile, stringsAsFactors = FALSE)
-      #output$infilename <- renderText(mydemofile)
-    } else {
-      if (!is.null(inFile)) {
-        browsedfilename <- inFile$datapath
-        cat('READING NEW BROWSED FULLTABLE \n')
-        fulltable <- read.csv(browsedfilename, stringsAsFactors = FALSE)
-        output$infilename <- renderText(inFile$name)
+    if (testing) {cat('inFile is null:', is.null(inFile), '\n'); print(input$localbigfilename) }
+      if (is.null(inFile) & input$localbigfilename == '') {
+        #mydemofile # e.g.  Export_Output_Example2.csv
+        cat('READING DEMO FULLTABLE \n'); cat('GETWD: ', getwd(), '\n')
+        fulltable <- read.csv(mydemofile, stringsAsFactors = FALSE)
+        #output$infilename <- renderText(mydemofile)
       } else {
-        cat('READING NEW LOCAL FULLTABLE \n')
-        fulltable <- read.csv(input$localbigfilename, stringsAsFactors = FALSE)
-        #output$infilename <- renderText(input$localbigfilename)
+        if (!is.null(inFile)) {
+          browsedfilename <- inFile$datapath
+          cat('READING NEW BROWSED FULLTABLE \n')
+          fulltable <- read.csv(browsedfilename, stringsAsFactors = FALSE)
+          output$infilename <- renderText(inFile$name)
+        } else {
+          cat('READING NEW LOCAL FULLTABLE \n')
+          fulltable <- read.csv(input$localbigfilename, stringsAsFactors = FALSE)
+          #output$infilename <- renderText(input$localbigfilename)
+        }
       }
-    }
-    
-    # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
-    # To allow user to specify parameters of upload file format:
-    #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
-    
-    # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
-    # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
-    fulltable <- batch.clean(fulltable, oldcolnames=lookup.fieldnames()$oldnames, newcolnames=lookup.fieldnames()$newnames )
-    if ('name' %in% colnames(fulltable) ) { rownames(fulltable) <- fulltable[ , 'name'] } # become colnames when transposed for viewing? no.
-    fulltable
-  })
+      
+      # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
+      # To allow user to specify parameters of upload file format:
+      #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
+      
+      # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
+      # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
+      fulltable <- batch.clean(fulltable, oldcolnames=lookup.fieldnames()$oldnames, newcolnames=lookup.fieldnames()$newnames )
+      if ('name' %in% colnames(fulltable) ) { rownames(fulltable) <- fulltable[ , 'name'] } # become colnames when transposed for viewing? no.
+      fulltable
+    })
   
   ####################################################################################
   # now same for popstats input that does not double count people
-
+  
   fulltabler.pop <- reactive({
     
     # observeEvent(
@@ -478,11 +480,11 @@ shinyServer(function(input, output, session) {
     )
   })
   
-#   make.colnames.friendly <- function(df) {
-#     # function of fulltabler()
-#     colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
-#     df
-#   }
+  #   make.colnames.friendly <- function(df) {
+  #     # function of fulltabler()
+  #     colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
+  #     df
+  #   }
   
   make.colnames.friendly.complete <- function(df) {
     # function of fulltabler()
@@ -579,8 +581,9 @@ shinyServer(function(input, output, session) {
     namecolpixels
   })
   
-  colfun.picked <- colfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
-  rowfun.picked <- rowfun.picked.default # 'all' # later can be a logical vector but length must equal # of such funs defined as options in batch.summarize()
+  colfun.picked <- colfun.picked.default # 'all' 
+  rowfun.picked <- rowfun.picked.default # 'all' 
+  # later can be a logical vector but length must equal count of such funcs defined as options in batch.summarize 
   
   ##################################################################################################
   # CREATE TABLES OF SUMMARY STATS
@@ -593,7 +596,8 @@ shinyServer(function(input, output, session) {
   outlist <- reactive({ 
     x <- batch.summarize(
       sitestats = fulltabler(), popstats = fulltabler.pop(),
-      wtscolname = mywtsname, #wts = fulltabler()[ , mywtsname],  
+      wtscolname = mywtsname, 
+      #wts = fulltabler()[ , mywtsname],  
       cols = mycolnames(), 
       threshnames = mythreshnames(), threshold = mythresholds(), threshgroup = mythreshgroups(),
       colfun.picked = colfun.picked, rowfun.picked = rowfun.picked,
@@ -1590,5 +1594,5 @@ shinyServer(function(input, output, session) {
   #  updateTabsetPanel(session, "tabset1", selected = "Barplots")
   updateTabsetPanel(session, "tabset1", selected = "Map of sites")
   
-})
+  })
 
