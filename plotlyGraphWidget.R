@@ -1,4 +1,4 @@
-library(shiny)
+#library(shiny)
 # see https://plot.ly/r/getting-started/
 
 graphOutput <- function(inputId, width="100%", height="550px") {

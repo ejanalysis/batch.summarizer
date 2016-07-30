@@ -1,9 +1,47 @@
+library(shiny) # http://shiny.rstudio.com
 
+# for debugging:
+testing <- FALSE 
+testing <- TRUE # comment out this line to stop debugging
+
+if (testing) {  cat('Starting global\n') }
+if (testing) {
+  options(shiny.reactlog = TRUE) # If TRUE, enable logging of reactive events, which can be 
+  # viewed later with the showReactLog function. This incurs a substantial performance penalty and should not be used in production.
+  options(shiny.trace = TRUE)
+  options(shiny.stacktraceoffset = TRUE) # name of function appears next to srcref where defined not where it is being called from - more intuitive view?
+  options(shiny.fullstacktrace = TRUE) # instead of shorter prettier view
+  options(shiny.error = browser) # or options(shiny.error = recover) gives debugger prompt on err
+  options(error = recover) # The functions dump.frames and recover provide alternatives that allow post-mortem debugging. 
+  options(verbose = TRUE) 
+  options(shiny.deprecation.messages = TRUE)
+} else {
+  options(shiny.reactlog = FALSE) 
+  options(shiny.trace = FALSE)
+  options(shiny.stacktraceoffset = FALSE) # name of function appears next to srcref where defined not where it is being called from - more intuitive view?
+  options(shiny.fullstacktrace = FALSE) # instead of shorter prettier view
+  options(shiny.error = NULL) # or options(shiny.error = recover) gives debugger prompt on err
+  options(error = NULL) # resets behavior to normal when error hit
+  options(verbose = FALSE) 
+  options(shiny.deprecation.messages = FALSE)
+}
+on.exit({
+  options(shiny.reactlog = FALSE) 
+  options(shiny.trace = FALSE)
+  options(shiny.stacktraceoffset = FALSE) # name of function appears next to srcref where defined not where it is being called from - more intuitive view?
+  options(shiny.fullstacktrace = FALSE) # instead of shorter prettier view
+  options(shiny.error = NULL) # or options(shiny.error = recover) gives debugger prompt on err
+  options(error = NULL) # resets behavior to normal when error hit
+  options(verbose = FALSE) 
+  options(shiny.deprecation.messages = FALSE)
+  
+})
+
+####################################################################################
 # DEFINE GLOBAL VARIABLES FOR USE IN server or ui - default values, etc.
-
+####################################################################################
 
 # **** MUST UPDATE ACS DATA IN CODE WHEN SWITCHING TO NEW ACS DATASET!
-
 
 # ***  COULD SPECIFY LARGE FILE THAT IS OUTPUT OF BATCH RUN AND INPUT TO THIS SUMMARIZER: ***
 #
@@ -417,3 +455,4 @@ rowfun.picked.default = 'all'
 
 # default for all functions so can get stats even if one site (or one indicator at one site) has no data
 na.rm = TRUE  
+
