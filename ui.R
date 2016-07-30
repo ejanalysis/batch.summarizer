@@ -93,13 +93,13 @@ shinyUI(
             h4('Upload batch buffer output that has standard report stats for each site'),
             wellPanel(
               
-              radioButtons('uploadingtoserver', 'Running locally on file too big to upload?', 
-                           c('Y', 'N'), selected = 'Y'),
+              radioButtons('notuploadingtoserver', 'Running locally on file too big to upload?', 
+                           c('Y', 'N'), selected = 'N'),
               
               #  uiOutput('filepicker', inline = FALSE),
               
               conditionalPanel(
-                condition = "input.uploadingtoserver == 'N'",
+                condition = "input.notuploadingtoserver == 'N'",
                 fileInput('file1', 'Browse to upload file of batch results to summarize',
                           accept = c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))
                 #actionButton('browsedfilebutton', 'Upload browsed filename'),
@@ -107,13 +107,13 @@ shinyUI(
               ),
               
               conditionalPanel(
-                condition = "input.uploadingtoserver == 'Y'",
-                #h4(textInput('localbigfilename', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', '')),
+                condition = "input.notuploadingtoserver == 'Y'",
                 textInput('localbigfilename', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', ''),                
                 #submitButton(text = 'Read entered filename')
                 actionButton('localfilebutton', 'Read entered filename')
               ),
               textOutput('sitecount.text2'),
+              #textOutput(input$localbigfilename), 
               
               tags$hr(),
               h5(fileInput('file2', 'Select file of fieldname mapping to rename fields to other than defaults',
@@ -129,13 +129,13 @@ shinyUI(
             h4('Upload batch buffer output with stats adjusted to stop double counting people'),
             wellPanel(
               
-              radioButtons('uploadingtoserverpop', 'Running locally on file too big to upload?', 
-                           c('Y', 'N'), selected = 'Y'),
+              radioButtons('notuploadingtoserverpop', 'Running locally on file too big to upload?', 
+                           c('Y', 'N'), selected = 'N'),
               
               #  uiOutput('filepicker', inline = FALSE),
               
               conditionalPanel(
-                condition = "input.uploadingtoserverpop == 'N'",
+                condition = "input.notuploadingtoserverpop == 'N'",
                 fileInput('file1.pop', 'Browse to upload file of batch results to summarize',
                           accept = c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))
                 #actionButton('browsedfilebutton', 'Upload browsed filename'),
@@ -143,14 +143,14 @@ shinyUI(
               ),
               
               conditionalPanel(
-                condition = "input.uploadingtoserverpop == 'Y'",
-                #h4(textInput('localbigfilename.pop', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', '')),
+                condition = "input.notuploadingtoserverpop == 'Y'",
                 textInput('localbigfilename.pop', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', ''),                
                 #submitButton(text = 'Read entered filename')
                 actionButton('localfilebutton.pop', 'Read entered filename')
               ),
               textOutput('sitecount.text2.pop'),
               #textOutput(input$localbigfilename), 
+              
               tags$hr(),
               h5(fileInput('file2.pop', 'Select file of fieldname mapping to rename fields to other than defaults',
                            accept = c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv')))
@@ -235,7 +235,7 @@ shinyUI(
         
         br(),
         h4(paste('Executive Summary - ','', sep = '')),
-        h4(textOutput('titletext')),
+        h4(textOutput('titletext2')),
         tags$hr(),
         h4(textOutput('popsitecounts.out2')),
         fluidRow(
