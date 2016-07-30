@@ -1,8 +1,17 @@
-#' @param x A matrix or data.frame to summarize, one row per site, one column per variable.
+#' @title Core function that calculates summary stats across all sites and nearby people for EJSCREEN batch analysis
+#' @description This is the function that takes the full tables of batch buffer results and calculates summary statistics 
+#'   like maximum at any site, median across all sites, maximum percentile for all specified indicators at a given site, etc.
+#'   It can be expanded to provide other summary stats by adding those other formulas to this code. 
+#' @param sitestats A matrix or data.frame to summarize, one row per site, one column per variable. 
+#'   Must have correct stats for all people near a given site.
+#' @param popstats  A matrix or data.frame to summarize, one row per site, one column per variable. 
+#'   Must have reduced counts that count only once each unique person near one or more of the sites. 
+#'   Used to sum population and get stats of distribution of each indicator across all unique individuals.
 #' @param cols NOT USED YET. Specifies which colums of x should be summarized or used during summarization. A single string value 'all' as default to specify all, or a vector of colnames.
 #' @param probs Vector of numeric values, fractions, to use as probabilities used in finding quantiles. Default is c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1)
 #' @param na.rm Logical TRUE by default, specifying if na.rm should be used for sum(), mean(), and other functions.
-#' @param wts weights vector for wtd.mean or weighted.quantile etc.
+#' @param wts Obsolete. Was the actual weights vector for wtd.mean or weighted.quantile etc.
+#' @param wtscolname Name of the column that contains the relevant weights to be used (e.g., "pop")
 #' @param threshold list of vectors each with 1+ thresholds (cutoff numbers) used to count find sites where 1+ of given set of indicators are at/above the threshold & how many of the indicators are.
 #'  If an element of the list is a single number, that is used for the whole group (all the threshnames in that nth list element). 
 #'  Otherwise/in general, each vector is recycled over the threshnames in corresponding list element, 
@@ -11,22 +20,30 @@
 #' @param threshgroup list of 1+ character strings naming the elements of threshnames list, such as "EJ US pctiles"
 #' @param rowfun.picked logical vector specifying which of the pre-defined functions (like at/above threshold) are needed and will be applied
 #' @param colfun.picked  logical vector specifying which of the pre-defined functions (like colSums) are needed and will be applied
+#' @return output is a list with two named elements, rows and cols, where each is a matrix of summary stats. 
+#'   cols: Each element in a summary col summarizes 1 row (site) across all the RELEVANT cols of batch data (e.g., all US EJ Index percentiles)
+#'   rows: Each element in a summary row summarizes 1 column (field) across all the rows of batch data.
 #' @author ejanalyst info@ejanalysis.com
 #' @export
-batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), 
-                            threshold=list(80), threshnames=list(colnames(x)), threshgroup=list('variables'), 
+batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop', wts=popstats[ , wtscolname], probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), 
+                            threshold=list(80), threshnames=list(colnames(sitestats)), threshgroup=list('variables'), 
                             na.rm=TRUE, rowfun.picked='all', colfun.picked='all') {
   # cat('threshnames = '); print(threshnames)
   ############################################
   # Basic error checking
   ############################################
   
-  if (missing(x)) {stop('x must be a matrix or data.frame to be analyzed')}
-  if (cols[1]=='all') {cols <- colnames(x)}
-  if (any(!(cols %in% colnames(x)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(x)')}
+  if (missing(sitestats) | missing(popstats)) {stop('sitestats and popstats are outputs of batch processing in EJSCREEN and must each be a matrix or data.frame to be analyzed, where each row has stats on a buffer around some point called a site')}
+  if (cols[1]=='all') {cols <- colnames(sitestats)}
+  if (!all.equal(dim(sitestats), dim(popstats))) {stop('sitestats and popstats must be identical in number of rows and in number of columns')}
+  if (!all.equal(colnames(sitestats), colnames(popstats))) {stop('sitestats and popstats must be identical in colnames')}
+  if (any(!(cols %in% colnames(sitestats)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(sitestats)')}
   if (!is.vector(probs) | !is.numeric(probs) | any(probs > 1) | any(probs < 0)) {stop('probs must be a numeric vector of fractions for quantile function')}
   
   if (1 != length(unique( length(threshold), length(threshnames), length(threshgroup) ) )) {stop('lengths of threshold list, threshnames list, threshgroup list must be identical') }
+  
+  # Specify the population weighting to use unique individuals, not the double counted total near each site.
+  wts <- popstats[ , wtscolname]
   
   # Specify summary metrics to calculate.
   # Provide a default set of summary metrics.
@@ -38,7 +55,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   ############################################
   
   rowfuname <- vector()
-  rowfun <- list()
+  rowfun  <- list()
   rowargs <- list()
   i=0
   
@@ -50,6 +67,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     
     # one set of thresholds, which are recycled as needed to match length of this threshnames[[threshnum]] vector
     
+    # FOR EACH SITE WHAT IS THE MAX VALUE OF A FEW INDICATORS (PERCENTILES) AT THAT SITE?
     i=i+1
     rowfuname[i]=paste('Max of', threshgroup[[setnum]])
     rowfun[[i]]=function(x, varnames, na.rm=na.rm) {
@@ -68,6 +86,7 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
 #     }
 #     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
     
+    # FOR EACH SITE HOW MANY OF A FEW INDICATORS (PERCENTILES) ARE AT/ABOVE A SPECIFIED THRESHOLD?
     i=i+1
     rowfuname[i]=paste('Number of', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
     rowfun[[i]]=function(x, varnames, cutoff, or.tied, na.rm) {
@@ -111,28 +130,35 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   
   colfuname <- vector()
   colfun <- list()
+  bywhat <- vector() # specify if this function gets applied across people or across sites
   # n specifies the order in which summary stat rows will appear
   n=0
   
   n=n+1
   colfuname[n]='Average site'
   colfun[[n]]=function(x, ...) {colMeans(x, na.rm=na.rm)}
+  bywhat[n] <- 'site'
   
   n=n+1
   colfuname[n]='Average person'
+  # *** above specified wts as popstats[ , wtscolname] since wts is not passed to this function later
   colfun[[n]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)}
+  bywhat[n] <- 'pop'
   
   n=n+1
   colfuname[n]='Median site'
   colfun[[n]]=function(x, ...) {
     sapply(x, FUN=function(y) {median(y, na.rm=na.rm)})
   }
+  bywhat[n] <- 'site'
   
   n=n+1
   colfuname[n]='Median person'
   colfun[[n]]=function(x, ...) {
-    sapply(x, FUN=function(y) {wtd.quantile(y, probs=0.50, weights=wts, na.rm=na.rm)})
+    # *** above specified wts as popstats[ , wtscolname] since wts is not passed to this function later
+    sapply(x, FUN=function(y) {Hmisc::wtd.quantile(y, probs=0.50, weights=wts, na.rm=na.rm)})
   }
+  bywhat[n] <- 'pop'
   
   n=n+1
   colfuname[n]='Min'
@@ -141,7 +167,8 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     z= suppressWarnings( colMins(x, na.rm=na.rm) ) 
     z[is.infinite(z)] <- NA
     return(z)
-    }
+  }
+  bywhat[n] <- 'site'
   
   n=n+1
   colfuname[n]='Max'
@@ -151,24 +178,28 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     z[is.infinite(z)] <- NA
     return(z)
     }
+  bywhat[n] <- 'site'
   
 #   n=n+1
 #   colfuname[n]='Sum'
 #   colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
+#   bywhat[n] <- 'pop'
   
 #   n=n+1
 #   colfuname[n]='Count of sites'
 #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
+#   bywhat[n] <- 'site'
   
   # manually removed this stat because colfun.picked is hard to use as currently written
   #n=n+1
   #   colfuname[n]='Number of unique values'
   #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
+  # bywhat[n] <- 'site'
   
   #n=n+1
   #  colfuname[n]='Standard Deviation'
   #  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
-  
+  # bywhat[n] <- 'site'
   
   ############################################
   # THESE SUMMARY FUNCTIONS RETURN MULTIPLE ROWS EACH:
@@ -194,6 +225,9 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
       myfunlist <- list()
       for (z in 1:length(probs)) {
         myfunlist[[z]] <- function(x, ...) {  }
+        
+        # *** may need to specify wts here as popstats[ , wtscolname]
+        
         f <- (parse( " function (x) ", as.symbol("{"), paste('wtd.quantile(x, weights=wts, probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
         body(myfunlist[[z]]) <- f
       }
@@ -232,14 +266,14 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   rowfuns.count.picked <- sum(rowfun.picked)
   
   # preallocate space to store summary stats on only those picked
-  summary.rows <- matrix(NA, nrow=colfuns.count.picked, ncol=ncol(x)) # rows with summary stats summarizing all the columns. This will hold 1 row per summary stat, and same # cols as original table of batch results
-  summary.cols <- matrix(NA, nrow=nrow(x), ncol=rowfuns.count.picked ) # columns with summary stats summarizing all the rows
+  summary.rows <- matrix(NA, nrow=colfuns.count.picked, ncol=ncol(sitestats)) # rows with summary stats summarizing all the columns. This will hold 1 row per summary stat, and same # cols as original table of batch results
+  summary.cols <- matrix(NA, nrow=nrow(sitestats), ncol=rowfuns.count.picked ) # columns with summary stats summarizing all the rows
   
   summary.rows.names<- vector()
   summary.cols.names<- vector()
   
   # don't summarize character columns like name of site
-  charcol <- sapply(x, class)=='character'
+  charcol <- sapply(sitestats, class)=='character'
   
   ############################################
   # Create summary rows
@@ -250,7 +284,16 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
     
     fnum <- which(colfun.picked)[i]
     
-    summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](x[ , !charcol]) )  # don't pass parameters since they are variables available in this memory space? like na.rm, threshold, probs, etc.
+    if (bywhat[fnum] == 'site') {
+      # right now wts are not passed from here to function- they are specified when function is specified
+      # don't pass parameters since they are variables available in this memory space. like wts, na.rm, threshold, probs, etc.
+      # weight by the total pop count at each site?? why?
+      # wts <- sitestats[ , wtscolname]
+      summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](sitestats[ , !charcol]) )  
+    } else {
+      # wts <- popstats[ , wtscolname] # weight by the unique individuals assigned to a given site
+      summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](popstats[ , !charcol]) )  
+    }
     
     # print('now summary.rows[i, ] all cols is '); print(summary.rows[i, ])
     
@@ -267,10 +310,15 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   for (i in 1:rowfuns.count.picked) {
     fnum <- which(rowfun.picked)[i]
     myargs <- rowargs[[fnum]]
-    myargs$x <- x
+    
+    if (bywhat[fnum] == 'site') {
+      myargs$x <- sitestats
+    } else {
+      myargs$x <- popstats
+    }
     
     summary.cols[ , i] <- round( as.vector( 
-      do.call(rowfun[[fnum]], args=myargs)
+      do.call(rowfun[[fnum]], args = myargs)
     ), 0) 
     
     summary.cols.names[ i] <- rowfuname[fnum]
@@ -281,22 +329,23 @@ batch.summarize <- function(x, cols='all', wts=1, probs=c(0,0.25,0.50,0.75,0.80,
   ############################################
   
   rownames(summary.rows) <- summary.rows.names
-  colnames(summary.rows) <- colnames(x)
+  colnames(summary.rows) <- cols # colnames(sitestats)  # Not sure this works if only some cols selected to summarize
   
   colnames(summary.cols) <- summary.cols.names
-  rownames(summary.cols) <- x[,1] # assumes you want the first column to be used as the rownames, which is OBJECTID as of 2/2015
-  # rownames(colsout) <- rownames(x)  # is another option
+  rownames(summary.cols) <- sitestats[ , 1] # assumes you want the first column to be used as the rownames, which is OBJECTID as of 2/2015
+  # rownames(colsout) <- rownames(sitestats)  # is another option
   
   ############################################
   # less elegant WAY TO APPEND QUANTILE SUMMARY ROWS:
   ############################################
   
   if (just.rbind.quantiles) {
-    quantile.rows     <- matrix(NA, nrow=length(probs), ncol=ncol(x)); rownames(quantile.rows)     <- paste('Percentile of sites', 100*probs)
-    wtd.quantile.rows <- matrix(NA, nrow=length(probs), ncol=ncol(x)); rownames(wtd.quantile.rows) <- paste('Percentile of people', 100*probs)
-    colnames(quantile.rows) <- colnames(x); colnames(wtd.quantile.rows) <- colnames(x)
-    quantile.rows[     , !charcol] <- sapply(x[ , !charcol], function(y) quantile(y,     probs=probs, na.rm=na.rm) )
-    wtd.quantile.rows[ , !charcol] <- sapply(x[ , !charcol], function(y) wtd.quantile(y, probs=probs, na.rm=na.rm,  weights=wts) )
+    quantile.rows     <- matrix(NA, nrow=length(probs), ncol=NCOL(sitestats)); rownames(quantile.rows)     <- paste('Percentile of sites', 100*probs)
+    wtd.quantile.rows <- matrix(NA, nrow=length(probs), ncol=NCOL(popstats)); rownames(wtd.quantile.rows) <- paste('Percentile of people', 100*probs)
+    colnames(quantile.rows) <- colnames(sitestats) # should be same as cols variable
+    colnames(wtd.quantile.rows) <- colnames(sitestats) # ditto
+    quantile.rows[     , !charcol] <- sapply(sitestats[ , !charcol], function(y) quantile(y,     probs=probs, na.rm=na.rm) )
+    wtd.quantile.rows[ , !charcol] <- sapply( popstats[ , !charcol], function(y) wtd.quantile(y, probs=probs, na.rm=na.rm,  weights=wts) )
     summary.rows <- rbind(summary.rows, quantile.rows, wtd.quantile.rows)
   }
   ############################################
