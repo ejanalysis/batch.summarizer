@@ -6,6 +6,9 @@ tab.parsed <- function(myfile, folder=getwd(), skip=2,
   
   # This is based on old code in parsed.rows.R
 
+  # THIS JUST READS IN THE CSV SAVED FROM THE SINGLE BUFFER REPORT SHOWN AS TABULAR VIEW ON SCREEN
+  # AND IT IS NOT USED BY THE BATCH SUMMARIZER. IT WAS USED TO READ ONE AT A TIME WHEN THAT WAS USEFUL A WHILE AGO.
+  
   # input is myfile, a csv of saved tabular data from a buffer standard report in EJSCREEN
   # and it will be imported as a data.frame plus info from the 1st two rows, using read.csv(file, as.is=TRUE, skip=2) 
   
