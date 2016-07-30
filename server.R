@@ -1,16 +1,16 @@
-# for debugging:
-# options(shiny.reactlog = TRUE)
-# options(shiny.trace = TRUE)
-# options(error = NULL)
-# options(shiny.error = browser)
 
-library(shiny) # http://shiny.rstudio.com
+if (testing) {  cat('Starting server\n') }
 
+##############
+# Get packages and source code to get functions needed
+# Why not do this in global.R?
+
+# MAPS FUNCTIONS
+#
 # TO OBTAIN THE leaflet PACKAGE (NOT ON CRAN):
 #  devtools::install_github("rstudio/leaflet")
 library(leaflet) # for interactive maps
 #library(leafletR) # for interactive maps (a different package than leaflet)
-
 library(maps) # for static maps; choropleth of counties, etc.
 library(mapproj)
 source("maphelpers.R")  # if we want percent choropleths of county data
@@ -18,19 +18,12 @@ counties <- readRDS(file = 'data/counties.rds') # if we want county data
 counties$nonwhite <- round( 100 - counties$white, 1)
 # load gomap.js ??
 
-# library(dplyr) # might not need this
-require(Hmisc) # various useful functions for data analysis
-library(plotrix) # for better weighted.hist than ggplot2 can provide.
-require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist, but better.
-
-# CUSTOM FUNCTIONS USED HERE: REQUIRE AS A PACKAGE, OR SOURCE FROM THE SHINY APP'S BASE DIRECTORY:
-# These are also found in the packages called analyze.stuff and ejanalysis, (and ejscreen pkg provides popupunits)
+# DATA ANALYSIS FUNCTIONS
+# 
+# *** These (newer versions) are also found in the packages called analyze.stuff and ejanalysis, (and ejscreen pkg provides popupunits)
 # available at http://ejanalysis.github.io
 # 
-
-#source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
 source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
-#source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
 source('count.above.R')        # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
 source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
 source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >50th or 80th or 95th%ile, for example), for each of many rows of a data.frame
@@ -39,14 +32,22 @@ source('rowMins.R')     # returns Min of each row
 source('colMaxs.R')     # returns Max of each col
 source('colMins.R')     # returns Min of each col
 source('wtd.colMeans.R')     # returns wtd.mean of each col
-source('lead.zeroes.R')
+source('lead.zeroes.R')  # add leading zeroes as needed to fix FIPS that had been stored as numeric
 source('change.fieldnames.R')  # updated function that helps change or resort fieldnames using a map file mapping old to new names
+#source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
+#source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
 
-source('wilcoxon.pvalues.r')  # for statistical significance testing
-
+# OTHER FUNCTIONS USED HERE:
+#
+source('wilcoxon.pvalues.r')  # for statistical significance testing - from air
 source('batch.read.R')
 source('batch.clean.R')
 source('batch.summarize.R')
+require(Hmisc) # various useful functions for data analysis
+library(plotrix) # for better weighted.hist than ggplot2 can provide.
+require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist, but better.
+# library(dplyr) # might not need this
+##############
 
 ##################################################################################################
 
@@ -65,25 +66,9 @@ shinyServer(function(input, output, session) {
   output$name3 <-  renderText(input$batchname)
   output$name4 <-  renderText(input$batchname)
   output$name5 <-  renderText(input$batchname)
-  output$titletext <- renderText(paste("Batch Results Summarizer:", as.character(input$batchname)))
-  
-  
-  # Show box for filename or upload by browsing
-  # probably not used- trying to use conditionalPanel instead
-  #if (input$uploadingtoserver == 'Y') {cat('Uploading is selected \n')}
-  output$uploadingtoserverout <-  renderText(input$uploadingtoserver)
-#   output$filepicker <- renderUI({
-#     if (input$uploadingtoserver == 'Y') {
-#       fileInput('file1', 'Browse to upload file of batch results to summarize',
-#                 accept = c('text/csv', 'text/txt', '.txt', 'text/comma-separated-values, text/plain', '.csv'))
-#     } else {
-#      #h4(textInput('localbigfilename', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', ''))
-#       textInput('localbigfilename', 'Enter filename to specify local file of batch results to read and summarize (if too large to upload)', '')
-#      submitButton(text = 'Upload entered filename')
-#     }
-#   })
-  
-  
+
+  output$titletext <- renderText(input$batchname)
+
   # Code enabling Download of tables and charts
   
   output$download.rowsout <- downloadHandler(
@@ -235,7 +220,6 @@ shinyServer(function(input, output, session) {
   })
   
   
-  
   ##################################################################################################
   # UPLOADED DATASET AS A TABLE
   
@@ -266,6 +250,7 @@ shinyServer(function(input, output, session) {
   #     myfile
   #   })
   
+  
   # This (the reactive expression called fulltabler) is the uploaded dataset that 
   # is the output of the batch processing and input to the batch summarizer:
   
@@ -293,11 +278,14 @@ shinyServer(function(input, output, session) {
     # After the user selects and uploads a file, it will be a data frame with 
     # 'name', 'size', 'type', and 'datapath' columns. 
     # The 'datapath' column will contain the local filenames where the data can be found.
+    
     inFile <- input$file1
+    if (testing) {cat('inFile is null:', is.null(inFile), '\n'); print(input$localbigfilename) 
     if (is.null(inFile) & input$localbigfilename == '') {
       #mydemofile # e.g.  Export_Output_Example2.csv
       cat('READING DEMO FULLTABLE \n'); cat('GETWD: ', getwd(), '\n')
       fulltable <- read.csv(mydemofile, stringsAsFactors = FALSE)
+      #output$infilename <- renderText(mydemofile)
     } else {
       if (!is.null(inFile)) {
         browsedfilename <- inFile$datapath
@@ -307,6 +295,7 @@ shinyServer(function(input, output, session) {
       } else {
         cat('READING NEW LOCAL FULLTABLE \n')
         fulltable <- read.csv(input$localbigfilename, stringsAsFactors = FALSE)
+        #output$infilename <- renderText(input$localbigfilename)
       }
     }
     
@@ -322,14 +311,78 @@ shinyServer(function(input, output, session) {
   })
   
   ####################################################################################
+  # now same for popstats input that does not double count people
+
+  fulltabler.pop <- reactive({
+    
+    # observeEvent(
+    #   input$browsedfilebutton, 
+    #   {
+    #     if (!is.null(inFile)) {
+    #       if (file.exists(browsedfilename)) {try( fulltable <- read.csv(browsedfilename, stringsAsFactors = FALSE) )}
+    #     }
+    #   }
+    # )
+    # 
+    # observeEvent(
+    #   input$localbigfilename, 
+    #   {
+    #     if (input$localbigfilename != ' ') {
+    #       if (file.exists(input$localbigfilename)) {try( fulltable <- read.csv(input$localbigfilename, stringsAsFactors = FALSE) )}
+    #     }
+    #   }
+    # )
+    
+    # input$file1 will be NULL initially, or can use the example file and preload it?
+    # After the user selects and uploads a file, it will be a data frame with 
+    # 'name', 'size', 'type', and 'datapath' columns. 
+    # The 'datapath' column will contain the local filenames where the data can be found.
+    
+    inFile.pop <- input$file1.pop
+    if (is.null(inFile.pop) & input$localbigfilename.pop == '') {
+      #mydemofile # e.g.  Export_Output_Example2.csv
+      cat('READING DEMO FULLTABLE.pop \n'); cat('GETWD: ', getwd(), '\n')
+      fulltable.pop <- read.csv(mydemofile.pop, stringsAsFactors = FALSE)
+    } else {
+      if (!is.null(inFile.pop)) {
+        browsedfilename.pop <- inFile.pop$datapath
+        cat('READING NEW BROWSED FULLTABLE.pop \n')
+        fulltable.pop <- read.csv(browsedfilename.pop, stringsAsFactors = FALSE)
+        output$infilename.pop <- renderText(inFile.pop$name)
+      } else {
+        cat('READING NEW LOCAL FULLTABLE.pop \n')
+        fulltable <- read.csv(input$localbigfilename.pop, stringsAsFactors = FALSE)
+      }
+    }
+    
+    # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
+    # To allow user to specify parameters of upload file format:
+    #fulltable.pop <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
+    
+    # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
+    # fulltable.pop <- batch.clean(fulltable.pop, namesfile=mynamesfile.pop)
+    
+    # **** ASSUMES HERE THAT lookup.fieldnames() is same for both input files !
+    
+    fulltable.pop <- batch.clean(fulltable.pop, oldcolnames = lookup.fieldnames()$oldnames, newcolnames = lookup.fieldnames()$newnames )
+    if ('name' %in% colnames(fulltable.pop) ) { rownames(fulltable.pop) <- fulltable.pop[ , 'name'] } # become colnames when transposed for viewing? no.
+    fulltable.pop
+  })
+  
+  ####################################################################################
   # TALLIES
   
   popcount <- reactive({
-    sum(fulltabler()$pop, na.rm=TRUE)
+    sum(fulltabler.pop()$pop, na.rm=TRUE)   # this now is count of UNIQUE people and won't be named .pop
   })
   
   sitecount <- reactive({
     length(fulltabler()[,1])
+  })
+  
+  sitecount.pop <- reactive({
+    length(fulltabler.pop()[,1]) 
+    # should be identical to non-.pop one, just used to verify how many found in popstats file
   })
   
   output$sitecount.text <- renderText({
@@ -337,7 +390,11 @@ shinyServer(function(input, output, session) {
   })
   
   output$sitecount.text2 <- renderText({
-    paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.')
+    paste( sitecount(), 'sites have been uploaded, analyzed, and mapped.') # need 2d one since used on maps tab and upload tab
+  })
+  
+  output$sitecount.text2.pop <- renderText({
+    paste( sitecount.pop(), 'sites have been uploaded and analyzed.')
   })
   
   output$popsitecounts.out <- renderText({
@@ -345,7 +402,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$popsitecounts.out2 <- renderText({
-    paste("Total population is ", format(popcount(), big.mark=',', scientific=FALSE), " at ", sitecount(), " sites.", sep='')
+    paste("Total population is ", format(popcount(), big.mark=',', scientific=FALSE), " unique individuals near one or more of the ", sitecount(), " sites.", sep='')
   })
   
   counts.by.state <- reactive({
@@ -355,7 +412,7 @@ shinyServer(function(input, output, session) {
     # #x=bystats(id, state)[,'N']
     # #x=bystats[-length(x)] # if want to remove the "ALL" column
     names(x) <- c('State', 'Site count')
-    popcounts <- aggregate.data.frame(fulltabler()$pop, by=list(fulltabler()$statename), FUN=function(z) sum(z, na.rm = TRUE))
+    popcounts <- aggregate.data.frame(fulltabler.pop()$pop, by=list(fulltabler.pop()$statename), FUN=function(z) sum(z, na.rm = TRUE))
     names(popcounts) <- c('State', 'Population count')
     x= merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all states with a length even if sum is NA
     x[ , 'Population count'] <- format(x[ , 'Population count'], scientific=FALSE, big.mark = ',')
@@ -378,7 +435,7 @@ shinyServer(function(input, output, session) {
     # #x=bystats(id, state)[,'N']
     # #x=bystats[-length(x)] # if want to remove the "ALL" column
     names(x) <- c('Region', 'Site count')
-    popcounts <- aggregate.data.frame(fulltabler()$pop, by=list(fulltabler()$REGION), FUN=function(z) sum(z, na.rm = TRUE))
+    popcounts <- aggregate.data.frame(fulltabler.pop()$pop, by=list(fulltabler.pop()$REGION), FUN=function(z) sum(z, na.rm = TRUE))
     names(popcounts) <- c('Region', 'Population count')
     x= merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all zones with a length even if sum is NA
     x[ , 'Population count'] <- format(x[ , 'Population count'], scientific=FALSE, big.mark = ',')
@@ -402,7 +459,7 @@ shinyServer(function(input, output, session) {
   # *** could replace mycolnames with friendly names at some point, or at least do that just before rendering or downloading,
   # by using lookup.fieldnames()$longnames to replace corresponding $newnames
   
-  ######## probably redundant:
+  ######## probably redundant: and will assume colnames are identical in file1 and file1.pop
   
   mycolnames.friendly <- reactive({
     # lookup the unfriendly colnames in the lookup table to get longname 
@@ -421,11 +478,11 @@ shinyServer(function(input, output, session) {
     )
   })
   
-  make.colnames.friendly <- function(df) {
-    # function of fulltabler()
-    colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
-    df
-  }
+#   make.colnames.friendly <- function(df) {
+#     # function of fulltabler()
+#     colnames(df) <- change.fieldnames(colnames(df), oldnames= lookup.fieldnames()$newname, newnames = lookup.fieldnames()$longname)
+#     df
+#   }
   
   make.colnames.friendly.complete <- function(df) {
     # function of fulltabler()
@@ -534,10 +591,10 @@ shinyServer(function(input, output, session) {
   #   rows (rows of summary stats), & cols (columns of summary stats)
   
   outlist <- reactive({ 
-    
     x <- batch.summarize(
-      fulltabler(),
-      wts = fulltabler()[ , mywtsname], cols = mycolnames(), 
+      sitestats = fulltabler(), popstats = fulltabler.pop(),
+      wtscolname = mywtsname, #wts = fulltabler()[ , mywtsname],  
+      cols = mycolnames(), 
       threshnames = mythreshnames(), threshold = mythresholds(), threshgroup = mythreshgroups(),
       colfun.picked = colfun.picked, rowfun.picked = rowfun.picked,
       probs = as.numeric( input$probs ), na.rm = na.rm
@@ -572,6 +629,7 @@ shinyServer(function(input, output, session) {
     x
     
   })
+  ##################################################################################################
   
   ###########################
   # Render comprehensive output/result rows & cols of the batch summarizer as an interactive datatable for the webpage:
@@ -893,7 +951,7 @@ shinyServer(function(input, output, session) {
     input$execsum.e.selected
   })
   my.ratio.to.us.e.name <- reactive({
-    names.e[ which(names.e.friendly == my.ratio.to.us.e.name.friendly() ) ]
+    names.e.batch[ which(names.e.friendly == my.ratio.to.us.e.name.friendly() ) ]
   })
   #  my.ratio.to.us.e <- 999
   my.ratio.to.us.e <- reactive({
@@ -902,12 +960,12 @@ shinyServer(function(input, output, session) {
   
   # NOTE: this might pick the wrong one if there is a tie??
   max.ratio.to.us.d.name <- reactive({
-    names.d[ which(ratio.to.us.d() == max.ratio.to.us.d() ) ]
+    names.d.batch[ which(ratio.to.us.d() == max.ratio.to.us.d() ) ]
   })
   
   # NOTE: this might pick the wrong one if there is a tie??
   max.ratio.to.us.e.name <- reactive({
-    names.e[ which(ratio.to.us.e() == max.ratio.to.us.e() ) ]
+    names.e.batch[ which(ratio.to.us.e() == max.ratio.to.us.e() ) ]
   })
   
   
@@ -1080,7 +1138,7 @@ shinyServer(function(input, output, session) {
       
       if (input$barvarmean=='med') {
         # MEDIAN PCTILE IS SELECTED
-        mybarvars.sumstat <- c( 'Median site','Median person')
+        mybarvars.sumstat <- c( 'Median site', 'Median person')
         mybarvars.refzone.row <- 'Median person'  # 'Median person' 
         
         # MEDIAN PERSON'S PCTILE IS just 50
@@ -1093,7 +1151,8 @@ shinyServer(function(input, output, session) {
         
         # AVERAGE PERSON'S PCTILE IS NOT AVAILABLE IN THIS DATASET CURRENTLY ******  just shows median of 50 for now ***
         # 
-        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY mybarvars.refzone <- gsub('us.avg','us.avg.pctile', mybarvars.refzone) 
+        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY
+        #mybarvars.refzone <- gsub('us.avg','us.avg.pctile', mybarvars.refzone) 
         mylegend <- c(  'Average site here', 'Average person here', 'Median person in US (not avg.)')
         
       }
@@ -1112,7 +1171,7 @@ shinyServer(function(input, output, session) {
         # IF IT WERE AVAILABLE HERE, THIS WOULD SAY mybarvars.refzone <- gsub('us.avg', 'us.med', mybarvars.refzone)
       } else {
         # AVG RAW IS SELECTED      
-        mybarvars.sumstat <- c( 'Average site','Average person')
+        mybarvars.sumstat <- c( 'Average site', 'Average person')
         mybarvars.refzone.row <- 'Average person'  #
         mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
         
@@ -1322,20 +1381,21 @@ shinyServer(function(input, output, session) {
     }
     if (myrefstat=='raw' ) {
       sitecount <- 0 # suppress horizontal line benchmark when viewing raw data- it only applies to percentiles. Correct histo benchmark for raw would be the US overall histogram of that raw value in the selected # of bins, which is hard to provide here.
-      popcount <- 0
+      popcount.hist <- 0
     } else {
-      sitecount <- length( fulltabler()[ , myvar.full] ) # but for popwtd hist, use popcount!
-      #popcount < - sum( fulltable[ , mywtsname], na.rm=TRUE ) # assumes 'pop' is colname for weights, for now. fails.
-      popcount <- outlist()$rows[ 'Sum','pop' ]
+      sitecount <- length( fulltabler()[ , myvar.full] ) 
+      # but for popwtd hist, use popcount.hist! 
+      popcount.hist <- outlist()$rows[ 'Sum', mywtsname ] 
+      # should be same as getting it from summing within fulltabler.pop()?
     }
     
     mybincount <- input$bincount # e.g. default (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
-    expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount?!
-    expected.pop.per.bin=   popcount  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
+    expected.sites.per.bin= sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount.hist?!
+    expected.pop.per.bin=   popcount.hist  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
     
     # HISTOGRAM plotted here
     
-    if (input$sites.or.people=='Sites') {
+    if (input$sites.or.people == 'Sites') {
       # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
       
       myplot <- ggplot( fulltabler(), aes_string( myvar.full) ) + 
@@ -1344,36 +1404,38 @@ shinyServer(function(input, output, session) {
         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''))
       
-      py <- plotly()
-      myplot2 <- py$ggplotly()
-      
-      return(myplot)
+      ### plotly() was Deprecated: see signup for credentials/configuration storage details. See ggplotly for the new ggplot2 interface.
+      #py <- plotly()
+      #myplot2 <- py$ggplotly()
+      #return(myplot)
+      return(NULL)  # NOT WORKING RIGHT NOW
       
     } else {
       
       # *** hard coded to use mywtsname as weights for now:
       # BUT, ggplot approach to weighted hist is NOT the same as what we want, which plotrix package CAN do:
       # print(fulltabler()[ , myvar.full])    
-      h = fulltabler()[ , myvar.full ]
-      wts=fulltabler()[ , mywtsname  ]
-      wts=wts[!is.na(h)] # but what if wts is na???
-      h= h[!is.na(h)]
-      if (myrefstat=='raw' ) {
+      h <- fulltabler.pop()[ , myvar.full]
+      wts.hist <- fulltabler.pop()[ , mywtsname] 
+      # and if wts is na??? not handled here
+      wts.hist <- wts.hist[!is.na(h)]        # ONLY SHOWS HISTOGRAM FOR VALID (NOT NA) INDICATOR VALUES
+      h <- h[!is.na(h)]       # ONLY SHOWS HISTOGRAM FOR VALID (NOT NA) INDICATOR VALUES
+      if (myrefstat == 'raw' ) {
         mybreaks <- 0
       }
       
       weighted.hist(
         x = h,
-        w = wts,
+        w = wts.hist,
         # breaks = seq(0, 100, 100 / mybincount),  # nice if demog raw, or any pctiles, are being plotted
         breaks = mybincount,  # needed if raw E being plotted
         main = paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep=''),
         # names.arg=myvar.friendly.full,
-        ylab=input$sites.or.people
+        ylab = input$sites.or.people
       )
-      print('blah')
+      print('hello')
       abline(h=expected.pop.per.bin)
-      curve(dnorm(x, mean=Hmisc::wtd.mean(h, wts), sd=sqrt(Hmisc::wtd.var(h,wts))), add=TRUE, col="darkblue", lwd=2)
+      curve(dnorm(x, mean=Hmisc::wtd.mean(h, wts.hist), sd=sqrt(Hmisc::wtd.var(h, wts.hist))), add=TRUE, col="darkblue", lwd=2)
       
       #       myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
       #         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
