@@ -36,10 +36,10 @@ count.above <- function(df, benchmarks='mean', benchnames='cutoff', or.tied=FALS
   #
   #################################################################################
   
-  if ( any(is.na(benchmarks))) {print("Error - benchmarks cannot include NA values."); return(NA)}
+  if ( any(is.na(benchmarks))) {warning("Error - benchmarks cannot include NA values."); return(NA)}
   
-  if (is.matrix(df)) {df <- as.data.frame(df)} #; print("df is a matrix... converting to data.frame")}
-  if (is.vector(df)) {df <- as.data.frame(df)} #; print("df is a vector... converting to data.frame")}
+  if (is.matrix(df)) {df <- as.data.frame(df)} #; warning("df is a matrix... converting to data.frame")}
+  if (is.vector(df)) {df <- as.data.frame(df)} #; warning("df is a vector... converting to data.frame")}
   
   if ( any(is.na(df))) {
     warning("df contains some NA values but should be numeric.")

@@ -10,7 +10,7 @@ lead.zeroes <- function(fips, length.desired) {
 
 	fips <- as.character(fips)
 	# might trim whitespace?  
-	if ( (length(length.desired) >1) & (length(fips) != length(length.desired))) {print("warning: #s of inputs don't match")}
+	if ( (length(length.desired) >1) & (length(fips) != length(length.desired))) {warning("numbers of inputs don't match")}
 	if ( any(length.desired==0 | length.desired>=100) ) {stop("error: string lengths must be >0 & <100")}
 	if ( any(nchar(fips) > length.desired) ) {stop("error: some are longer than desired length")}
 

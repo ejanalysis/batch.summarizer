@@ -1,37 +1,30 @@
-wtd.colMeans <- function(x, wts=1, na.rm = FALSE, dims = 1) {
-  
-  warning(' **** THIS IS WORK IN PROGRESS AS IS wtd.rowMeans() !!! Check how NA values are handled ****')
-
+wtd.colMeans <- function(x, wts, by, na.rm = TRUE, dims = 1) {
+  #  version of this function for batch.summarizer originally had these defaults:
+  #   wts=1, na.rm=FALSE 
+  # and is just this function:
   return( colMeans(x * t(wts), na.rm=na.rm) * colSums(!is.na(x)) / sum(wts, na.rm=na.rm) )
+  # which is the same as analyze.stuff::wtd.colMeans2()
+  # and doesn't need data.table package which makes it a bit easier for a hosted app.
+  # suppressWarnings( ) might be useful.
   
-  #colSums(!is.na(x)) instead of length(w) might use all rows of given col where value in that col is not NA
-  # t(wtd.rowMeans(t(x), wts, na.rm=na.rm, dims=dims)) #problem: treats value as zero if any in row is NA? ? ? 
-  # this might not work right handling NA VALUES IN wts vs in x ???****
-  # instead of length(w) might want length2(w, na.rm=na.rm) or just na.rm=TRUE ???
-  
-  # Example:
-  x=data.frame(a=c(NA, 2:4), b=rep(100,4), c=rep(3,4))
-  w=c(1.1, 2, NA, 0)
-  print(cbind(x,w, wtd=w*x))
-  print(wtd.colMeans(x, w, na.rm=TRUE))
-  #rbind(cbind(x, w, wtd=w*x), c(wtd.colMeans(x, w, na.rm=TRUE), 'wtd.colMeans', rep(NA,length(w))) )
-  
-  x=data.frame(a=c(NA, 2:10), b=rep(100,10), c=rep(3,10))
-   w=c(1.1, 2, NA, rep(1, 7))
-  print(cbind(x,w, wtd=w*x))
-   rbind(cbind(x, w), c(wtd.colMeans(x, w, na.rm=TRUE), 'wtd.colMeans') )
-  print(w*cbind(x,w))
-
+#   require(data.table)
+#   if (!missing(wts)) {
+#     if (any(is.na(wts)) ) {warning('For wts with NA values, not fully tested -- I think mean uses total number of rows (or sum of non-NA weights) as denominator, not just rows where the actual value is non-NA!')}
+#   }
+#   if (any(is.na(x)) ) {warning('For cols with NA values, not fully tested -- I think mean uses total number of rows (or sum of non-NA weights) as denominator, not just rows where the actual value is non-NA!')}
+#   myna.rm <- na.rm
+#   # if just a vector (single col from data.frame with drop=TRUE) then cannot use setDT() -- setDT saves RAM by not making a copy
+#   if (NCOL(x) == 1) {
+#     x <- data.table(x)
+#   } else {
+#     x <- data.table(x)
+#     #setDT(x)
+#   }
+#   if (missing(wts)) {
+#     result <- x[ , lapply(.SD, mean, na.rm = myna.rm  ), by = by]
+#   } else {
+#     result <- x[ , lapply(.SD, weighted.mean, wts, na.rm = myna.rm  ), by = by]
+#   }
+#   setDF(result)
+#   return(result)
 }
-
-# *** Question:  see notes in wtd.rowMeans()
-
-# x  
-# an array of two or more dimensions, containing numeric, complex, integer or logical values, or a numeric data frame.
-# 
-# na.rm  
-# logical. Should missing values (including NaN) be omitted from the calculations?
-# 
-# dims	
-# integer: Which dimensions are regarded as 'rows' or 'columns' to sum over. For row*, the sum or mean is over dimensions dims+1, ...; for col* it is over dimensions 1:dims.
-#

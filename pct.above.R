@@ -60,13 +60,13 @@ pct.above <- function(df, benchmarks='mean', benchnames='cutoff', na.rm=FALSE, o
   }
   
   if (length(benchnames) > length(df)) {
-    print("Warning: length of benchnames must be less than or equal to # of cols in df. Renaming benchnames to 'cutoff' ")
+    warning("length of benchnames must be less than or equal to # of cols in df. Renaming benchnames to 'cutoff' ")
     benchnames <- 'cutoff' 
   }
   
   counts.above <- count.above(df, benchmarks, benchnames, or.tied=or.tied, below=below, wts=wts)
   
-  if (length(counts.above)==1 && is.na(counts.above)) {print("Error in counts.above"); return(NA)}
+  if (length(counts.above)==1 && is.na(counts.above)) {stop("Error in counts.above"); return(NA)}
   
   recycles <- length(df[ , 1]) / length(wts) # ensure sum of wts is right if it was recycled
 

@@ -18,9 +18,9 @@ wilcoxon.pvalues <- function(x,n) {
   return(round(p.values,4))
   
   # example of usage:
-  x <- c(white=0, black=0, native=0, multi=0, minority=9, ling.isol=1, 
-    age0.4=41, age0.17=0, age65.up=57, no.hs.diploma=41, low.income=48)
-  # Sample Size (# of facilities w/ 3 mi. population >= 100):
-  n <- 13
-  print( wilcoxon.pvalues(x,n) ) 
+  #   x <- c(white=0, black=0, native=0, multi=0, minority=9, ling.isol=1, 
+  #     age0.4=41, age0.17=0, age65.up=57, no.hs.diploma=41, low.income=48)
+  #   # Sample Size (# of facilities w/ 3 mi. population >= 100):
+  #   n <- 13
+  #   print( wilcoxon.pvalues(x,n) ) 
 }
