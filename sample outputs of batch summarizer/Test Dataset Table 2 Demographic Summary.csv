@@ -1,0 +1,6 @@
+"","Statistic","Demog.Ind.","% Low-inc.","% Minority","% <High School","% Linguistic Isol.","% < age 5","% > age 64"
+"1","At the average site","38%","41%","35%","18%","2%","6%","14%"
+"2","standard deviation","18.13","12.55","27.74","6.95","3.7","2.49","4.66"
+"3","t-statistic","0","0","0","0","0","0","0"
+"4","p-value from Wilcoxon test","0","0","0","0","0","0","0"
+"5","Avg site, ratio to avg person in US","1.06","1.2","0.93","1.33","0.54","1","1.01"
