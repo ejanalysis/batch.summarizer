@@ -3,20 +3,27 @@ if (testing) {  cat('Starting server\n') }
 
 ##############
 # Get packages and source code to get functions needed
-# Why not do this in global.R?
+# Why not do this in global.R ?
 
-# MAPS FUNCTIONS
-#
-# TO OBTAIN THE leaflet PACKAGE (NOT ON CRAN):
-#  devtools::install_github("rstudio/leaflet")
-library(leaflet) # for interactive maps
-#library(leafletR) # for interactive maps (a different package than leaflet)
-library(maps) # for static maps; choropleth of counties, etc.
-library(mapproj)
+# FUNCTIONS DEFINED HERE (Defined just in this batch.summarizer package):
+# 
+source('wilcoxon.pvalues.r')  # for statistical significance testing - from air
+source('batch.read.R')
+source('batch.clean.R')
+source('batch.summarize.R')
 source("maphelpers.R")  # if we want percent choropleths of county data
 counties <- readRDS(file = 'data/counties.rds') # if we want county data
 counties$nonwhite <- round( 100 - counties$white, 1)
 # load gomap.js ??
+
+# MAPS PACKAGES
+#
+# TO OBTAIN THE leaflet PACKAGE (IF VERSION NOT ON CRAN?):
+# library(devtools); devtools::install_github("rstudio/leaflet")
+library(leaflet) # for interactive maps
+#library(leafletR) # for interactive maps? (a different package than leaflet)
+library(maps) # for static maps; choropleth of counties, etc.
+library(mapproj)
 
 # DATA ANALYSIS FUNCTIONS
 # 
@@ -37,26 +44,22 @@ source('change.fieldnames.R')  # updated function that helps change or resort fi
 #source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
 #source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
 
-# OTHER FUNCTIONS USED HERE:
-#
-source('wilcoxon.pvalues.r')  # for statistical significance testing - from air
-source('batch.read.R')
-source('batch.clean.R')
-source('batch.summarize.R')
-require(Hmisc) # various useful functions for data analysis
+# OTHER PACKAGES USED:
+# library(data.table) # used by analyze.stuff or newer version of wtd.colMeans() 
+library(Hmisc) # various useful functions for data analysis
 library(plotrix) # for better weighted.hist than ggplot2 can provide.
-require(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist, but better.
+library(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist, but better.
 # library(dplyr) # might not need this
 ##############
 
 ##################################################################################################
-
 ##################################################################################################
 
 shinyServer(function(input, output, session) {
   
-  #   # seems to need this to calculate barplot at start
-  updateTabsetPanel(session, "tabset1", selected = "Detailed settings")
+  #   # seems to need this to calculate anything like tables or exec sum or barplot at start
+  #updateTabsetPanel(session, "tabset1", selected = "Details") # momentartarily selects this one
+  updateTabsetPanel(session, "tabset1", selected = default.tab) # then selects this one as first displayed. Not sure how this competes with selected = default.tab in ui.R
   
   # User-defined name for this dataset / analysis
   
@@ -82,6 +85,16 @@ shinyServer(function(input, output, session) {
     }
   )
   
+  output$download.rowsout.only <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'summary stats on each indicator -not site data.csv')
+    },
+    contentType = 'text/csv',
+    content = function(file) {
+      write.csv( make.colnames.friendly.complete(  outlist()$rows ), file)
+    }
+  )
+  
   output$download.colsout <- downloadHandler(
     filename = function() { 
       paste(mybatchname(), 'summary stats on each site -plus site data.csv')
@@ -89,6 +102,16 @@ shinyServer(function(input, output, session) {
     contentType = 'text/csv',
     content = function(file) {
       write.csv( cbind( outlist()$cols,  make.colnames.friendly.complete( fulltabler() ) ), file)
+    }
+  )
+  
+  output$download.colsout.only <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'summary stats on each site -not site data.csv')
+    },
+    contentType = 'text/csv',
+    content = function(file) {
+      write.csv( cbind( outlist()$cols ), file)
     }
   )
   
@@ -149,6 +172,26 @@ shinyServer(function(input, output, session) {
     contentType='text/csv',
     content = function(file) {
       write.csv( table3e(), file)
+    }
+  )
+  
+  output$download.states <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Site Count by State.csv')
+    },
+    contentType = 'text/csv',
+    content = function(file) {
+      write.csv( counts.by.state(), file)
+    }
+  )
+  
+  output$download.regions <- downloadHandler(
+    filename = function() { 
+      paste(mybatchname(), 'Site Count by Region.csv')
+    },
+    contentType = 'text/csv',
+    content = function(file) {
+      write.csv( counts.by.region(), file)
     }
   )
   
@@ -283,34 +326,34 @@ shinyServer(function(input, output, session) {
     
     inFile <- input$file1
     if (testing) {cat('inFile is null:', is.null(inFile), '\n'); print(input$localbigfilename) }
-      if (is.null(inFile) & input$localbigfilename == '') {
-        #mydemofile # e.g.  Export_Output_Example2.csv
-        cat('READING DEMO FULLTABLE \n'); cat('GETWD: ', getwd(), '\n')
-        fulltable <- read.csv(mydemofile, stringsAsFactors = FALSE)
-        #output$infilename <- renderText(mydemofile)
+    if (is.null(inFile) & input$localbigfilename == '') {
+      #mydemofile # e.g.  Export_Output_Example2.csv
+      cat('READING DEMO FULLTABLE \n'); cat('GETWD: ', getwd(), '\n')
+      fulltable <- read.csv(mydemofile, stringsAsFactors = FALSE)
+      #output$infilename <- renderText(mydemofile)
+    } else {
+      if (!is.null(inFile)) {
+        browsedfilename <- inFile$datapath
+        cat('READING NEW BROWSED FULLTABLE \n')
+        fulltable <- read.csv(browsedfilename, stringsAsFactors = FALSE)
+        output$infilename <- renderText(inFile$name)
       } else {
-        if (!is.null(inFile)) {
-          browsedfilename <- inFile$datapath
-          cat('READING NEW BROWSED FULLTABLE \n')
-          fulltable <- read.csv(browsedfilename, stringsAsFactors = FALSE)
-          output$infilename <- renderText(inFile$name)
-        } else {
-          cat('READING NEW LOCAL FULLTABLE \n')
-          fulltable <- read.csv(input$localbigfilename, stringsAsFactors = FALSE)
-          #output$infilename <- renderText(input$localbigfilename)
-        }
+        cat('READING NEW LOCAL FULLTABLE \n')
+        fulltable <- read.csv(input$localbigfilename, stringsAsFactors = FALSE)
+        #output$infilename <- renderText(input$localbigfilename)
       }
-      
-      # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
-      # To allow user to specify parameters of upload file format:
-      #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
-      
-      # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
-      # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
-      fulltable <- batch.clean(fulltable, oldcolnames=lookup.fieldnames()$oldnames, newcolnames=lookup.fieldnames()$newnames )
-      if ('name' %in% colnames(fulltable) ) { rownames(fulltable) <- fulltable[ , 'name'] } # become colnames when transposed for viewing? no.
-      fulltable
-    })
+    }
+    
+    # Read the uploaded batch results. read.csv used to read text file (csv format) that was exported from ArcGIS batch tool
+    # To allow user to specify parameters of upload file format:
+    #fulltable <- read.csv(myfile, header=input$header, sep=input$sep, quote=input$quote, stringsAsFactors=FALSE)
+    
+    # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
+    # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
+    fulltable <- batch.clean(fulltable, oldcolnames=lookup.fieldnames()$oldnames, newcolnames=lookup.fieldnames()$newnames )
+    if ('name' %in% colnames(fulltable) ) { rownames(fulltable) <- fulltable[ , 'name'] } # become colnames when transposed for viewing? no.
+    fulltable
+  })
   
   ####################################################################################
   # now same for popstats input that does not double count people
@@ -587,7 +630,7 @@ shinyServer(function(input, output, session) {
   
   ##################################################################################################
   # CREATE TABLES OF SUMMARY STATS
-  
+  ##################################################################################################  
   # Create the reactive expression providing summary rows and cols, the key output of the batch summarizer:
   # Create summary stats from uploaded batch results. 
   # outlist() is a list of 2 elements: 
@@ -604,34 +647,23 @@ shinyServer(function(input, output, session) {
       probs = as.numeric( input$probs ), na.rm = na.rm
     )
     
-    # THIS FIXES BUG IN SORTING/ FORMATTING cols RESULTS AS NUMERIC VS CHARACTER
-    x$cols <- as.data.frame(x$cols, stringsAsFactors = FALSE)
-    # but can't do this here WHILE STRINGS ARE IN SOME CELLS: 
-    # x$rows <- as.data.frame(x$rows, stringsAsFactors = FALSE)
-    
     # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
     if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename = fulltabler()$name, x$cols, stringsAsFactors = FALSE) }
-    
     # ******** don't set anything to NA for plotting or downloading or mapping! only for onscreen display/sort/filter!
-    
     
     # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
     vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
     x$rows[ , vars.NA] <- NA
     vars.round0 <- 'pop'
-    x$rows[ , vars.round0] <- round( x$rows[ , vars.round0], 0)
-    
+    x$rows[ , vars.round0] <- round(x$rows[ , vars.round0], 0)
     x$rows <- as.data.frame(x$rows, stringsAsFactors = FALSE)
+    x
     
     #     stats.round2 <- c('Average site', 'Average person')
     #     numeric.cols <- apply(x$rows, 2, class)=='numeric' # all should be now
     #     x$rows[ stats.round2, numeric.cols] <- round( x$rows[ stats.round2, numeric.cols] , 1)
-    
     #    vars.comma  <- 'pop'
     #    x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',')
-    
-    x
-    
   })
   ##################################################################################################
   
@@ -1437,7 +1469,7 @@ shinyServer(function(input, output, session) {
         # names.arg=myvar.friendly.full,
         ylab = input$sites.or.people
       )
-      print('hello')
+      
       abline(h=expected.pop.per.bin)
       curve(dnorm(x, mean=Hmisc::wtd.mean(h, wts.hist), sd=sqrt(Hmisc::wtd.var(h, wts.hist))), add=TRUE, col="darkblue", lwd=2)
       
@@ -1570,29 +1602,32 @@ shinyServer(function(input, output, session) {
   #   
   
   # ***** TO SHOW IN A DEBUGGING TAB:
+  if (testing) {
+    output$debugginginfo <- renderPrint( 
+      #     # need one and only one line of output in this renderPrint()
+      #     # print('DEBUGGING INFORMATION') 
+      #     #str(cbind(  outlist()$cols,  make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE) )
+      #     #print(str(outlist()$cols))
+      print(str(fulltabler()[,paste('pctile.',names.ej.batch , sep='')]))
+      #     #print(head(outlist()$cols))
+      #print(mythreshgroups())
+      #     #rownames(outlist()$rows)
+      #     # head(outlist()$rows)
+      #     (head(outlist()$rows,40))
+      #     #     chr [1:179, 1:74] "001" "002" "003" "004" "005" "006" "007" "008" "009" "010" "011" "012" "013" ...
+      #     #     - attr(*, "dimnames")=List of 2
+      #     #     ..$ : chr [1:179] "OBJECTID" "FACID" "name" "lat" ...
+      #     #     ..$ : chr [1:74] "n" "Category" "Type" "Indicator" ...
+      #     #     
+      #     #t( head(outlist()$rows, 30) )
+    )
+    
+  }
   
-  output$debugginginfo <- renderPrint( 
-    #     # need one and only one line of output in this renderPrint()
-    #     # print('DEBUGGING INFORMATION') 
-    #     #str(cbind(  outlist()$cols,  make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors=FALSE) )
-    #     #print(str(outlist()$cols))
-    print(str(fulltabler()[,paste('pctile.',names.ej.batch , sep='')]))
-    #     #print(head(outlist()$cols))
-    #print(mythreshgroups())
-    #     #rownames(outlist()$rows)
-    #     # head(outlist()$rows)
-    #     (head(outlist()$rows,40))
-    #     #     chr [1:179, 1:74] "001" "002" "003" "004" "005" "006" "007" "008" "009" "010" "011" "012" "013" ...
-    #     #     - attr(*, "dimnames")=List of 2
-    #     #     ..$ : chr [1:179] "OBJECTID" "FACID" "name" "lat" ...
-    #     #     ..$ : chr [1:74] "n" "Category" "Type" "Indicator" ...
-    #     #     
-    #     #t( head(outlist()$rows, 30) )
-  )
-  
-  # need to force a "recalculation" of barplots.react() at start of this app so it can be displayed before user changes any data.
+  #   # seems to need this to calculate anything like tables or exec sum or barplot at start
+  # seems like we need to force a "recalculation" of some reactive like map or barplots.react() at start of this app so it can be displayed before user changes any data.
   #  updateTabsetPanel(session, "tabset1", selected = "Barplots")
-  updateTabsetPanel(session, "tabset1", selected = "Map of sites")
-  
-  })
+  # updateTabsetPanel(session, "tabset1", selected = "Map")
+  updateTabsetPanel(session, "tabset1", selected = "Details")
+})
 

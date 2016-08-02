@@ -5,7 +5,6 @@ shinyUI(
   fluidPage(
     
     # http://datatables.net/release-datatables/extensions/FixedColumns/js/dataTables.fixedColumns.js
-    
     # # BUT NOW SEE http://rstudio.github.io/DT/  
     
     tagList(
@@ -73,7 +72,7 @@ shinyUI(
       ####################################################################################
       tabPanel(
         
-        "Upload/Settings",
+        "Upload",
         
         br(),
         #h4(textOutput("name1", container = span)),
@@ -212,7 +211,6 @@ shinyUI(
         
       ),
       
-      
       ####################################################################################
       tabPanel(
         
@@ -233,9 +231,10 @@ shinyUI(
         
         "Exec sum", 
         
+        # HOW TO SAVE AS PDF MOST EASILY? ***
         br(),
         h4(paste('Executive Summary - ','', sep = '')),
-        h4(textOutput('titletext2')),
+        #h4(textOutput('titletext2')), # already in header above the tab
         tags$hr(),
         h4(textOutput('popsitecounts.out2')),
         fluidRow(
@@ -306,7 +305,7 @@ shinyUI(
           column(
             4,
             radioButtons('markertype', label='Marker style', choices= list('Large (easier to click but sites overlap)' = 'big', 'Small' = 'small'), 
-                         selected = 'big' # default for example dataset which is small set so use big markers
+                         selected = 'small' # default for example dataset which is small set so use big markers? small is more often useful though.
             )
           )
         )
@@ -323,11 +322,13 @@ shinyUI(
         fluidRow(
           column(
             5,
-            dataTableOutput('counts.by.state.out')
+            dataTableOutput('counts.by.state.out'),
+            downloadButton('download.states', 'Download States Table')
           ),
           column(
             5,
-            dataTableOutput('counts.by.region.out')
+            dataTableOutput('counts.by.region.out'),
+            downloadButton('download.regions', 'Download Regions Table')
           )
         )
       ),
@@ -377,8 +378,8 @@ shinyUI(
         
         "Batch Details", 
         
-        downloadButton('download.rowsout', 'Download'),
-        
+        downloadButton('download.rowsout.only', 'Download stats only'),
+        downloadButton('download.rowsout', 'Download stats plus every site'),
         dataTableOutput("rowsout"),
         h5('Tip: Enter text (e.g., Demog, EJ, Env for Category column, and pctile, state, statepctile, etc. for the Type column) in the filter boxes at the bottoms of columns to limit view to certain rows.'),
         h5('Tip: Click a heading (e.g., Type) twice to sort descending, then Shift-click another column (e.g., Average person) twice for descending secondary sort (to sort on 2d col within each group in 1st col)')
@@ -390,7 +391,8 @@ shinyUI(
         
         "Site Details", 
         
-        downloadButton('download.colsout', 'Download'),
+        downloadButton('download.colsout.only', 'Download stats only'),
+        downloadButton('download.colsout', 'Download stats plus every site'),
         dataTableOutput("colsout"),
         h5('Tip: Click a heading (e.g., State) to sort, then Shift-click another column for secondary sort (to sort on 2d within each group in 1st column)'),
         h5('Tip: Enter text in the filter box at the bottom of a column to focus on one State or search for one site by name.')
@@ -452,7 +454,7 @@ shinyUI(
                     min = 0, max = 100, value = c(0, 100)),
         
         plotOutput("map")
-      )                       # , 
+      ) # , 
       
       ####################################################################################
       #      tabPanel(
@@ -462,10 +464,10 @@ shinyUI(
       ####################################################################################
       
       ####################################################################################
-      #      tabPanel(
-      #        'debug',
-      #        verbatimTextOutput('debugginginfo')
-      #      )
+      #            tabPanel(
+      #              'debug',
+      #              verbatimTextOutput('debugginginfo')
+      #            )
       ####################################################################################
       
     )

@@ -20,21 +20,23 @@
 #' @param threshgroup list of 1+ character strings naming the elements of threshnames list, such as "EJ US pctiles"
 #' @param rowfun.picked logical vector specifying which of the pre-defined functions (like at/above threshold) are needed and will be applied
 #' @param colfun.picked  logical vector specifying which of the pre-defined functions (like colSums) are needed and will be applied
+#' @param testing optional, default is FALSE. prints some debugging info if TRUE.
 #' @return output is a list with two named elements, rows and cols, where each is a matrix of summary stats. 
 #'   cols: Each element in a summary col summarizes 1 row (site) across all the RELEVANT cols of batch data (e.g., all US EJ Index percentiles)
 #'   rows: Each element in a summary row summarizes 1 column (field) across all the rows of batch data.
 #' @author ejanalyst info@ejanalysis.com
 #' @export
-batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop', wts=popstats[ , wtscolname], probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), 
-                            threshold=list(80), threshnames=list(colnames(sitestats)), threshgroup=list('variables'), 
-                            na.rm=TRUE, rowfun.picked='all', colfun.picked='all') {
-  # cat('threshnames = '); print(threshnames)
+batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop', wts=popstats[ , wtscolname], 
+                            probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), 
+                            threshold=list(80), threshnames=list(names(which(sapply(sitestats,  class) != 'character'))), threshgroup=list('variables'), 
+                            na.rm=TRUE, rowfun.picked='all', colfun.picked='all', testing = FALSE) {
+  
   ############################################
   # Basic error checking
   ############################################
   
   if (missing(sitestats) | missing(popstats)) {stop('sitestats and popstats are outputs of batch processing in EJSCREEN and must each be a matrix or data.frame to be analyzed, where each row has stats on a buffer around some point called a site')}
-  if (cols[1]=='all') {cols <- colnames(sitestats)}
+  if (cols[1] == 'all') {cols <- colnames(sitestats)}
   if (!all.equal(dim(sitestats), dim(popstats))) {stop('sitestats and popstats must be identical in number of rows and in number of columns')}
   if (!all.equal(colnames(sitestats), colnames(popstats))) {stop('sitestats and popstats must be identical in colnames')}
   if (any(!(cols %in% colnames(sitestats)))) {stop('invalid cols -- must be a vector of strings, all of which must be elements of names(sitestats)')}
@@ -42,6 +44,8 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   
   if (1 != length(unique( length(threshold), length(threshnames), length(threshgroup) ) )) {stop('lengths of threshold list, threshnames list, threshgroup list must be identical') }
   
+  # numericols  <- names(which(sapply(sitestats,  class) != 'character'))
+
   # Specify the population weighting to use unique individuals, not the double counted total near each site.
   wts <- popstats[ , wtscolname]
   
@@ -57,7 +61,7 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   rowfuname <- vector()
   rowfun  <- list()
   rowargs <- list()
-  i=0
+  i <- 0
   
   ########
   
@@ -78,13 +82,13 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
     }
     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], na.rm=na.rm)
     
-# NOT ESSENTIAL ONCE YOU HAVE THE NUMBER OF SITES AT/ABOVE:
-#     i=i+1
-#     rowfuname[i]=paste('Are any', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
-#     rowfun[[i]]= function(x, varnames, cutoff, or.tied, na.rm) {
-#       0 < cols.above.count( x[ ,  varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm ) 
-#     }
-#     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
+    # NOT ESSENTIAL ONCE YOU HAVE THE NUMBER OF SITES AT/ABOVE:
+    #     i=i+1
+    #     rowfuname[i]=paste('Are any', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
+    #     rowfun[[i]]= function(x, varnames, cutoff, or.tied, na.rm) {
+    #       0 < cols.above.count( x[ ,  varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm ) 
+    #     }
+    #     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
     
     # FOR EACH SITE HOW MANY OF A FEW INDICATORS (PERCENTILES) ARE AT/ABOVE A SPECIFIED THRESHOLD?
     i=i+1
@@ -142,7 +146,7 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   n=n+1
   colfuname[n]='Average person'
   # *** above specified wts as popstats[ , wtscolname] since wts is not passed to this function later
-  colfun[[n]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)}
+  colfun[[n]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)} # function is defined in this package
   bywhat[n] <- 'pop'
   
   n=n+1
@@ -177,18 +181,18 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
     z= suppressWarnings( colMaxs(x, na.rm=na.rm) )
     z[is.infinite(z)] <- NA
     return(z)
-    }
+  }
   bywhat[n] <- 'site'
   
-#   n=n+1
-#   colfuname[n]='Sum'
-#   colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
-#   bywhat[n] <- 'pop'
+  #   n=n+1
+  #   colfuname[n]='Sum'
+  #   colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
+  #   bywhat[n] <- 'pop'
   
-#   n=n+1
-#   colfuname[n]='Count of sites'
-#   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
-#   bywhat[n] <- 'site'
+  #   n=n+1
+  #   colfuname[n]='Count of sites'
+  #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
+  #   bywhat[n] <- 'site'
   
   # manually removed this stat because colfun.picked is hard to use as currently written
   #n=n+1
@@ -295,7 +299,7 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
       summary.rows[i, ][  !charcol] <- as.vector( colfun[[fnum]](popstats[ , !charcol]) )  
     }
     
-    # print('now summary.rows[i, ] all cols is '); print(summary.rows[i, ])
+    if(testing) {cat('now summary.rows[i, ] all cols is \n'); print(summary.rows[i, ])}
     
     summary.rows.names[i] <- colfuname[fnum]
     
@@ -317,9 +321,9 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
       myargs$x <- popstats
     }
     
-    summary.cols[ , i] <- round( as.vector( 
+    summary.cols[ , i] <- round(as.vector(
       do.call(rowfun[[fnum]], args = myargs)
-    ), 0) 
+    ), 0)
     
     summary.cols.names[ i] <- rowfuname[fnum]
   }
@@ -345,12 +349,17 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
     colnames(quantile.rows) <- colnames(sitestats) # should be same as cols variable
     colnames(wtd.quantile.rows) <- colnames(sitestats) # ditto
     quantile.rows[     , !charcol] <- sapply(sitestats[ , !charcol], function(y) quantile(y,     probs=probs, na.rm=na.rm) )
-    wtd.quantile.rows[ , !charcol] <- sapply( popstats[ , !charcol], function(y) wtd.quantile(y, probs=probs, na.rm=na.rm,  weights=wts) )
+    wtd.quantile.rows[ , !charcol] <- sapply( popstats[ , !charcol], function(y) Hmisc::wtd.quantile(y, probs=probs, na.rm=na.rm,  weights=wts) )
     summary.rows <- rbind(summary.rows, quantile.rows, wtd.quantile.rows)
   }
   ############################################
+  summary.cols <- as.data.frame(summary.cols, stringsAsFactors = FALSE)
+  # THIS FIXES BUG IN SORTING/ FORMATTING cols RESULTS AS NUMERIC VS CHARACTER
+  # x$cols <- as.data.frame(x$cols, stringsAsFactors = FALSE)
+  # but can't do this here WHILE STRINGS ARE IN SOME CELLS: 
+  # x$rows <- as.data.frame(x$rows, stringsAsFactors = FALSE)
   
-  return( list(rows=summary.rows, cols=summary.cols) )
+  return( list(rows=summary.rows, cols = summary.cols) )
 }
 
 ############################################  ############################################

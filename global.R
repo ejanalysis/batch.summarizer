@@ -2,7 +2,7 @@ library(shiny) # http://shiny.rstudio.com
 
 # for debugging:
 testing <- FALSE 
-testing <- TRUE # comment out this line to stop debugging
+# testing <- TRUE # comment out this line to stop debugging
 
 if (testing) {  cat('Starting global\n') }
 if (testing) {
@@ -204,7 +204,7 @@ mapserver2= 'http://services.arcgisonline.com/ArcGIS/rest/services/Reference/Wor
 
 pixels.per.char <- 10 #????
 max.allowed=30 # max length of site name we want displayed before wrapping in sites table
-default.tab <- 'Upload/Settings'
+default.tab <- 'Upload'
 
 #############################
 # WHICH FIELDS TO COMPARE TO THRESHOLDS
@@ -327,8 +327,7 @@ names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
 # DEMOGRAPHIC US TOTALS/US OVERALL PERCENTS -- MUST BE UPDATED WHEN NEW ACS DATA IS USED !
 ##########################################################################################
 
-print('NOTE: MUST UPDATE ACS DATA IN CODE WHEN SWITCHING TO NEW ACS DATASET!')
-# 307727594 was in sample reports # MUST BE UPDATED WHEN NEW ACS DATA IS USED ! 307727594 is from ???  
+message('Note: MUST UPDATE ACS DATA IN CODE, WHEN SWITCHING TO NEW ACS DATASET')
 #popus <-  309138711 # 309,138,711 is from 
 # http://factfinder2.census.gov/bkmk/table/1.0/en/ACS/12_5YR/B01001/0100000US
 popus <-  314107084 # from 2010-2014
@@ -403,7 +402,6 @@ us.percents <- us.percents.2016
 us.counts.names <- paste(gsub('pct', '', names.d.batch), '.US', sep='')
 us.counts.names <- gsub('min.US', 'mins.US', us.counts.names)
 us.counts <- sapply(us.counts.names, get)
-#print('structure of us.counts now is '); print(str(us.counts))
 #
 # for count of VSI.eo.US, do we want true count or pct * pop? or is VSI.eo.US count even used here at all?
 # us.counts['VSI.eo.US'] <- mins.US + lowinc.US # ???
