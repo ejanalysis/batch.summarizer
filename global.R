@@ -134,8 +134,10 @@ batchfields2016 <- c(
 # type              "Environmental"         
 # glossaryfieldname "Air toxics cancer risk"
 #
+
 # Default File that has default input and output and friendly fieldnames & var type & var category:
-mynamesfile.default <- 'map batch to friendly fieldnames v1.csv' 
+# mynamesfile.default <- 'map batch to friendly fieldnames 2015.csv' 
+mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv' 
 
 # Specify units that go with each environmental indicator. This is also available via 
 # data(popupunits, package='ejscreen') # except this package has to be obtained from github for that.
