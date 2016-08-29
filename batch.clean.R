@@ -1,4 +1,4 @@
-batch.clean <- function(x, namesfile='map batch to friendly fieldnames v1.csv', oldcolnames, newcolnames) {
+batch.clean <- function(x, namesfile='map batch to friendly fieldnames 2016.csv', oldcolnames, newcolnames) {
   
   # namesfile='keepnames' is one way to specify user wants to keep same names.
 

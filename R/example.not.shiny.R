@@ -57,26 +57,35 @@ if (1 == 0) {
   ##########################
   # use the functions
   ##########################
+  sitedata <- readclean("R/sample ejscreen batch output.csv", 'map batch to friendly fieldnames 2016.csv')  
+  sitedata1 <- readclean("Export_Output_Example2.csv", 'map batch to friendly fieldnames v1.csv')  
+  popdata  <-  readclean("R/sample ejscreen batch output.csv", 'map batch to friendly fieldnames 2016.csv')  
   
-  sitedata <- readclean("Export_Output_Example2.csv", 'map batch to friendly fieldnames v1.csv')  
-  popdata  <-  readclean("Export_Output_Example2.pop.csv", 'map batch to friendly fieldnames v1.csv')  
-  # test.outlist <- batch.summarize(sitedata, popdata)
+  #names(sitedata)
+
+    # test.outlist <- batch.summarize(sitedata, popdata)
   # or,
   
   # get summary stats cols and rows:
   test.outlist <- batch.all(
-    sitefile = "Export_Output_Example2.csv", 
-    popfile  = "Export_Output_Example2.pop.csv", 
+    sitefile = "Export_Output_Example2.csv",
+    popfile  = "Export_Output_Example2.pop.csv",
     namesfile = 'map batch to friendly fieldnames v1.csv'
   )
   
+  # test.outlist <- batch.all(
+  #   sitefile = "R/sample ejscreen batch output.csv",
+  #   popfile  = "R/sample ejscreen batch output.csv",
+  #   namesfile = 'map batch to friendly fieldnames 2016.csv'
+  # )
+  # FAILS AS OF 8/27/16
   ##########################
   # View results  
   ##########################
   
   test.outlist$cols  # one row per site, one col per summary stat
   # cbind(sitedata, test.outlist$cols)[ 1:7, c(1:7, 178:181)]
-  t(cbind(sitedata, test.outlist$cols)[ 1:2, c(1:22, 175:181)])
+  t(cbind(sitedata, test.outlist$cols)[ 1:2, c(1:22, 170:173)])
 
   #test.outlist$rows[1:4, 1:20 ]  # one row per summary stat before t(), one col per indicator before t()
   round( t(test.outlist$rows[1:4, 1:20 ]), 1) 

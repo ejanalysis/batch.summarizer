@@ -1,8 +1,8 @@
 library(shiny) # http://shiny.rstudio.com
 
 # for debugging:
-testing <- FALSE 
-# testing <- TRUE # comment out this line to stop debugging
+#testing <- FALSE 
+ testing <- TRUE # comment out this line to stop debugging
 
 if (testing) {  cat('Starting global\n') }
 if (testing) {
