@@ -1,4 +1,5 @@
 oldnames,newnames,gdbfieldname,vartype,varcategory,longname,example,order0,order1,order2
+OBJECTID,OBJECTID,OBJECTID,geo,geo,OBJECTID,1,0,0,1
 ID,OBJECTID,OBJECTID,geo,geo,OBJECTID,1,0,0,1
 FACID,FACID,na,geo,geo,Facility ID,NEI99999,0,0,2
 Registry_I,registryID,na,geo,geo,Registry ID,"9,999",0,0,2.5

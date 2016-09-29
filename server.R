@@ -411,6 +411,7 @@ shinyServer(function(input, output, session) {
     
     fulltable.pop <- batch.clean(fulltable.pop, oldcolnames = lookup.fieldnames()$oldnames, newcolnames = lookup.fieldnames()$newnames )
     if ('name' %in% colnames(fulltable.pop) ) { rownames(fulltable.pop) <- fulltable.pop[ , 'name'] } # become colnames when transposed for viewing? no.
+    
     fulltable.pop
   })
   
@@ -451,15 +452,17 @@ shinyServer(function(input, output, session) {
   })
   
   counts.by.state <- reactive({
-    id=isolate( fulltabler()$OBJECTID )
-    state=isolate( fulltabler()$statename )
-    x=aggregate.data.frame(id, by=list(state), FUN=length)
+    id <- fulltabler()$OBJECTID 
+    #id=isolate( fulltabler()$OBJECTID )
+    state <- fulltabler()$statename 
+    state <- isolate(fulltabler()$statename )
+    x <- aggregate.data.frame(id, by=list(state), FUN=length)
     # #x=bystats(id, state)[,'N']
     # #x=bystats[-length(x)] # if want to remove the "ALL" column
     names(x) <- c('State', 'Site count')
     popcounts <- aggregate.data.frame(fulltabler.pop()$pop, by=list(fulltabler.pop()$statename), FUN=function(z) sum(z, na.rm = TRUE))
     names(popcounts) <- c('State', 'Population count')
-    x= merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all states with a length even if sum is NA
+    x <- merge(x, popcounts, all.x=TRUE, all.y=FALSE) # in case some have NA for pop, keep all states with a length even if sum is NA
     x[ , 'Population count'] <- format(x[ , 'Population count'], scientific=FALSE, big.mark = ',')
     x
     # x = rbind(x, colSums(x,na.rm=TRUE))
@@ -495,7 +498,6 @@ shinyServer(function(input, output, session) {
   )
   
   #####################
-  
   
   #####################
   # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
@@ -599,8 +601,8 @@ shinyServer(function(input, output, session) {
   mythreshnames <-  reactive({ 
     #mythreshnames.default()
     # temporarily disable user defined names until code finished ***
-    x=c(list(usergroup1=input$mythreshnames.in1,  usergroup2=input$mythreshnames.in2, usergroup3=input$mythreshnames.in3) )
-    names(x)= c(input$threshgroup1, input$threshgroup2, input$threshgroup3)
+    x <- c(list(usergroup1=input$mythreshnames.in1,  usergroup2=input$mythreshnames.in2, usergroup3=input$mythreshnames.in3) )
+    names(x) <- c(input$threshgroup1, input$threshgroup2, input$threshgroup3)
     x
   })
   
@@ -637,6 +639,7 @@ shinyServer(function(input, output, session) {
   #   rows (rows of summary stats), & cols (columns of summary stats)
   
   outlist <- reactive({ 
+    # cat('\n\n'); print('RUNNING OUTLIST CODE');cat('\n\n')
     x <- batch.summarize(
       sitestats = fulltabler(), popstats = fulltabler.pop(),
       wtscolname = mywtsname, 
@@ -646,6 +649,27 @@ shinyServer(function(input, output, session) {
       colfun.picked = colfun.picked, rowfun.picked = rowfun.picked,
       probs = as.numeric( input$probs ), na.rm = na.rm
     )
+    
+    # cat('\n'); print('FULLTABLER:')
+    # print(colnames(fulltabler()))
+    # cat('\n')
+    # print(dim(fulltabler()))
+    # cat('\n')
+    # 
+    # cat('\n'); print('FULLTABLER.pop:')
+    # print(colnames(fulltabler.pop()))
+    # cat('\n')
+    # print(dim(fulltabler.pop()))
+    # cat('\n')
+    # 
+    # cat('\n'); print('OUTLIST so far, maybe needs name field:')
+    # print(colnames(x[[1]]))
+    # cat('\n')
+    # print(colnames(x[[2]]))
+    # cat('\n')
+    # print(dim(x[[1]]))
+    # print(dim(x[[2]]))
+    # cat('\n')
     
     # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
     if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename = fulltabler()$name, x$cols, stringsAsFactors = FALSE) }
@@ -972,7 +996,9 @@ shinyServer(function(input, output, session) {
   # EXECUTIVE SUMMARY TEXT
   
   ratio.to.us.d <- reactive({ outlist()$rows['Average person', names.d.batch ] /  fulltabler()[ 1, paste('us.avg.', names.d.batch , sep='')] })
-  ratio.to.us.e <- reactive({ outlist()$rows['Average person', names.e.batch ] /  fulltabler()[ 1, paste('us.avg.', names.e.batch , sep='')] })
+  ratio.to.us.e <- reactive({ 
+    outlist()$rows['Average person', names.e.batch ] /  fulltabler()[ 1, paste('us.avg.', names.e.batch , sep='')] 
+  })
   
   max.ratio.to.us.d <- reactive({
     max( ratio.to.us.d(), na.rm=TRUE)

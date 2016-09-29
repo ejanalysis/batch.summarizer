@@ -1,3 +1,15 @@
+# would be nice to have access to this pkg, to be able to use, e.g., func required.packages()
+# require(analyze.stuff)
+# analyze.stuff::required.packages()
+
+#neuro-related fields may need to be removed from these in batch summarizer global.R:
+#
+#names.e.batch
+#names.e.friendly
+#names.ej.batch
+#names.ej.friendly
+
+
 library(shiny) # http://shiny.rstudio.com
 
 # for debugging:
@@ -90,41 +102,81 @@ batchfields2015 <- c(
 # # 1,1000,BRASW Facility,32.4,-94.7,"7,946",3 miles,TX, Texas,6,97,74,44,75,61,35%,1.2,9.44,19%,0.733,13%,0.054,74,92,37,1.5,72,23%,110,99,95,47%,55%,20%,66,27,61%,92,7%,0.27,97,54,51,77,64,49,70,0.29,69,91,96,0.33,80,0.12,0.913,52%,95,34,42.9,1.4,1.5,0.824,83,95,69%,72,47,68,0.31,84,0.043,0.3,91,0.42,0.478,66,81,0.18,63,90,87,73,49,79,0.073,0.067,11%,62,94,86,10.7,0.062,0.47,6%,60,61,0.17,92,9%,0.096,50,67,68,60,0.32,0.25,0.063,70,43,97,55,44%,68,62,78,0.35,5%,9.63,94,99,49%,97,56,95,74,71,7%,97,84,2.3,15%,8%,84,56,69,81,64,89,43.8,79,43.6,46.3,98,63,10%,34%,0.063,52,73,79,62,78,55,89,80,57,0.38,69,93,36%,9.44,74,39%,89,76,13%,49,7%,42,44,68,79,71,0.044,39%,47,7%,76,82
 
 # Required format for input file (***for 2016 version):
-# This is the output of the new faster batch tool with 2016 dataset:
+# This is the output of the new faster batch tool with 2016 dataset???:
+# but it does not match the format of outputs from nonshiny version as delivered july 2016! (which is further down below)
 
 batchfields2016 <- c(
-  "ID","LAT","LONG",
+  'OBJECTID', 'FACID', "LAT","LONG",
   "POP100","mins","pctmin","lowinc","pctlowinc","lths","pctlths","lingiso","pctlingiso","under5","pctunder5","over64","pctover64",
-  "traffic.score","pctpre1960","pm","o3","cancer","dpm","resp","neuro","proximity.tsdf","proximity.rmp","proximity.npl","proximity.npdes",
+  "traffic.score","pctpre1960","pm","o3","cancer","dpm","resp","proximity.tsdf","proximity.rmp","proximity.npl","proximity.npdes",
   "VSI.eo","VSI.svi6",
   
-  "inedx_EJ_Traffic","inedx_EJ_Lead","inedx_EJ_PM","inedx_EJ_Ozone","inedx_EJ_Cancer","inedx_EJ_DPM","inedx_EJ_Resp","inedx_EJ_Neuro","inedx_EJ_proximity.tsdf","inedx_EJ_proximity.rmp","inedx_EJ_proximity.npl","inedx_EJ_proximity.npdes",
-  
-  "BLOCKID","Distance.x",    # *****???????
+  "inedx_EJ_Traffic","inedx_EJ_Lead","inedx_EJ_PM","inedx_EJ_Ozone","inedx_EJ_Cancer","inedx_EJ_DPM","inedx_EJ_Resp","inedx_EJ_proximity.tsdf","inedx_EJ_proximity.rmp","inedx_EJ_proximity.npl",
+#"neuro","inedx_EJ_proximity.npdes",  "inedx_EJ_Neuro","N_E_NEURO_PER","N_E_NEURO","R_E_NEURO_PER","R_E_NEURO","S_E_NEURO_PER","S_E_NEURO",
+  "BLOCKID","Distance.x",  
   
   "BLOCKGROUPFIPS","STUSAB","STATE","COUNTY","TRACT","BLKGRP","BLOCK","REGION",
   
   "N_D_INDEX_PER",
-  "N_E_NPDES_PER","N_E_TSDF_PER","N_E_RMP_PER","N_E_NPL_PER","N_E_LEAD_PER","N_E_TRAFFIC_PER","N_E_RESP_PER","N_E_NEURO_PER","N_E_CANCER_PER","N_E_DIESEL_PER","N_E_O3_PER","N_E_PM25_PER",
+  "N_E_NPDES_PER","N_E_TSDF_PER","N_E_RMP_PER","N_E_NPL_PER","N_E_LEAD_PER","N_E_TRAFFIC_PER","N_E_RESP_PER","N_E_CANCER_PER","N_E_DIESEL_PER","N_E_O3_PER","N_E_PM25_PER",
   "N_D_MINOR_PER","N_D_INCOME_PER","N_D_LESSHS_PER","N_D_LING_PER","N_D_UNDER5_PER","N_D_OVER64_PER",
   "N_D_INDEX",
-  "N_E_NPDES","N_E_TSDF","N_E_RMP","N_E_NPL","N_E_LEAD","N_E_TRAFFIC","N_E_RESP","N_E_NEURO","N_E_CANCER","N_E_DIESEL","N_E_O3","N_E_PM25",
+  "N_E_NPDES","N_E_TSDF","N_E_RMP","N_E_NPL","N_E_LEAD","N_E_TRAFFIC","N_E_RESP","N_E_CANCER","N_E_DIESEL","N_E_O3","N_E_PM25",
   "N_D_MINOR","N_D_INCOME","N_D_LESSHS","N_D_LING","N_D_UNDER5","N_D_OVER64",
   
   "R_D_INDEX_PER",
-  "R_E_NPDES_PER","R_E_TSDF_PER","R_E_RMP_PER","R_E_NPL_PER","R_E_LEAD_PER","R_E_TRAFFIC_PER","R_E_RESP_PER","R_E_NEURO_PER","R_E_CANCER_PER","R_E_DIESEL_PER","R_E_O3_PER","R_E_PM25_PER",
+  "R_E_NPDES_PER","R_E_TSDF_PER","R_E_RMP_PER","R_E_NPL_PER","R_E_LEAD_PER","R_E_TRAFFIC_PER","R_E_RESP_PER","R_E_CANCER_PER","R_E_DIESEL_PER","R_E_O3_PER","R_E_PM25_PER",
   "R_D_MINOR_PER","R_D_INCOME_PER","R_D_LESSHS_PER","R_D_LING_PER","R_D_UNDER5_PER","R_D_OVER64_PER",
   "R_D_INDEX",
-  "R_E_NPDES","R_E_TSDF","R_E_RMP","R_E_NPL","R_E_LEAD","R_E_TRAFFIC","R_E_RESP","R_E_NEURO","R_E_CANCER","R_E_DIESEL","R_E_O3","R_E_PM25",
+  "R_E_NPDES","R_E_TSDF","R_E_RMP","R_E_NPL","R_E_LEAD","R_E_TRAFFIC","R_E_RESP","R_E_CANCER","R_E_DIESEL","R_E_O3","R_E_PM25",
   "R_D_MINOR","R_D_INCOME","R_D_LESSHS","R_D_LING","R_D_UNDER5","R_D_OVER64",
   
   "S_D_INDEX_PER",
-  "S_E_NPDES_PER","S_E_TSDF_PER","S_E_RMP_PER","S_E_NPL_PER","S_E_LEAD_PER","S_E_TRAFFIC_PER","S_E_RESP_PER","S_E_NEURO_PER","S_E_CANCER_PER","S_E_DIESEL_PER","S_E_O3_PER","S_E_PM25_PER",
+  "S_E_NPDES_PER","S_E_TSDF_PER","S_E_RMP_PER","S_E_NPL_PER","S_E_LEAD_PER","S_E_TRAFFIC_PER","S_E_RESP_PER","S_E_CANCER_PER","S_E_DIESEL_PER","S_E_O3_PER","S_E_PM25_PER",
   "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER5_PER","S_D_OVER64_PER",
   "S_D_INDEX",
-  "S_E_NPDES","S_E_TSDF","S_E_RMP","S_E_NPL","S_E_LEAD","S_E_TRAFFIC","S_E_RESP","S_E_NEURO","S_E_CANCER","S_E_DIESEL","S_E_O3","S_E_PM25",
+  "S_E_NPDES","S_E_TSDF","S_E_RMP","S_E_NPL","S_E_LEAD","S_E_TRAFFIC","S_E_RESP","S_E_CANCER","S_E_DIESEL","S_E_O3","S_E_PM25",
   "S_D_MINOR","S_D_INCOME","S_D_LESSHS","S_D_LING","S_D_UNDER5","S_D_OVER64"
 )
+
+# colnames in output of nonshiny tool as delivered july 2016 (once rownames col removed) 
+# BUT FIXED MY COPY SO IT PROVIDES OBJECTID, THEN FACID
+# [1] "FACID"           "FACID.1"         "LAT"             "LON"            
+# [5] "totpop"          "buff"            "stabbr"          "statename"      
+# [9] "region"          "RAW_E_PM25"      "S_E_PM25_PER"    "R_E_PM25_PER"   
+# [13] "N_E_PM25_PER"    "S_E_PM25"        "R_E_PM25"        "N_E_PM25"       
+# [17] "RAW_E_O3"        "S_E_O3_PER"      "R_E_O3_PER"      "N_E_O3_PER"     
+# [21] "S_E_O3"          "R_E_O3"          "N_E_O3"          "RAW_E_DIESEL"   
+# [25] "S_E_DIESEL_PER"  "R_E_DIESEL_PER"  "N_E_DIESEL_PER"  "S_E_DIESEL"     
+# [29] "R_E_DIESEL"      "N_E_DIESEL"      "RAW_E_CANCER"    "S_E_CANCER_PER" 
+# [33] "R_E_CANCER_PER"  "N_E_CANCER_PER"  "S_E_CANCER"      "R_E_CANCER"     
+# [37] "N_E_CANCER"      "RAW_E_NEURO"     "S_E_NEURO_PER"   "R_E_NEURO_PER"  
+# [41] "N_E_NEURO_PER"   "S_E_NEURO"       "R_E_NEURO"       "N_E_NEURO"      
+# [45] "RAW_E_RESP"      "S_E_RESP_PER"    "R_E_RESP_PER"    "N_E_RESP_PER"   
+# [49] "S_E_RESP"        "R_E_RESP"        "N_E_RESP"        "RAW_E_TRAFFIC"  
+# [53] "S_E_TRAFFIC_PER" "R_E_TRAFFIC_PER" "N_E_TRAFFIC_PER" "S_E_TRAFFIC"    
+# [57] "R_E_TRAFFIC"     "N_E_TRAFFIC"     "RAW_E_LEAD"      "S_E_LEAD_PER"   
+# [61] "R_E_LEAD_PER"    "N_E_LEAD_PER"    "S_E_LEAD"        "R_E_LEAD"       
+# [65] "N_E_LEAD"        "RAW_E_NPL"       "S_E_NPL_PER"     "R_E_NPL_PER"    
+# [69] "N_E_NPL_PER"     "S_E_NPL"         "R_E_NPL"         "N_E_NPL"        
+# [73] "RAW_E_RMP"       "S_E_RMP_PER"     "R_E_RMP_PER"     "N_E_RMP_PER"    
+# [77] "S_E_RMP"         "R_E_RMP"         "N_E_RMP"         "RAW_E_TSDF"     
+# [81] "S_E_TSDF_PER"    "R_E_TSDF_PER"    "N_E_TSDF_PER"    "S_E_TSDF"       
+# [85] "R_E_TSDF"        "N_E_TSDF"        "RAW_E_NPDES"     "S_E_NPDES_PER"  
+# [89] "R_E_NPDES_PER"   "N_E_NPDES_PER"   "S_E_NPDES"       "R_E_NPDES"      
+# [93] "N_E_NPDES"       "RAW_D_INDEX"     "S_D_INDEX_PER"   "R_D_INDEX_PER"  
+# [97] "N_D_INDEX_PER"   "S_D_INDEX"       "R_D_INDEX"       "N_D_INDEX"      
+# [101] "RAW_D_MINOR"     "S_D_MINOR_PER"   "R_D_MINOR_PER"   "N_D_MINOR_PER"  
+# [105] "S_D_MINOR"       "R_D_MINOR"       "N_D_MINOR"       "RAW_D_INCOME"   
+# [109] "S_D_INCOME_PER"  "R_D_INCOME_PER"  "N_D_INCOME_PER"  "S_D_INCOME"     
+# [113] "R_D_INCOME"      "N_D_INCOME"      "RAW_D_LING"      "S_D_LING_PER"   
+# [117] "R_D_LING_PER"    "N_D_LING_PER"    "S_D_LING"        "R_D_LING"       
+# [121] "N_D_LING"        "RAW_D_LESSHS"    "S_D_LESSHS_PER"  "R_D_LESSHS_PER" 
+# [125] "N_D_LESSHS_PER"  "S_D_LESSHS"      "R_D_LESSHS"      "N_D_LESSHS"     
+# [129] "RAW_D_UNDER5"    "S_D_UNDER5_PER"  "R_D_UNDER5_PER"  "N_D_UNDER5_PER" 
+# [133] "S_D_UNDER5"      "R_D_UNDER5"      "N_D_UNDER5"      "RAW_D_OVER64"   
+# [137] "S_D_OVER64_PER"  "R_D_OVER64_PER"  "N_D_OVER64_PER"  "S_D_OVER64"     
+# [141] "R_D_OVER64"      "N_D_OVER64"     
 
 # ** Some or all of the map between versions of field names could be handled using the 
 # ejscreen package now, via data('ejscreenformulas'), with e.g., 
@@ -143,16 +195,16 @@ mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv'
 # data(popupunits, package='ejscreen') # except this package has to be obtained from github for that.
 popupunits <- structure(
   list(
-    evar = c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
+    evar = c("pm", "o3", "cancer",  "resp", "dpm", "pctpre1960", 
              "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", "proximity.npdes"), 
-    units = c("ug/m3", "ppb", "lifetime risk per million", "", "", "ug/m3", "= fraction pre-1960", 
+    units = c("ug/m3", "ppb", "lifetime risk per million", "",  "ug/m3", "= fraction pre-1960", 
               "daily vehicles/meters distance", "sites/km distance", "facilities/km distance", "facilities/km distance", "facilities/km distance")
   ), 
   .Names = c("evar", "units"), 
   row.names = c(NA, -12L), 
   class = "data.frame"
 )
-
+#"neuro",
 #############################################
 
 #############################
@@ -313,13 +365,15 @@ mywtsname <- 'pop'  # used for weighted means to get stats on the average person
 names.d.batch          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64') 
 names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
 
-names.e.batch           <- c("pm", "o3", "cancer", "neuro", "resp", "dpm", "pctpre1960", 
+names.e.batch           <- c("pm", "o3", "cancer", "resp", "dpm", "pctpre1960", 
                              "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", "proximity.npdes")
-names.e.friendly <- c("PM2.5", "Ozone", "Cancer risk", "Neuro.", "Respiratory", "Diesel PM", "% built pre-1960", 
+#"neuro", 
+names.e.friendly <- c("PM2.5", "Ozone", "Cancer risk",  "Respiratory", "Diesel PM", "% built pre-1960", 
                       "Traffic", "NPL proximity", "RMP proximity", "TSDF proximity", "NPDES proximity")
-
-names.ej.batch  <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", "EJ.DISPARITY.neuro.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", "EJ.DISPARITY.pctpre1960.eo", 
+#"Neuro.",
+names.ej.batch  <- c("EJ.DISPARITY.pm.eo", "EJ.DISPARITY.o3.eo", "EJ.DISPARITY.cancer.eo", "EJ.DISPARITY.resp.eo", "EJ.DISPARITY.dpm.eo", "EJ.DISPARITY.pctpre1960.eo", 
                      "EJ.DISPARITY.traffic.score.eo", "EJ.DISPARITY.proximity.npl.eo", "EJ.DISPARITY.proximity.rmp.eo", "EJ.DISPARITY.proximity.tsdf.eo", "EJ.DISPARITY.proximity.npdes.eo")
+#"EJ.DISPARITY.neuro.eo", 
 names.ej.friendly <- paste('EJ:', names.e.friendly)
 
 names.all <- c(names.d.batch , names.e.batch , names.ej.batch )
