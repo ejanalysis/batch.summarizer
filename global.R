@@ -299,10 +299,12 @@ source("plotlyGraphWidget.R")
 #'############################
 # For leaflet maps, might need to define these here 
 # until latest version of leaflet package is on cran:
+
 #'############################
+require(htmlwidgets)
 
 leafletOutput = function(outputId, width = "100%", height = 400) {
-  htmlwidgets::shinyWidgetOutput(outputId, "leaflet", width, height, "leaflet")
+  htmlwidgets::shinyWidgetOutput(outputId, "leaflet", width, height, "leaflet")#, error.label = NULL)
 }
 
 renderLeaflet = function(expr, env = parent.frame(), quoted = FALSE) {
