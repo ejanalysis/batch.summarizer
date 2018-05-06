@@ -2,13 +2,22 @@ oldnames,newnames,gdbfieldname,vartype,varcategory,longname,example,order0,order
 OBJECTID,OBJECTID,OBJECTID,geo,geo,OBJECTID,1,0,0,1
 ID,OBJECTID,OBJECTID,geo,geo,OBJECTID,1,0,0,1
 FACID,FACID,na,geo,geo,Facility ID,NEI99999,0,0,2
+facid,FACID,na,geo,geo,Facility ID,NEI99999,0,0,2
 Registry_I,registryID,na,geo,geo,Registry ID,"9,999",0,0,2.5
 NAME,name,na,geo,geo,Name,xyz facility,0,0,3
+name,name,na,geo,geo,Name,xyz facility,0,0,3
 LAT,lat,na,geo,geo,Latitude,21.2,0,0,4
+lat,lat,na,geo,geo,Latitude,21.2,0,0,4
 LONG,lon,na,geo,geo,Longitude,-158.2,0,0,5
 LON,lon,na,geo,geo,Longitude,-158.2,0,0,5
+lon,lon,na,geo,geo,Longitude,-158.2,0,0,5
 POP100,pop,ACSTOTPOP,geo,geo,Population,5205,0,0,6
 totpop,pop,ACSTOTPOP,geo,geo,Population,5205,0,0,6
+ACSTOTPOP,pop,ACSTOTPOP,geo,geo,Population,5205,0,0,6
+ACSIPOVBAS,povknownratio,ACSIPOVBAS,raw,Demographic,Population for whom poverty status is determined,0.19,1,2,1
+ACSTOTHH,hhlds,ACSTOTHH,raw,Demographic,Households (for linguistic isolation),0.19,1,2,1
+ACSEDUCBAS,age25up,ACSEDUCBAS,raw,Demographic,Population 25 years and over,0.19,1,2,1
+PRE1960,pre1960,PRE1960,raw,Demographic,count of housing units built before 1960,0.19,1,2,1
 buff,radius.miles,na,geo,geo,Size of buffer as radius of circular buffer,3 miles,0,0,7
 STUSAB,ST,ST_ABBREV,geo,geo,State abbreviation,HI,0,0,8
 stabbr,ST,ST_ABBREV,geo,geo,State abbreviation,HI,0,0,8
