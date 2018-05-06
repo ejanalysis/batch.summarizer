@@ -1,3 +1,23 @@
+#' @title tab.parsed is OBSOLETE
+#' @description WAS TO READ IN THE CSV SAVED FROM THE SINGLE BUFFER REPORT SHOWN AS TABULAR VIEW ON SCREEN
+#'   AND IT IS NOT USED BY THE BATCH SUMMARIZER. IT WAS USED TO READ ONE AT A TIME WHEN THAT WAS USEFUL A WHILE AGO.
+#' @param myfile name of file. a csv of saved tabular data from a buffer standard report in EJSCREEN 
+#'   and it will be imported as a data.frame plus info from the 1st two rows, using read.csv(file, as.is=TRUE, skip=2) 
+#' @param folder default is getwd()
+#' @param skip default lines to skip is 2 
+#' @param wordsbeforefips.bg default=2
+#' @param wordsbeforestate.bg default=3
+#' @param wordsafterstate.bg default=5
+#' @param wordsafterregion.bg default=2 
+#' @param wordsafterpop.bg default=0
+#' @param wordsbeforemiles.ring =0
+#' @param wordsbeforestate.ring =7
+#' @param wordsafterstate.ring =5
+#' @param wordsafterregion.ring =2
+#' @param wordsafterpop.ring =0
+#' @param wordsbeforelon.ring =6
+#' @param wordsbeforelat.ring =5
+#' @return output is not described here
 #' @export
 tab.parsed <- function(myfile, folder=getwd(), skip=2, 
                        wordsbeforefips.bg=2,    wordsbeforestate.bg=3, wordsafterstate.bg=5, wordsafterregion.bg=2, wordsafterpop.bg=0, 
@@ -6,12 +26,6 @@ tab.parsed <- function(myfile, folder=getwd(), skip=2,
   
   # This is based on old code in parsed.rows.R
 
-  # THIS JUST READS IN THE CSV SAVED FROM THE SINGLE BUFFER REPORT SHOWN AS TABULAR VIEW ON SCREEN
-  # AND IT IS NOT USED BY THE BATCH SUMMARIZER. IT WAS USED TO READ ONE AT A TIME WHEN THAT WAS USEFUL A WHILE AGO.
-  
-  # input is myfile, a csv of saved tabular data from a buffer standard report in EJSCREEN
-  # and it will be imported as a data.frame plus info from the 1st two rows, using read.csv(file, as.is=TRUE, skip=2) 
-  
   ######################
   # FORMAT OF EJSCREEN TABULAR REPORT SAVED AS CSV:
   ######################

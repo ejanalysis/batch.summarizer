@@ -1,21 +1,89 @@
-# would be nice to have access to this pkg, to be able to use, e.g., func required.packages()
-# require(analyze.stuff)
-# analyze.stuff::required.packages()
+#'###################################################################################
+# *** To specify a local large custom file, uncoment one of the following lines:
+######
+# mydemofile <- 'path/hugebatchoutput.csv' # for example
+# mydemofile <- 'ejtest2.csv'
+#'###################################################################################
 
-#neuro-related fields may need to be removed from these in batch summarizer global.R:
+#'##############
+# *** neuro-related fields may need to be removed from these in batch summarizer global.R:
 #
 #names.e.batch
 #names.e.friendly
 #names.ej.batch
 #names.ej.friendly
 
+#'###################################################################################
+# Get packages and source code to get functions needed
+# *** These could be put into R folder and loading batch.summarizer package would make them available.
+#'###################################################################################
 
+# FUNCTIONS DEFINED HERE (Defined just in this batch.summarizer package):
+source('wilcoxon.pvalues.r')  # for statistical significance testing - from air
+#source('batch.read.R') # now as package
+#source('batch.clean.R') # now as package
+#source('batch.summarize.R') # now as package
+source("maphelpers.R")  # if we want percent choropleths of county data
+# load gomap.js ??
+
+#'###################################################################################
+# DATA ANALYSIS FUNCTIONS
+#'###################################################################################
+# 
+# *** These (newer versions) are also found in the packages called analyze.stuff and ejanalysis, (and ejscreen pkg provides popupunits)
+# available at http://ejanalysis.github.io
+# Could use analyze stuff to replace all the copies of key functions that are also here
+# require(analyze.stuff) 
+# analyze.stuff::required.packages()
+# 
+source('pct.above.R')         # returns percent of rows (or wtd people) that have value above specified cutoff (or mean as default), for each column of data.frame
+source('count.above.R')        # returns count of how many rows (or wtd people) have value above specified cutoff (or mean as default), for each column of data.frame
+source('cols.above.count.R')  # returns count of how many cols (e.g. how many variables or indicators) have value above specified cutoff (or mean as default), for each row of data.frame
+source('flagged.R')      # creates flag that is TRUE if at least one of 12 indicators is > cutoff (EJ index >50th or 80th or 95th%ile, for example), for each of many rows of a data.frame
+source('rowMaxs.R')     # returns Max of each row
+source('rowMins.R')     # returns Min of each row
+source('colMaxs.R')     # returns Max of each col
+source('colMins.R')     # returns Min of each col
+source('wtd.colMeans.R')     # returns wtd.mean of each col
+source('lead.zeroes.R')  # add leading zeroes as needed to fix FIPS that had been stored as numeric
+source('change.fieldnames.R')  # updated function that helps change or resort fieldnames using a map file mapping old to new names
+#source('pct.below.R')         # returns percent of rows (or wtd people) that have value below specified cutoff (or mean as default), for each column of data.frame
+#source('pop.ecdf.R')  # plot pop-wtd ecdf(s) for one demographic group vs others, etc.,  for comparing conditions between groups across many Census areal units (e.g. tracts)
+
+# COUNTY DATA 
+
+# *** could get this from proxistat package, or keep here and could just use lazy loading?  - see  data(counties, package='proxistat') 
+data(counties) 
+counties$nonwhite <- round( 100 - counties$white, 1)
+
+#'###################################################################################
+#'# OTHER PACKAGES USED:
+#
+# library(data.table) # used by analyze.stuff or newer version of wtd.colMeans() 
+library(Hmisc) # various useful functions for data analysis
+library(plotrix) # for better weighted.hist than ggplot2 can provide.
+library(ggplot2) # for geom_histogram() that allows weights to be used. plotrix package also does wtd hist, but better.
+# library(dplyr) # might not need this
 library(shiny) # http://shiny.rstudio.com
 
-# for debugging:
+# MAPS PACKAGES
+#
+# TO OBTAIN THE leaflet PACKAGE (IF VERSION NOT ON CRAN?):
+# library(devtools); devtools::install_github("rstudio/leaflet")
+library(leaflet) # for interactive maps
+#library(leafletR) # for interactive maps? (a different package than leaflet)
+library(maps) # for static maps; choropleth of counties, etc.
+library(mapproj)
+#'###################################################################################
+
+#'#####################
+# TESTING / DEBUGGING
+#'#####################
+#
+# **********   while debugging:
 #testing <- FALSE 
  testing <- TRUE # comment out this line to stop debugging
-
+#
 if (testing) {  cat('Starting global\n') }
 if (testing) {
   options(shiny.reactlog = TRUE) # If TRUE, enable logging of reactive events, which can be 
@@ -49,9 +117,9 @@ on.exit({
   
 })
 
-####################################################################################
+#'###################################################################################
 # DEFINE GLOBAL VARIABLES FOR USE IN server or ui - default values, etc.
-####################################################################################
+#'###################################################################################
 
 # **** MUST UPDATE ACS DATA IN CODE WHEN SWITCHING TO NEW ACS DATASET!
 
@@ -62,10 +130,6 @@ on.exit({
 # 
 suppressWarnings(rm(mydemofile)) # just in case testing and had already specified this
 #
-# To specify a local large custom file, can uncomment one of the following lines
-# 
-# mydemofile <- 'path/hugebatchoutput.csv' # for example
-# mydemofile <- 'ejtest2.csv'
 # 
 # Default example of export of batch results, for use in testing/demonstrating summarizer:
 #
@@ -73,71 +137,62 @@ if (!exists('mydemofile'))     {mydemofile     <- 'Export_Output_Example2.csv'} 
 if (!exists('mydemofile.pop')) {mydemofile.pop <- 'Export_Output_Example2.pop.csv'} # not realistic - just smaller pop numbers
 
 
-# Required format for input file (***for 2015 version):
-#  ***  These seem to be all out of order ***:
-batchfields2015 <- c(
-  'OBJECTID', 'FACID', 'NAME', 'LAT', 'LON', 'totpop', 'buff', 'stabbr', 'statename', 'region', 
-  'S_E_TSDF_PER', 'R_P_TRAFFIC', 'S_E_PM25_PER', 'R_P_CANCER', 'S_P_DIESEL', 'N_D_INDEX', 
-  'RAW_E_RMP', 'R_E_PM25', 'R_D_LESSHS', 'R_E_DIESEL', 
-  'RAW_D_OVER64', 'N_E_TSDF', 'R_E_LEAD_PER', 'R_E_RMP_PER', 'S_E_DIESEL_PER', 
-  'RAW_E_RESP', 'R_D_INDEX_PER', 
-  'RAW_D_LESSHS', 'N_E_TRAFFIC', 'S_E_NEURO_PER', 'N_P_NPL', 'S_D_INDEX', 'S_D_MINOR', 'S_D_LESSHS', 'S_P_RESP', 'N_E_PM25_PER', 
-  'RAW_D_INDEX', 'N_E_NEURO_PER', 
-  'RAW_D_UNDER5', 
-  'RAW_E_LEAD', 'R_E_NPL_PER', 'S_E_RESP_PER', 'S_E_O3_PER', 'N_P_PM25', 'S_D_LESSHS_PER', 'N_E_DIESEL_PER', 'S_D_INCOME_PER', 
-  'RAW_E_NPL', 'R_D_MINOR_PER', 'S_E_TRAFFIC', 'R_P_TSDF', 
-  'RAW_E_TSDF', 'N_P_CANCER', 
-  'RAW_E_NEURO', 'S_E_DIESEL', 
-  'RAW_D_INCOME', 'N_P_RMP', 'N_E_O3_PER', 'S_E_O3', 'R_E_RESP', 'S_E_RESP', 'N_E_DIESEL', 'N_D_INDEX_PER', 'N_E_RMP_PER', 
-  'RAW_D_MINOR', 'N_E_CANCER_PER', 'R_E_O3_PER', 'S_D_INDEX_PER', 'N_E_RMP', 'R_P_LEAD', 'R_E_NEURO', 'N_E_LEAD', 'S_E_RMP_PER', 'R_E_RMP', 
-  'RAW_E_DIESEL', 'R_D_LING_PER', 'R_E_TRAFFIC', 'R_E_LEAD', 'R_D_OVER64_PER', 'N_P_NEURO', 'R_E_CANCER_PER', 'R_E_NPDES_PER', 'N_E_CANCER', 'N_D_MINOR_PER', 'S_E_TSDF', 'S_E_NPL', 'R_D_OVER64', 'S_D_MINOR_PER', 'S_P_TSDF', 'S_P_RMP', 'N_E_PM25', 'R_E_TSDF', 'S_E_RMP', 
-  'RAW_D_LING', 'S_E_TRAFFIC_PER', 'S_P_PM25', 'S_E_LEAD', 'R_P_NEURO', 'S_D_LING', 'N_E_NPL', 'R_E_DIESEL_PER', 'R_D_LESSHS_PER', 'R_P_O3', 'N_E_TRAFFIC_PER', 
-  'RAW_E_NPDES', 'N_E_NPDES', 'N_E_NEURO', 'R_P_DIESEL', 'N_E_RESP_PER', 'R_E_TSDF_PER', 
-  'RAW_E_TRAFFIC', 'R_D_INDEX', 'R_P_PM25', 'N_D_UNDER5_PER', 'N_D_LESSHS_PER', 'R_E_NPDES', 'N_D_LING', 'S_E_PM25', 'N_E_NPL_PER', 'R_E_NEURO_PER', 'R_D_MINOR', 'N_P_TSDF', 'S_D_LING_PER', 'R_P_NPL', 'S_P_NPDES', 'S_E_NPDES_PER', 'N_D_UNDER5', 'S_E_NPL_PER', 'S_E_CANCER_PER', 'N_E_RESP', 'N_D_LESSHS', 'S_D_UNDER5', 'N_P_LEAD', 
-  'RAW_E_CANCER', 'S_P_TRAFFIC', 'N_E_NPDES_PER', 'R_E_TRAFFIC_PER', 'N_P_NPDES', 
-  'RAW_E_O3', 'N_P_O3', 'R_E_O3', 'N_E_O3', 'N_E_TSDF_PER', 'R_E_RESP_PER', 'S_D_OVER64', 'N_D_INCOME', 'R_E_NPL', 'R_D_UNDER5_PER', 'R_P_RESP', 'R_P_NPDES', 'S_P_O3', 'N_P_DIESEL', 'N_D_OVER64_PER', 'R_P_RMP', 'N_P_TRAFFIC', 'N_E_LEAD_PER', 'S_E_NPDES', 'S_D_OVER64_PER', 'S_P_NPL', 'N_D_MINOR', 
-  'RAW_E_PM25', 'N_D_LING_PER', 'S_D_INCOME', 'S_P_NEURO', 'N_P_RESP', 'N_D_OVER64', 'S_D_UNDER5_PER', 'R_D_LING', 'R_E_CANCER', 'S_E_CANCER', 'S_P_CANCER', 'N_D_INCOME_PER', 'R_D_INCOME_PER', 'S_E_NEURO', 'R_D_INCOME', 'R_E_PM25_PER', 'R_D_UNDER5', 'S_E_LEAD_PER', 'S_P_LEAD'
-)
-# # OBJECTID,FACID,NAME,LAT,LON,totpop,buff,stabbr,statename,region,S_E_TSDF_PER,R_P_TRAFFIC,S_E_PM25_PER,R_P_CANCER,S_P_DIESEL,N_D_INDEX,RAW_E_RMP,R_E_PM25,R_D_LESSHS,R_E_DIESEL,RAW_D_OVER64,N_E_TSDF,R_E_LEAD_PER,R_E_RMP_PER,S_E_DIESEL_PER,RAW_E_RESP,R_D_INDEX_PER,RAW_D_LESSHS,N_E_TRAFFIC,S_E_NEURO_PER,N_P_NPL,S_D_INDEX,S_D_MINOR,S_D_LESSHS,S_P_RESP,N_E_PM25_PER,RAW_D_INDEX,N_E_NEURO_PER,RAW_D_UNDER5,RAW_E_LEAD,R_E_NPL_PER,S_E_RESP_PER,S_E_O3_PER,N_P_PM25,S_D_LESSHS_PER,N_E_DIESEL_PER,S_D_INCOME_PER,RAW_E_NPL,R_D_MINOR_PER,S_E_TRAFFIC,R_P_TSDF,RAW_E_TSDF,N_P_CANCER,RAW_E_NEURO,S_E_DIESEL,RAW_D_INCOME,N_P_RMP,N_E_O3_PER,S_E_O3,R_E_RESP,S_E_RESP,N_E_DIESEL,N_D_INDEX_PER,N_E_RMP_PER,RAW_D_MINOR,N_E_CANCER_PER,R_E_O3_PER,S_D_INDEX_PER,N_E_RMP,R_P_LEAD,R_E_NEURO,N_E_LEAD,S_E_RMP_PER,R_E_RMP,RAW_E_DIESEL,R_D_LING_PER,R_E_TRAFFIC,R_E_LEAD,R_D_OVER64_PER,N_P_NEURO,R_E_CANCER_PER,R_E_NPDES_PER,N_E_CANCER,N_D_MINOR_PER,S_E_TSDF,S_E_NPL,R_D_OVER64,S_D_MINOR_PER,S_P_TSDF,S_P_RMP,N_E_PM25,R_E_TSDF,S_E_RMP,RAW_D_LING,S_E_TRAFFIC_PER,S_P_PM25,S_E_LEAD,R_P_NEURO,S_D_LING,N_E_NPL,R_E_DIESEL_PER,R_D_LESSHS_PER,R_P_O3,N_E_TRAFFIC_PER,RAW_E_NPDES,N_E_NPDES,N_E_NEURO,R_P_DIESEL,N_E_RESP_PER,R_E_TSDF_PER,RAW_E_TRAFFIC,R_D_INDEX,R_P_PM25,N_D_UNDER5_PER,N_D_LESSHS_PER,R_E_NPDES,N_D_LING,S_E_PM25,N_E_NPL_PER,R_E_NEURO_PER,R_D_MINOR,N_P_TSDF,S_D_LING_PER,R_P_NPL,S_P_NPDES,S_E_NPDES_PER,N_D_UNDER5,S_E_NPL_PER,S_E_CANCER_PER,N_E_RESP,N_D_LESSHS,S_D_UNDER5,N_P_LEAD,RAW_E_CANCER,S_P_TRAFFIC,N_E_NPDES_PER,R_E_TRAFFIC_PER,N_P_NPDES,RAW_E_O3,N_P_O3,R_E_O3,N_E_O3,N_E_TSDF_PER,R_E_RESP_PER,S_D_OVER64,N_D_INCOME,R_E_NPL,R_D_UNDER5_PER,R_P_RESP,R_P_NPDES,S_P_O3,N_P_DIESEL,N_D_OVER64_PER,R_P_RMP,N_P_TRAFFIC,N_E_LEAD_PER,S_E_NPDES,S_D_OVER64_PER,S_P_NPL,N_D_MINOR,RAW_E_PM25,N_D_LING_PER,S_D_INCOME,S_P_NEURO,N_P_RESP,N_D_OVER64,S_D_UNDER5_PER,R_D_LING,R_E_CANCER,S_E_CANCER,S_P_CANCER,N_D_INCOME_PER,R_D_INCOME_PER,S_E_NEURO,R_D_INCOME,R_E_PM25_PER,R_D_UNDER5,S_E_LEAD_PER,S_P_LEAD
-# # 1,1000,BRASW Facility,32.4,-94.7,"7,946",3 miles,TX, Texas,6,97,74,44,75,61,35%,1.2,9.44,19%,0.733,13%,0.054,74,92,37,1.5,72,23%,110,99,95,47%,55%,20%,66,27,61%,92,7%,0.27,97,54,51,77,64,49,70,0.29,69,91,96,0.33,80,0.12,0.913,52%,95,34,42.9,1.4,1.5,0.824,83,95,69%,72,47,68,0.31,84,0.043,0.3,91,0.42,0.478,66,81,0.18,63,90,87,73,49,79,0.073,0.067,11%,62,94,86,10.7,0.062,0.47,6%,60,61,0.17,92,9%,0.096,50,67,68,60,0.32,0.25,0.063,70,43,97,55,44%,68,62,78,0.35,5%,9.63,94,99,49%,97,56,95,74,71,7%,97,84,2.3,15%,8%,84,56,69,81,64,89,43.8,79,43.6,46.3,98,63,10%,34%,0.063,52,73,79,62,78,55,89,80,57,0.38,69,93,36%,9.44,74,39%,89,76,13%,49,7%,42,44,68,79,71,0.044,39%,47,7%,76,82
+# Default File that has default input and output and friendly fieldnames & var type & var category:
+mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv' 
+# mynamesfile.default <- 'map batch to friendly fieldnames 2015.csv' 
 
-# Required format for input file (***for 2016 version):
+
+#'############################
+# *** Required format for input file (***for 2016 version):
 # This is the output of the new faster batch tool with 2016 dataset???:
 # but it does not match the format of outputs from nonshiny version as delivered july 2016! (which is further down below)
-
-batchfields2016 <- c(
-  'OBJECTID', 'FACID', "LAT","LONG",
-  "POP100","mins","pctmin","lowinc","pctlowinc","lths","pctlths","lingiso","pctlingiso","under5","pctunder5","over64","pctover64",
-  "traffic.score","pctpre1960","pm","o3","cancer","dpm","resp","proximity.tsdf","proximity.rmp","proximity.npl","proximity.npdes",
-  "VSI.eo","VSI.svi6",
-  
-  "inedx_EJ_Traffic","inedx_EJ_Lead","inedx_EJ_PM","inedx_EJ_Ozone","inedx_EJ_Cancer","inedx_EJ_DPM","inedx_EJ_Resp","inedx_EJ_proximity.tsdf","inedx_EJ_proximity.rmp","inedx_EJ_proximity.npl",
-#"neuro","inedx_EJ_proximity.npdes",  "inedx_EJ_Neuro","N_E_NEURO_PER","N_E_NEURO","R_E_NEURO_PER","R_E_NEURO","S_E_NEURO_PER","S_E_NEURO",
-  "BLOCKID","Distance.x",  
-  
-  "BLOCKGROUPFIPS","STUSAB","STATE","COUNTY","TRACT","BLKGRP","BLOCK","REGION",
-  
-  "N_D_INDEX_PER",
-  "N_E_NPDES_PER","N_E_TSDF_PER","N_E_RMP_PER","N_E_NPL_PER","N_E_LEAD_PER","N_E_TRAFFIC_PER","N_E_RESP_PER","N_E_CANCER_PER","N_E_DIESEL_PER","N_E_O3_PER","N_E_PM25_PER",
-  "N_D_MINOR_PER","N_D_INCOME_PER","N_D_LESSHS_PER","N_D_LING_PER","N_D_UNDER5_PER","N_D_OVER64_PER",
-  "N_D_INDEX",
-  "N_E_NPDES","N_E_TSDF","N_E_RMP","N_E_NPL","N_E_LEAD","N_E_TRAFFIC","N_E_RESP","N_E_CANCER","N_E_DIESEL","N_E_O3","N_E_PM25",
-  "N_D_MINOR","N_D_INCOME","N_D_LESSHS","N_D_LING","N_D_UNDER5","N_D_OVER64",
-  
-  "R_D_INDEX_PER",
-  "R_E_NPDES_PER","R_E_TSDF_PER","R_E_RMP_PER","R_E_NPL_PER","R_E_LEAD_PER","R_E_TRAFFIC_PER","R_E_RESP_PER","R_E_CANCER_PER","R_E_DIESEL_PER","R_E_O3_PER","R_E_PM25_PER",
-  "R_D_MINOR_PER","R_D_INCOME_PER","R_D_LESSHS_PER","R_D_LING_PER","R_D_UNDER5_PER","R_D_OVER64_PER",
-  "R_D_INDEX",
-  "R_E_NPDES","R_E_TSDF","R_E_RMP","R_E_NPL","R_E_LEAD","R_E_TRAFFIC","R_E_RESP","R_E_CANCER","R_E_DIESEL","R_E_O3","R_E_PM25",
-  "R_D_MINOR","R_D_INCOME","R_D_LESSHS","R_D_LING","R_D_UNDER5","R_D_OVER64",
-  
-  "S_D_INDEX_PER",
-  "S_E_NPDES_PER","S_E_TSDF_PER","S_E_RMP_PER","S_E_NPL_PER","S_E_LEAD_PER","S_E_TRAFFIC_PER","S_E_RESP_PER","S_E_CANCER_PER","S_E_DIESEL_PER","S_E_O3_PER","S_E_PM25_PER",
-  "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER5_PER","S_D_OVER64_PER",
-  "S_D_INDEX",
-  "S_E_NPDES","S_E_TSDF","S_E_RMP","S_E_NPL","S_E_LEAD","S_E_TRAFFIC","S_E_RESP","S_E_CANCER","S_E_DIESEL","S_E_O3","S_E_PM25",
-  "S_D_MINOR","S_D_INCOME","S_D_LESSHS","S_D_LING","S_D_UNDER5","S_D_OVER64"
-)
+#'############################
+# NOTE batchfields2016 IS NOT USED - THEY ARE MAPPED IN THE FILE mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv' 
+#
+# batchfields2016 <- c(
+#   'OBJECTID', 'FACID', "LAT","LONG",
+#   "POP100","mins","pctmin","lowinc","pctlowinc","lths","pctlths","lingiso","pctlingiso","under5","pctunder5","over64","pctover64",
+#   "traffic.score","pctpre1960","pm","o3","cancer","dpm","resp","proximity.tsdf","proximity.rmp","proximity.npl","proximity.npdes",
+#   "VSI.eo","VSI.svi6",
+#   
+#   "inedx_EJ_Traffic","inedx_EJ_Lead","inedx_EJ_PM","inedx_EJ_Ozone","inedx_EJ_Cancer","inedx_EJ_DPM","inedx_EJ_Resp","inedx_EJ_proximity.tsdf","inedx_EJ_proximity.rmp","inedx_EJ_proximity.npl",
+#   #"neuro","inedx_EJ_proximity.npdes",  "inedx_EJ_Neuro","N_E_NEURO_PER","N_E_NEURO","R_E_NEURO_PER","R_E_NEURO","S_E_NEURO_PER","S_E_NEURO",
+#   "BLOCKID","Distance.x",  
+#   
+#   "BLOCKGROUPFIPS","STUSAB","STATE","COUNTY","TRACT","BLKGRP","BLOCK","REGION",
+#   
+#   "N_D_INDEX_PER",
+#   "N_E_NPDES_PER","N_E_TSDF_PER","N_E_RMP_PER","N_E_NPL_PER","N_E_LEAD_PER","N_E_TRAFFIC_PER","N_E_RESP_PER","N_E_CANCER_PER","N_E_DIESEL_PER","N_E_O3_PER","N_E_PM25_PER",
+#   "N_D_MINOR_PER","N_D_INCOME_PER","N_D_LESSHS_PER","N_D_LING_PER","N_D_UNDER5_PER","N_D_OVER64_PER",
+#   "N_D_INDEX",
+#   "N_E_NPDES","N_E_TSDF","N_E_RMP","N_E_NPL","N_E_LEAD","N_E_TRAFFIC","N_E_RESP","N_E_CANCER","N_E_DIESEL","N_E_O3","N_E_PM25",
+#   "N_D_MINOR","N_D_INCOME","N_D_LESSHS","N_D_LING","N_D_UNDER5","N_D_OVER64",
+#   
+#   "R_D_INDEX_PER",
+#   "R_E_NPDES_PER","R_E_TSDF_PER","R_E_RMP_PER","R_E_NPL_PER","R_E_LEAD_PER","R_E_TRAFFIC_PER","R_E_RESP_PER","R_E_CANCER_PER","R_E_DIESEL_PER","R_E_O3_PER","R_E_PM25_PER",
+#   "R_D_MINOR_PER","R_D_INCOME_PER","R_D_LESSHS_PER","R_D_LING_PER","R_D_UNDER5_PER","R_D_OVER64_PER",
+#   "R_D_INDEX",
+#   "R_E_NPDES","R_E_TSDF","R_E_RMP","R_E_NPL","R_E_LEAD","R_E_TRAFFIC","R_E_RESP","R_E_CANCER","R_E_DIESEL","R_E_O3","R_E_PM25",
+#   "R_D_MINOR","R_D_INCOME","R_D_LESSHS","R_D_LING","R_D_UNDER5","R_D_OVER64",
+#   
+#   "S_D_INDEX_PER",
+#   "S_E_NPDES_PER","S_E_TSDF_PER","S_E_RMP_PER","S_E_NPL_PER","S_E_LEAD_PER","S_E_TRAFFIC_PER","S_E_RESP_PER","S_E_CANCER_PER","S_E_DIESEL_PER","S_E_O3_PER","S_E_PM25_PER",
+#   "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER5_PER","S_D_OVER64_PER",
+#   "S_D_INDEX",
+#   "S_E_NPDES","S_E_TSDF","S_E_RMP","S_E_NPL","S_E_LEAD","S_E_TRAFFIC","S_E_RESP","S_E_CANCER","S_E_DIESEL","S_E_O3","S_E_PM25",
+#   "S_D_MINOR","S_D_INCOME","S_D_LESSHS","S_D_LING","S_D_UNDER5","S_D_OVER64"
+# )
+# 
+# 
+# # The other 2016 format, from last contractor fast batch tool not ESRI batch processing tool, I think was this:
+# # "","FACID","FACID","LAT","LON","totpop","buff","stabbr","statename","region","RAW_E_PM25","S_E_PM25_PER","R_E_PM25_PER","N_E_PM25_PER","S_E_PM25","R_E_PM25","N_E_PM25","RAW_E_O3","S_E_O3_PER","R_E_O3_PER","N_E_O3_PER","S_E_O3","R_E_O3","N_E_O3","RAW_E_DIESEL","S_E_DIESEL_PER","R_E_DIESEL_PER","N_E_DIESEL_PER","S_E_DIESEL","R_E_DIESEL","N_E_DIESEL","RAW_E_CANCER","S_E_CANCER_PER","R_E_CANCER_PER","N_E_CANCER_PER","S_E_CANCER","R_E_CANCER","N_E_CANCER","RAW_E_RESP","S_E_RESP_PER","R_E_RESP_PER","N_E_RESP_PER","S_E_RESP","R_E_RESP","N_E_RESP","RAW_E_TRAFFIC","S_E_TRAFFIC_PER","R_E_TRAFFIC_PER","N_E_TRAFFIC_PER","S_E_TRAFFIC","R_E_TRAFFIC","N_E_TRAFFIC","RAW_E_LEAD","S_E_LEAD_PER","R_E_LEAD_PER","N_E_LEAD_PER","S_E_LEAD","R_E_LEAD","N_E_LEAD","RAW_E_NPL","S_E_NPL_PER","R_E_NPL_PER","N_E_NPL_PER","S_E_NPL","R_E_NPL","N_E_NPL","RAW_E_RMP","S_E_RMP_PER","R_E_RMP_PER","N_E_RMP_PER","S_E_RMP","R_E_RMP","N_E_RMP","RAW_E_TSDF","S_E_TSDF_PER","R_E_TSDF_PER","N_E_TSDF_PER","S_E_TSDF","R_E_TSDF","N_E_TSDF","RAW_E_NPDES","S_E_NPDES_PER","R_E_NPDES_PER","N_E_NPDES_PER","S_E_NPDES","R_E_NPDES","N_E_NPDES","RAW_D_INDEX","S_D_INDEX_PER","R_D_INDEX_PER","N_D_INDEX_PER","S_D_INDEX","R_D_INDEX","N_D_INDEX","RAW_D_MINOR","S_D_MINOR_PER","R_D_MINOR_PER","N_D_MINOR_PER","S_D_MINOR","R_D_MINOR","N_D_MINOR","RAW_D_INCOME","S_D_INCOME_PER","R_D_INCOME_PER","N_D_INCOME_PER","S_D_INCOME","R_D_INCOME","N_D_INCOME","RAW_D_LING","S_D_LING_PER","R_D_LING_PER","N_D_LING_PER","S_D_LING","R_D_LING","N_D_LING","RAW_D_LESSHS","S_D_LESSHS_PER","R_D_LESSHS_PER","N_D_LESSHS_PER","S_D_LESSHS","R_D_LESSHS","N_D_LESSHS","RAW_D_UNDER5","S_D_UNDER5_PER","R_D_UNDER5_PER","N_D_UNDER5_PER","S_D_UNDER5","R_D_UNDER5","N_D_UNDER5","RAW_D_OVER64","S_D_OVER64_PER","R_D_OVER64_PER","N_D_OVER64_PER","S_D_OVER64","R_D_OVER64","N_D_OVER64","N_P_NPDES","N_P_TSDF","N_P_RMP","N_P_NPL","N_P_LEAD","N_P_TRAFFIC","N_P_RESP","N_P_CANCER","N_P_DIESEL","N_P_O3","N_P_PM25","R_P_NPDES","R_P_TSDF","R_P_RMP","R_P_NPL","R_P_LEAD","R_P_TRAFFIC","R_P_RESP","R_P_CANCER","R_P_DIESEL","R_P_O3","R_P_PM25","S_P_NPDES","S_P_TSDF","S_P_RMP","S_P_NPL","S_P_LEAD","S_P_TRAFFIC","S_P_RESP","S_P_CANCER","S_P_DIESEL","S_P_O3","S_P_PM25"
+# # "1",1,1,36.263333,-98.480833,1961.40424097441,NA,"OK","Oklahoma",6,"8.03",1.77771128179981,25,21,"11.0","98.0","35.9","56.1",322.246969303584,13.7462551,91,"50.0","76.0","59.0","0.203",0.182134659435296,6.3588859,7,"78.0","65.0","65.0","34.",0.0724048684886795,4.5393877,28,"27.","39.","100.","1.3",0.547464297686105,13.6746759,29,"91.","50.","99.","31.",0.0745478729955391,34.5409178,33,"40.","51.","100.","0.43",0.413336006369685,37.2317588,71,"0","9.0","99.","0",44.5587502520971,9.31803123693269,16,"29.","13.","100.","1.1",43,47.4094320438217,89,"12.","92.","100.","0.029",58,0.936750327315794,39,"7.2","8.0","100.","0",100,40.0308416122907,1,"6.0","12.","100.",25,99,1.83805363064454,41,"17.","22.","97.",11,42.3909505224415,1,26,"4.0","100.","0.31",39,0.72036093334196,39,61,"14.","100.","0.072",1,9.45314368072279,26,48,5,100,0,14,46.9739301923974,85,62,42,100,0,8,49.6663627814666,85,74,6,100,0,16,39.4511377227276,33,69,"51.","100.","590.",61,61,69,67,100,100,100,100,100,100,100,100,100,72,57,35.4792282684122,0.220137577563249,0.0659186952810612,0.383558587739272,0.0435088811568746,0.253614939269496,83.0005230043116,1.92944399583553,44.8221775748263,0.5259545310825,55.7806552664324,9.36848012374696,32.231684346941,38.7267721898835,13.3065062074557,2.15037821086161,6.93577727960583,13.9850441926119
+# 
+# names1 <- c("","FACID","FACID","LAT","LON",
+#             "totpop","buff",
+#             "stabbr","statename","region",
+#             "RAW_E_PM25","S_E_PM25_PER","R_E_PM25_PER","N_E_PM25_PER","S_E_PM25","R_E_PM25","N_E_PM25","RAW_E_O3","S_E_O3_PER","R_E_O3_PER","N_E_O3_PER","S_E_O3","R_E_O3","N_E_O3","RAW_E_DIESEL","S_E_DIESEL_PER","R_E_DIESEL_PER","N_E_DIESEL_PER","S_E_DIESEL","R_E_DIESEL","N_E_DIESEL","RAW_E_CANCER","S_E_CANCER_PER","R_E_CANCER_PER","N_E_CANCER_PER","S_E_CANCER","R_E_CANCER","N_E_CANCER","RAW_E_RESP","S_E_RESP_PER","R_E_RESP_PER","N_E_RESP_PER","S_E_RESP","R_E_RESP","N_E_RESP","RAW_E_TRAFFIC","S_E_TRAFFIC_PER","R_E_TRAFFIC_PER","N_E_TRAFFIC_PER","S_E_TRAFFIC","R_E_TRAFFIC","N_E_TRAFFIC","RAW_E_LEAD","S_E_LEAD_PER","R_E_LEAD_PER","N_E_LEAD_PER","S_E_LEAD","R_E_LEAD","N_E_LEAD","RAW_E_NPL","S_E_NPL_PER","R_E_NPL_PER","N_E_NPL_PER","S_E_NPL","R_E_NPL","N_E_NPL","RAW_E_RMP","S_E_RMP_PER","R_E_RMP_PER","N_E_RMP_PER","S_E_RMP","R_E_RMP","N_E_RMP","RAW_E_TSDF","S_E_TSDF_PER","R_E_TSDF_PER","N_E_TSDF_PER","S_E_TSDF","R_E_TSDF","N_E_TSDF","RAW_E_NPDES","S_E_NPDES_PER","R_E_NPDES_PER","N_E_NPDES_PER","S_E_NPDES","R_E_NPDES","N_E_NPDES","RAW_D_INDEX","S_D_INDEX_PER","R_D_INDEX_PER","N_D_INDEX_PER","S_D_INDEX","R_D_INDEX","N_D_INDEX","RAW_D_MINOR","S_D_MINOR_PER","R_D_MINOR_PER","N_D_MINOR_PER","S_D_MINOR","R_D_MINOR","N_D_MINOR","RAW_D_INCOME","S_D_INCOME_PER","R_D_INCOME_PER","N_D_INCOME_PER","S_D_INCOME","R_D_INCOME","N_D_INCOME","RAW_D_LING","S_D_LING_PER","R_D_LING_PER","N_D_LING_PER","S_D_LING","R_D_LING","N_D_LING","RAW_D_LESSHS","S_D_LESSHS_PER","R_D_LESSHS_PER","N_D_LESSHS_PER","S_D_LESSHS","R_D_LESSHS","N_D_LESSHS","RAW_D_UNDER5","S_D_UNDER5_PER","R_D_UNDER5_PER","N_D_UNDER5_PER","S_D_UNDER5","R_D_UNDER5","N_D_UNDER5","RAW_D_OVER64","S_D_OVER64_PER","R_D_OVER64_PER","N_D_OVER64_PER","S_D_OVER64","R_D_OVER64","N_D_OVER64","N_P_NPDES","N_P_TSDF","N_P_RMP","N_P_NPL","N_P_LEAD","N_P_TRAFFIC","N_P_RESP","N_P_CANCER","N_P_DIESEL","N_P_O3","N_P_PM25","R_P_NPDES","R_P_TSDF","R_P_RMP","R_P_NPL","R_P_LEAD","R_P_TRAFFIC","R_P_RESP","R_P_CANCER","R_P_DIESEL","R_P_O3","R_P_PM25","S_P_NPDES","S_P_TSDF","S_P_RMP","S_P_NPL","S_P_LEAD","S_P_TRAFFIC","S_P_RESP","S_P_CANCER","S_P_DIESEL","S_P_O3","S_P_PM25")
+# dat1 <- c("1",1,1,36.263333,-98.480833,1961.40424097441,NA,"OK","Oklahoma",6,"8.03",1.77771128179981,25,21,"11.0","98.0","35.9","56.1",322.246969303584,13.7462551,91,"50.0","76.0","59.0","0.203",0.182134659435296,6.3588859,7,"78.0","65.0","65.0","34.",0.0724048684886795,4.5393877,28,"27.","39.","100.","1.3",0.547464297686105,13.6746759,29,"91.","50.","99.","31.",0.0745478729955391,34.5409178,33,"40.","51.","100.","0.43",0.413336006369685,37.2317588,71,"0","9.0","99.","0",44.5587502520971,9.31803123693269,16,"29.","13.","100.","1.1",43,47.4094320438217,89,"12.","92.","100.","0.029",58,0.936750327315794,39,"7.2","8.0","100.","0",100,40.0308416122907,1,"6.0","12.","100.",25,99,1.83805363064454,41,"17.","22.","97.",11,42.3909505224415,1,26,"4.0","100.","0.31",39,0.72036093334196,39,61,"14.","100.","0.072",1,9.45314368072279,26,48,5,100,0,14,46.9739301923974,85,62,42,100,0,8,49.6663627814666,85,74,6,100,0,16,39.4511377227276,33,69,"51.","100.","590.",61,61,69,67,100,100,100,100,100,100,100,100,100,72,57,35.4792282684122,0.220137577563249,0.0659186952810612,0.383558587739272,0.0435088811568746,0.253614939269496,83.0005230043116,1.92944399583553,44.8221775748263,0.5259545310825,55.7806552664324,9.36848012374696,32.231684346941,38.7267721898835,13.3065062074557,2.15037821086161,6.93577727960583,13.9850441926119)
 
 # colnames in output of nonshiny tool as delivered july 2016 (once rownames col removed) 
 # BUT FIXED MY COPY SO IT PROVIDES OBJECTID, THEN FACID
@@ -187,9 +242,36 @@ batchfields2016 <- c(
 # glossaryfieldname "Air toxics cancer risk"
 #
 
-# Default File that has default input and output and friendly fieldnames & var type & var category:
-# mynamesfile.default <- 'map batch to friendly fieldnames 2015.csv' 
-mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv' 
+
+#'#######################
+# Required format for input file (***for 2015 version):
+#  ***  These seem to be all out of order ***:
+batchfields2015 <- c(
+  'OBJECTID', 'FACID', 'NAME', 'LAT', 'LON', 'totpop', 'buff', 'stabbr', 'statename', 'region', 
+  'S_E_TSDF_PER', 'R_P_TRAFFIC', 'S_E_PM25_PER', 'R_P_CANCER', 'S_P_DIESEL', 'N_D_INDEX', 
+  'RAW_E_RMP', 'R_E_PM25', 'R_D_LESSHS', 'R_E_DIESEL', 
+  'RAW_D_OVER64', 'N_E_TSDF', 'R_E_LEAD_PER', 'R_E_RMP_PER', 'S_E_DIESEL_PER', 
+  'RAW_E_RESP', 'R_D_INDEX_PER', 
+  'RAW_D_LESSHS', 'N_E_TRAFFIC', 'S_E_NEURO_PER', 'N_P_NPL', 'S_D_INDEX', 'S_D_MINOR', 'S_D_LESSHS', 'S_P_RESP', 'N_E_PM25_PER', 
+  'RAW_D_INDEX', 'N_E_NEURO_PER', 
+  'RAW_D_UNDER5', 
+  'RAW_E_LEAD', 'R_E_NPL_PER', 'S_E_RESP_PER', 'S_E_O3_PER', 'N_P_PM25', 'S_D_LESSHS_PER', 'N_E_DIESEL_PER', 'S_D_INCOME_PER', 
+  'RAW_E_NPL', 'R_D_MINOR_PER', 'S_E_TRAFFIC', 'R_P_TSDF', 
+  'RAW_E_TSDF', 'N_P_CANCER', 
+  'RAW_E_NEURO', 'S_E_DIESEL', 
+  'RAW_D_INCOME', 'N_P_RMP', 'N_E_O3_PER', 'S_E_O3', 'R_E_RESP', 'S_E_RESP', 'N_E_DIESEL', 'N_D_INDEX_PER', 'N_E_RMP_PER', 
+  'RAW_D_MINOR', 'N_E_CANCER_PER', 'R_E_O3_PER', 'S_D_INDEX_PER', 'N_E_RMP', 'R_P_LEAD', 'R_E_NEURO', 'N_E_LEAD', 'S_E_RMP_PER', 'R_E_RMP', 
+  'RAW_E_DIESEL', 'R_D_LING_PER', 'R_E_TRAFFIC', 'R_E_LEAD', 'R_D_OVER64_PER', 'N_P_NEURO', 'R_E_CANCER_PER', 'R_E_NPDES_PER', 'N_E_CANCER', 'N_D_MINOR_PER', 'S_E_TSDF', 'S_E_NPL', 'R_D_OVER64', 'S_D_MINOR_PER', 'S_P_TSDF', 'S_P_RMP', 'N_E_PM25', 'R_E_TSDF', 'S_E_RMP', 
+  'RAW_D_LING', 'S_E_TRAFFIC_PER', 'S_P_PM25', 'S_E_LEAD', 'R_P_NEURO', 'S_D_LING', 'N_E_NPL', 'R_E_DIESEL_PER', 'R_D_LESSHS_PER', 'R_P_O3', 'N_E_TRAFFIC_PER', 
+  'RAW_E_NPDES', 'N_E_NPDES', 'N_E_NEURO', 'R_P_DIESEL', 'N_E_RESP_PER', 'R_E_TSDF_PER', 
+  'RAW_E_TRAFFIC', 'R_D_INDEX', 'R_P_PM25', 'N_D_UNDER5_PER', 'N_D_LESSHS_PER', 'R_E_NPDES', 'N_D_LING', 'S_E_PM25', 'N_E_NPL_PER', 'R_E_NEURO_PER', 'R_D_MINOR', 'N_P_TSDF', 'S_D_LING_PER', 'R_P_NPL', 'S_P_NPDES', 'S_E_NPDES_PER', 'N_D_UNDER5', 'S_E_NPL_PER', 'S_E_CANCER_PER', 'N_E_RESP', 'N_D_LESSHS', 'S_D_UNDER5', 'N_P_LEAD', 
+  'RAW_E_CANCER', 'S_P_TRAFFIC', 'N_E_NPDES_PER', 'R_E_TRAFFIC_PER', 'N_P_NPDES', 
+  'RAW_E_O3', 'N_P_O3', 'R_E_O3', 'N_E_O3', 'N_E_TSDF_PER', 'R_E_RESP_PER', 'S_D_OVER64', 'N_D_INCOME', 'R_E_NPL', 'R_D_UNDER5_PER', 'R_P_RESP', 'R_P_NPDES', 'S_P_O3', 'N_P_DIESEL', 'N_D_OVER64_PER', 'R_P_RMP', 'N_P_TRAFFIC', 'N_E_LEAD_PER', 'S_E_NPDES', 'S_D_OVER64_PER', 'S_P_NPL', 'N_D_MINOR', 
+  'RAW_E_PM25', 'N_D_LING_PER', 'S_D_INCOME', 'S_P_NEURO', 'N_P_RESP', 'N_D_OVER64', 'S_D_UNDER5_PER', 'R_D_LING', 'R_E_CANCER', 'S_E_CANCER', 'S_P_CANCER', 'N_D_INCOME_PER', 'R_D_INCOME_PER', 'S_E_NEURO', 'R_D_INCOME', 'R_E_PM25_PER', 'R_D_UNDER5', 'S_E_LEAD_PER', 'S_P_LEAD'
+)
+# # OBJECTID,FACID,NAME,LAT,LON,totpop,buff,stabbr,statename,region,S_E_TSDF_PER,R_P_TRAFFIC,S_E_PM25_PER,R_P_CANCER,S_P_DIESEL,N_D_INDEX,RAW_E_RMP,R_E_PM25,R_D_LESSHS,R_E_DIESEL,RAW_D_OVER64,N_E_TSDF,R_E_LEAD_PER,R_E_RMP_PER,S_E_DIESEL_PER,RAW_E_RESP,R_D_INDEX_PER,RAW_D_LESSHS,N_E_TRAFFIC,S_E_NEURO_PER,N_P_NPL,S_D_INDEX,S_D_MINOR,S_D_LESSHS,S_P_RESP,N_E_PM25_PER,RAW_D_INDEX,N_E_NEURO_PER,RAW_D_UNDER5,RAW_E_LEAD,R_E_NPL_PER,S_E_RESP_PER,S_E_O3_PER,N_P_PM25,S_D_LESSHS_PER,N_E_DIESEL_PER,S_D_INCOME_PER,RAW_E_NPL,R_D_MINOR_PER,S_E_TRAFFIC,R_P_TSDF,RAW_E_TSDF,N_P_CANCER,RAW_E_NEURO,S_E_DIESEL,RAW_D_INCOME,N_P_RMP,N_E_O3_PER,S_E_O3,R_E_RESP,S_E_RESP,N_E_DIESEL,N_D_INDEX_PER,N_E_RMP_PER,RAW_D_MINOR,N_E_CANCER_PER,R_E_O3_PER,S_D_INDEX_PER,N_E_RMP,R_P_LEAD,R_E_NEURO,N_E_LEAD,S_E_RMP_PER,R_E_RMP,RAW_E_DIESEL,R_D_LING_PER,R_E_TRAFFIC,R_E_LEAD,R_D_OVER64_PER,N_P_NEURO,R_E_CANCER_PER,R_E_NPDES_PER,N_E_CANCER,N_D_MINOR_PER,S_E_TSDF,S_E_NPL,R_D_OVER64,S_D_MINOR_PER,S_P_TSDF,S_P_RMP,N_E_PM25,R_E_TSDF,S_E_RMP,RAW_D_LING,S_E_TRAFFIC_PER,S_P_PM25,S_E_LEAD,R_P_NEURO,S_D_LING,N_E_NPL,R_E_DIESEL_PER,R_D_LESSHS_PER,R_P_O3,N_E_TRAFFIC_PER,RAW_E_NPDES,N_E_NPDES,N_E_NEURO,R_P_DIESEL,N_E_RESP_PER,R_E_TSDF_PER,RAW_E_TRAFFIC,R_D_INDEX,R_P_PM25,N_D_UNDER5_PER,N_D_LESSHS_PER,R_E_NPDES,N_D_LING,S_E_PM25,N_E_NPL_PER,R_E_NEURO_PER,R_D_MINOR,N_P_TSDF,S_D_LING_PER,R_P_NPL,S_P_NPDES,S_E_NPDES_PER,N_D_UNDER5,S_E_NPL_PER,S_E_CANCER_PER,N_E_RESP,N_D_LESSHS,S_D_UNDER5,N_P_LEAD,RAW_E_CANCER,S_P_TRAFFIC,N_E_NPDES_PER,R_E_TRAFFIC_PER,N_P_NPDES,RAW_E_O3,N_P_O3,R_E_O3,N_E_O3,N_E_TSDF_PER,R_E_RESP_PER,S_D_OVER64,N_D_INCOME,R_E_NPL,R_D_UNDER5_PER,R_P_RESP,R_P_NPDES,S_P_O3,N_P_DIESEL,N_D_OVER64_PER,R_P_RMP,N_P_TRAFFIC,N_E_LEAD_PER,S_E_NPDES,S_D_OVER64_PER,S_P_NPL,N_D_MINOR,RAW_E_PM25,N_D_LING_PER,S_D_INCOME,S_P_NEURO,N_P_RESP,N_D_OVER64,S_D_UNDER5_PER,R_D_LING,R_E_CANCER,S_E_CANCER,S_P_CANCER,N_D_INCOME_PER,R_D_INCOME_PER,S_E_NEURO,R_D_INCOME,R_E_PM25_PER,R_D_UNDER5,S_E_LEAD_PER,S_P_LEAD
+# # 1,1000,BRASW Facility,32.4,-94.7,"7,946",3 miles,TX, Texas,6,97,74,44,75,61,35%,1.2,9.44,19%,0.733,13%,0.054,74,92,37,1.5,72,23%,110,99,95,47%,55%,20%,66,27,61%,92,7%,0.27,97,54,51,77,64,49,70,0.29,69,91,96,0.33,80,0.12,0.913,52%,95,34,42.9,1.4,1.5,0.824,83,95,69%,72,47,68,0.31,84,0.043,0.3,91,0.42,0.478,66,81,0.18,63,90,87,73,49,79,0.073,0.067,11%,62,94,86,10.7,0.062,0.47,6%,60,61,0.17,92,9%,0.096,50,67,68,60,0.32,0.25,0.063,70,43,97,55,44%,68,62,78,0.35,5%,9.63,94,99,49%,97,56,95,74,71,7%,97,84,2.3,15%,8%,84,56,69,81,64,89,43.8,79,43.6,46.3,98,63,10%,34%,0.063,52,73,79,62,78,55,89,80,57,0.38,69,93,36%,9.44,74,39%,89,76,13%,49,7%,42,44,68,79,71,0.044,39%,47,7%,76,82
+#'#######################
 
 # Specify units that go with each environmental indicator. This is also available via 
 # data(popupunits, package='ejscreen') # except this package has to be obtained from github for that.
@@ -205,19 +287,19 @@ popupunits <- structure(
   class = "data.frame"
 )
 #"neuro",
-#############################################
+#'############################
 
-#############################
+#'############################
 # for interactive plots/charts/graphs
-#############################
+#'############################
 
 source("plotlyGraphWidget.R") 
 # see https://plot.ly/r/getting-started/
 
-#############################
+#'############################
 # For leaflet maps, might need to define these here 
 # until latest version of leaflet package is on cran:
-#############################
+#'############################
 
 leafletOutput = function(outputId, width = "100%", height = 400) {
   htmlwidgets::shinyWidgetOutput(outputId, "leaflet", width, height, "leaflet")
@@ -228,10 +310,9 @@ renderLeaflet = function(expr, env = parent.frame(), quoted = FALSE) {
   htmlwidgets::shinyRenderWidget(expr, leafletOutput, env, quoted = TRUE)
 }
 
-#############################################
-
+#'############################
 # Useful open map layers
-
+#'############################
 # layer.admin <- 'OpenMapSurfer.AdminBounds'   # neighborhoods, counties, etc.
 # layer.houses <- 'HERE.hybridDay'
 # layer.street1 <- 'Esri.WorldStreetMap'
@@ -244,27 +325,43 @@ renderLeaflet = function(expr, env = parent.frame(), quoted = FALSE) {
 # layer.sat2 <- 'MapQuestOpen.Aerial'
 # layer.esrigray <- 'Esri.WorldGrayCanvas'
 
-mapserver1= 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer'
-mapserver2= 'http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer'
+mapserver1 = 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer'
+mapserver2 = 'http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer'
 
 # var MapQuestOpen_Aerial = L.tileLayer('http://oatile{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg', {
 #   attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency',
 #   subdomains: '1234'
 # });
 
-#############################
-# DEFAULT VALUES - possibly could recode to allow user to change them
-#############################
+#'############################
+# MISC DEFAULT VALUES
+#'############################
 
-pixels.per.char <- 10 #????
-max.allowed=30 # max length of site name we want displayed before wrapping in sites table
-default.tab <- 'Upload'
+default.tab <- 'Details' # for some reason this has to be used to update info so barplot etc works on first click
+default.tab.start <- 'Upload'
 
-#############################
+#'############################
+# WHICH QUANTILES TO USE IN SUMMARY STATS
+#'############################
+# Defaults for quantiles summary stats, with character string version used in ui to present options in checkboxes
+# (probs of 0, 0.50, 1 are redundant since min, median, max are already separately shown)
+probs.default.choices <- c('0','0.25','0.50','0.75','0.80','0.90','0.95','0.99','1.00')
+probs.default  <- c(0.25,0.75,0.95) 
+# as.numeric(probs.default.choices) # to have it default to all of these summary stats of the distributions across sites and people
+# c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1) 
+
+# Defaults for which of the predefined functions to use for summary stats (logical vector or vector of names?)
+colfun.picked.default = 'all'
+rowfun.picked.default = 'all'
+
+# Default for all functions so can get stats even if one site (or one indicator at one site) has no data
+na.rm = TRUE  
+
+#'############################
 # WHICH FIELDS TO COMPARE TO THRESHOLDS
-#############################
+#'############################
 
-# allow user to specify user-specified # of groups of user-specified fields to compare to user-specified thresholds.
+# Allow user to specify user-specified # of groups of user-specified fields to compare to user-specified thresholds.
 # Initially, just the 3 thresholds can be altered, not which fields are compared or how many groups or what the groups are called.
 threshold.default   <- list(50, 50, 50)  # a default for cutoff in at/above threshold stat summarizing EJ US percentiles
 threshgroup.default <- list('EJ US pctiles', 'EJ Region pctiles', 'EJ State pctiles')
@@ -275,12 +372,26 @@ threshgroup.default <- list('EJ US pctiles', 'EJ Region pctiles', 'EJ State pcti
 #   grep('statepctile.EJ.DISPARITY.', colnames(fulltabler()), value=TRUE) 
 # )
 
-#############################
+#'############################
+# MISC DEFAULTS
+#'############################
+pixels.per.char <- 10 #????
+max.allowed = 30 # max length of site name we want displayed before wrapping in sites table
+# define scaling for text on barplot
+bar.cex <- 1.10 
+# size of marker for sites on map:
+circle.marker.radius <- 6
+meters.per.mile = 1609.344 # proxistat::convert(1, from = 'miles', towhat = 'meters') 
+
+
+
+
+#' ####################################################################################
 # FIELDNAMES USED BY CODE TO REFER TO SPECIFIC TYPES OF FIELDS
 # THIS COULD BE REPLACED BY JUST REQUIRING THE RELEVANT GROUPS OF NAMES BE PROVIDED IN A PARTICULAR SORT ORDER IN THE newnames COLUMN OF THE LOOKUP TABLE (CSV READ IN AS mynamesfile.default or user-uploaded version of that)
 # AS WRITTEN CURRENTLY, THE non-friendly versions of the NAMES BELOW *MUST* MATCH THOSE IN THE newnames COLUMN OF THE LOOKUP TABLE
 # and the friendly versions are read from the csv file for table outputs but from the defaults below for use in the graphics (hist/bar) labeling I believe.
-#############################
+#' ####################################################################################
 
 # Only some of these maps between versions of field names could be handled using the 
 # ejscreen package now, via data('ejscreenformulas'), with e.g., 
@@ -312,7 +423,7 @@ threshgroup.default <- list('EJ US pctiles', 'EJ Region pctiles', 'EJ State pcti
 # also they lack full unique name like 'Ozone US percentile' or 'Cancer risk state average'
 # The ones below are short and friendly for graph labels. 
 
-# if using names from data(names.evars, package='ejscreen') etc., 
+# *** if using names from data(names.evars, package='ejscreen') etc., 
 # > ejscreenformulas$glossaryfieldname[match(names.d , ejscreenformulas$Rfieldname)]
 # [1] "Demographic Index (based on 2 factors, % low-income and % minority)" 
 # [2] "Supplementary Demographic Index (based on 6 factors)"                
@@ -362,8 +473,12 @@ threshgroup.default <- list('EJ US pctiles', 'EJ Region pctiles', 'EJ State pcti
 
 mywtsname <- 'pop'  # used for weighted means to get stats on the average person in all these zones (e.g. avg person nearby any site)
 
+# *** These are all in package called ejscreen now:
+
 names.d.batch          <- c('VSI.eo', 'pctlowinc', 'pctmin', 'pctlths', 'pctlingiso', 'pctunder5', 'pctover64') 
 names.d.friendly <- c('Demog.Ind.', '% Low-inc.', '% Minority', '% <High School', '% Linguistic Isol.', '% < age 5', '% > age 64')
+# *** should I add these:? 
+#    "ACSIPOVBAS", "ACSTOTHH", "ACSEDUCBAS", "PRE1960"   
 
 names.e.batch           <- c("pm", "o3", "cancer", "resp", "dpm", "pctpre1960", 
                              "traffic.score", "proximity.npl", "proximity.rmp", "proximity.tsdf", "proximity.npdes")
@@ -380,20 +495,21 @@ names.all <- c(names.d.batch , names.e.batch , names.ej.batch )
 names.all.friendly <- c(names.d.friendly, names.e.friendly, names.ej.friendly)
 
 ##########################################################################################
-# DEMOGRAPHIC US TOTALS/US OVERALL PERCENTS -- MUST BE UPDATED WHEN NEW ACS DATA IS USED !
+# DEMOGRAPHIC US TOTALS/US OVERALL PERCENTS -- 
+# *** MUST BE UPDATED WHEN NEW ACS DATA IS USED !
 ##########################################################################################
 
-message('Note: MUST UPDATE ACS DATA IN CODE, WHEN SWITCHING TO NEW ACS DATASET')
+message('*** Note: MUST UPDATE ACS DATA IN CODE, WHEN SWITCHING TO NEW ACS DATASET')
 #popus <-  309138711 # 309,138,711 is from 
 # http://factfinder2.census.gov/bkmk/table/1.0/en/ACS/12_5YR/B01001/0100000US
-popus <-  314107084 # from 2010-2014
+popus <-  314107084 # from 2010-2014 ??
 # http://factfinder2.census.gov/bkmk/table/1.0/en/ACS/14_5YR/B01001/0100000US
-
 #browseURL('http://factfinder2.census.gov/bkmk/table/1.0/en/ACS/14_5YR/B01001/0100000US')
 pop.US <- 314107084
 under5.US <- 10205881 + 9767830; pctunder5.US <- under5.US / pop.US
 over64.US <- (2915262 + 3616479 + 4666294 + 3328014 + 2362325	+ 1936823) + 
-  (3223178	+ 4077987 + 5494784	+ 4231547	+ 3442927+ 3882341)
+  (3223178	+ 4077987 + 5494784	+ 4231547	+ 3442927 + 3882341)
+
 pctover64.US <- over64.US / pop.US
 # 65 and 66 years	2,915,262	+/-9,504
 # 67 to 69 years	3,616,479	+/-9,539
@@ -425,7 +541,7 @@ VSI.eo.US <- (pctmin.US + pctlowinc.US) / 2
 
 # THESE SHOULD BE AVAILABLE IN THE BATCH ANALYSIS OUTPUTS?
 
-us.percents.2016 <- 100 * sapply( paste(names.d.batch , '.US', sep='') , get)
+us.percents.2016 <- 100 * sapply( paste(names.d.batch , '.US', sep = '') , get)
 # Calculated here from Census website tables:
 # > cbind(us.percents.2016)
 #               us.percents.2016
@@ -455,7 +571,7 @@ us.percents <- us.percents.2016
 # The actual exact counts are obtained above, like lowinc.US,
 # but that is not quite the same as pctlowinc.US * pop.US, because denominator was not pop!
 # Early versions of summarizer used the approximation of pct*pop, but might want to use actual count?
-us.counts.names <- paste(gsub('pct', '', names.d.batch), '.US', sep='')
+us.counts.names <- paste(gsub('pct', '', names.d.batch), '.US', sep = '')
 us.counts.names <- gsub('min.US', 'mins.US', us.counts.names)
 us.counts <- sapply(us.counts.names, get)
 #
@@ -483,30 +599,4 @@ names(us.counts) <- names.d.batch
 # PWDIS 	0.307163434
 
 
-
-
-####################
-# OTHER
-####################
-
-# define scaling for text on barplot
-bar.cex <- 1.10 
-
-# size of marker for sites on map
-circle.marker.radius <- 6
-meters.per.mile = 1609.344 # proxistat::convert(1, from = 'miles', towhat = 'meters') 
-
-# defaults for quantiles summary stats, with character string version used in ui to present options in checkboxes
-# (probs of 0, 0.50, 1 are redundant since min, median, max are already separately shown)
-probs.default.choices <- c('0','0.25','0.50','0.75','0.80','0.90','0.95','0.99','1.00')
-probs.default  <- c(0.25,0.75,0.95) 
-# as.numeric(probs.default.choices) # to have it default to all of these summary stats of the distributions across sites and people
-# c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1) 
-
-# defaults for which of the predefined functions to use for summary stats (logical vector or vector of names?)
-colfun.picked.default = 'all'
-rowfun.picked.default = 'all'
-
-# default for all functions so can get stats even if one site (or one indicator at one site) has no data
-na.rm = TRUE  
 

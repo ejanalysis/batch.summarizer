@@ -1,5 +1,5 @@
 lead.zeroes <- function(fips, length.desired) {
-
+  # Latest version of this is also now available in package called analyze.stuff
 	########
 	# DEFINE FUNCTION THAT CAN ADD LEADING ZEROES AS NEEDED (FOR TABLE OR SEQUENCE FILE NUMBER OR FIPS)
 	########
@@ -10,11 +10,11 @@ lead.zeroes <- function(fips, length.desired) {
 
 	fips <- as.character(fips)
 	# might trim whitespace?  
-	if ( (length(length.desired) >1) & (length(fips) != length(length.desired))) {warning("numbers of inputs don't match")}
-	if ( any(length.desired==0 | length.desired>=100) ) {stop("error: string lengths must be >0 & <100")}
+	if ( (length(length.desired) > 1) & (length(fips) != length(length.desired))) {warning("numbers of inputs don't match")}
+	if ( any(length.desired == 0 | length.desired >= 100) ) {stop("error: string lengths must be >0 & <100")}
 	if ( any(nchar(fips) > length.desired) ) {stop("error: some are longer than desired length")}
 
-	fips <- paste( paste( rep( rep("0", length(length.desired)), length.desired), collapse=""), fips, sep="") 
+	fips <- paste( paste( rep( rep("0", length(length.desired)), length.desired), collapse = ""), fips, sep = "") 
 	# does that work vectorized?
 
 	# or maybe this, but can't say length.desired[i] unless it has same length as fip & can't handle recycling also:

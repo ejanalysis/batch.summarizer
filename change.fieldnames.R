@@ -1,5 +1,5 @@
 change.fieldnames <- function(allnames, oldnames, newnames, file=NA, sort=FALSE) {
-
+  # THIS IS ALSO IN MY PACKAGE CALLED analyze.stuff
 	# FUNCTION TO CHANGE SOME OR ALL FIELDNAMES
 	
 	# Input parameters are:
@@ -54,7 +54,7 @@ change.fieldnames <- function(allnames, oldnames, newnames, file=NA, sort=FALSE)
 	if (!sort) { if (length(oldnames)!=length(newnames)) {stop('oldnames and newnames must be the same length\n')} }
 	if (!sort) { if (length(allnames)==0 | length(oldnames)==0 | length(newnames)==0  ) {stop('no input can be length zero\n')} }
 
-	if (length(allnames) < length(oldnames)) {cat('Warning: length(allnames) generally should be >= length(oldnames)\n')}
+	# if (length(allnames) < length(oldnames)) {cat('Warning: length(allnames) generally should be >= length(oldnames)\n')}
   
   # Done with error-checking or file-creation/editing.
 	################
