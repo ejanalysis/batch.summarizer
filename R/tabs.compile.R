@@ -1,16 +1,22 @@
-#' @export
+#' @title compiles into one table the several tables from files saved from EJSCREEN buffer reports - probably obsolete
+#' @description This is a function to read a set of csv files saved from EJSCREEN tabular view and compile / format them 
+#' @param files character vector of filenames with full paths
+#' @param folder default is working directory, searches for all files in this folder unless files param given
+#' @param ... pass more to tabs.parsed
+#' @author ejanalyst info@ejanalysis.com
+#' @return the output is the output
 tabs.compile <- function(files, folder=getwd(), ...) {
   
   # based on code from make.fulltable.R
   
   if (missing(files)) {
-    files <- list.files(path=folder, pattern = '.csv')
+    files <- list.files(path = folder, pattern = '.csv')
   }
   
   #print(Sys.time())
   # pre-allocate enough memory for the fulltable, to speed up populating it with data:
   
-  mytable <- tab.parsed(files[1], folder=folder, ...)
+  mytable <- tab.parsed(files[1], folder = folder, ...)
   colcount <- length(mytable)
   rowcount <- length(mytable[ , 1]) 
   
@@ -22,7 +28,7 @@ tabs.compile <- function(files, folder=getwd(), ...) {
   
   for (i in 1:length(files)) 
   {
-    mytable <- tab.parsed(files[i], folder=folder, ...)
+    mytable <- tab.parsed(files[i], folder = folder, ...)
     # This avoids growing it with rbind which would be very slow:
     fulltable[nextrownum:(nextrownum + rowcount - 1), 1:colcount] <- mytable
     nextrownum <- nextrownum + rowcount

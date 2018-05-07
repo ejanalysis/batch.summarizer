@@ -1,15 +1,14 @@
-#' @export
+#' @title reformats tabular data saved from a single buffer report - probably obsolete
+#' @description based on code from make.finaltable.R
+#' @param fulltable input is fulltable, a set of tabular data from a buffer standard report in EJSCREEN
+#' @param folder default is working directory
+#' @param colcount colcount is 17 for circular buffer report, but differs for block group and maybe noncircular buffer reports
+#' @author ejanalyst info@ejanalysis.com
+#' @return the output is the output
 tabs.reformat <- function(fulltable, folder=getwd(), colcount=17 ) {
-  
-  # input is fulltable, a set of tabular data from a buffer standard report in EJSCREEN
-  # based on code from make.finaltable.R
-  # colcount is 17 for circular buffer report, but differs for block group and maybe noncircular buffer reports
 
-  
-  
 warning(' # DOES NOT WORK YET -- IT IS CREATING PAIRS OF ROWS INSTEAD OF 2 COLS, ONE FOR EACH BUFFER REPORT I USED:') 
 
-#
 #     > t(batchout)
 #   [,1]                                           [,2]                                                                 
 #   ID                                                        "ejscreenbuffersavedfromtabular1"              "ejscreenbuffersavedfromtabular1"                                    
@@ -108,7 +107,7 @@ warning(' # DOES NOT WORK YET -- IT IS CREATING PAIRS OF ROWS INSTEAD OF 2 COLS,
 
   # This pointcount should match the length of filelist, and is the number of points/buffers/zones/places analyzed.
   pointcount <- length(fulltable[, 1]) / varcount.typical
-  if (floor(pointcount)!=pointcount) {
+  if (floor(pointcount) != pointcount) {
     cat("\n ERROR - Table length is not an integer multiple of number of places/buffers.\n")
     #logwrite("ERROR - Table length is not an integer multiple of number of places/buffers.")
   }
@@ -135,7 +134,7 @@ warning(' # DOES NOT WORK YET -- IT IS CREATING PAIRS OF ROWS INSTEAD OF 2 COLS,
 
   for (mycolname in names(fulltable[ , (ID.etc.rowcount + 2):(colcount - 1)]) ) {
     
-    c.this <- matrix(fulltable[ , mycolname], ncol=varcount.typical, nrow=pointcount, byrow=TRUE)
+    c.this <- matrix(fulltable[ , mycolname], ncol = varcount.typical, nrow = pointcount, byrow = TRUE)
     colnames(c.this) <- paste(fulltable$fieldname[1:varcount.typical], mycolname)
     finaltable <- cbind(finaltable, c.this, stringsAsFactors = FALSE)
   }

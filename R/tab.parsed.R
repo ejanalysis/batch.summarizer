@@ -18,7 +18,6 @@
 #' @param wordsbeforelon.ring =6
 #' @param wordsbeforelat.ring =5
 #' @return output is not described here
-#' @export
 tab.parsed <- function(myfile, folder=getwd(), skip=2, 
                        wordsbeforefips.bg=2,    wordsbeforestate.bg=3, wordsafterstate.bg=5, wordsafterregion.bg=2, wordsafterpop.bg=0, 
                        wordsbeforemiles.ring=0, wordsbeforestate.ring=7, wordsafterstate.ring=5, wordsafterregion.ring=2, wordsafterpop.ring=0,

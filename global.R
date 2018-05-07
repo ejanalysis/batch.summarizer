@@ -18,11 +18,13 @@
 # *** These could be put into R folder and loading batch.summarizer package would make them available.
 #'###################################################################################
 
+require(batch.summarizer)
+source('batch.summarize.R') # will be  as package but had trouble with export tag bug
+
 # FUNCTIONS DEFINED HERE (Defined just in this batch.summarizer package):
 source('wilcoxon.pvalues.r')  # for statistical significance testing - from air
 #source('batch.read.R') # now as package
 #source('batch.clean.R') # now as package
-#source('batch.summarize.R') # now as package
 source("maphelpers.R")  # if we want percent choropleths of county data
 # load gomap.js ??
 
@@ -138,8 +140,8 @@ if (!exists('mydemofile.pop')) {mydemofile.pop <- 'Export_Output_Example2.pop.cs
 
 
 # Default File that has default input and output and friendly fieldnames & var type & var category:
-mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv' 
-# mynamesfile.default <- 'map batch to friendly fieldnames 2015.csv' 
+mynamesfile.default <- 'map_batch_to_friendly_fieldnames_2016.csv' 
+# mynamesfile.default <- 'map_batch_to_friendly_fieldnames_2015.csv' 
 
 
 #'############################
@@ -147,7 +149,7 @@ mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv'
 # This is the output of the new faster batch tool with 2016 dataset???:
 # but it does not match the format of outputs from nonshiny version as delivered july 2016! (which is further down below)
 #'############################
-# NOTE batchfields2016 IS NOT USED - THEY ARE MAPPED IN THE FILE mynamesfile.default <- 'map batch to friendly fieldnames 2016.csv' 
+# NOTE batchfields2016 IS NOT USED - THEY ARE MAPPED IN THE FILE mynamesfile.default <- 'map_batch_to_friendly_fieldnames_2016.csv' 
 #
 # batchfields2016 <- c(
 #   'OBJECTID', 'FACID', "LAT","LONG",

@@ -24,17 +24,7 @@
 #' @return output is a list with two named elements, rows and cols, where each is a matrix of summary stats. 
 #'   cols: Each element in a summary col summarizes 1 row (site) across all the RELEVANT cols of batch data (e.g., all US EJ Index percentiles)
 #'   rows: Each element in a summary row summarizes 1 column (field) across all the rows of batch data.
-#' @author ejanalyst info@ejanalysis.com
-#' @export
-batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop', wts=popstats[ , wtscolname], 
-                            probs=c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), 
-                            threshold=list(80), threshnames=list(names(which(sapply(sitestats,  class) != 'character'))), threshgroup=list('variables'), 
-                            na.rm=TRUE, rowfun.picked='all', colfun.picked='all', testing = FALSE) {
-  
-  #'###########################################
-  # Basic error checking #####
-  #'###########################################
-  
+batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop', wts = popstats[ , wtscolname], probs = c(0,0.25,0.50,0.75,0.80,0.90,0.95,0.99,1), threshold=list(80), threshnames=list(names(which(sapply(sitestats,  class) != 'character'))), threshgroup = list('variables'), na.rm = TRUE, rowfun.picked = 'all', colfun.picked = 'all', testing = FALSE) {
   if (missing(sitestats) | missing(popstats)) {stop('sitestats and popstats are outputs of batch processing in EJSCREEN and must each be a matrix or data.frame to be analyzed, where each row has stats on a buffer around some point called a site')}
   if (cols[1] == 'all') {cols <- colnames(sitestats)}
   if (!all.equal(dim(sitestats), dim(popstats))) {stop('sitestats and popstats must be identical in number of rows and in number of columns')}
@@ -45,7 +35,7 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   if (1 != length(unique( length(threshold), length(threshnames), length(threshgroup) ) )) {stop('lengths of threshold list, threshnames list, threshgroup list must be identical') }
   
   # numericols  <- names(which(sapply(sitestats,  class) != 'character'))
-
+  
   # Specify the population weighting to use unique individuals, not the double counted total near each site. #####
   wts <- popstats[ , wtscolname]
   
@@ -87,23 +77,23 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
     #     rowfun[[i]]= function(x, varnames, cutoff, or.tied, na.rm) {
     #       0 < cols.above.count( x[ ,  varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm ) 
     #     }
-    #     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
+    #     rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.r = a.rm)
     
     # at site, how many indicators are > x%ile? ####
     # FOR EACH SITE HOW MANY OF A FEW INDICATORS (PERCENTILES) ARE AT/ABOVE A SPECIFIED THRESHOLD?
-    i=i+1
-    rowfuname[i]=paste('Number of', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse='/' ) )
-    rowfun[[i]]=function(x, varnames, cutoff, or.tied, na.rm) {
-      cols.above.count( x[ , varnames], cutoff=cutoff, or.tied=or.tied, na.rm=na.rm )
+    i = i + 1
+    rowfuname[i] = paste('Number of', threshgroup[[setnum]], 'at/above threshold of', paste(threshold[[setnum]], collapse = '/' ) )
+    rowfun[[i]] = function(x, varnames, cutoff, or.tied, na.rm) {
+      cols.above.count( x[ , varnames], cutoff = cutoff, or.tied = or.tied, na.rm = na.rm )
     }
-    rowargs[[i]] <- list(x=NULL, varnames=threshnames[[setnum]], cutoff=threshold[[setnum]], or.tied=TRUE, na.rm=na.rm)
+    rowargs[[i]] <- list(x = NULL, varnames = threshnames[[setnum]], cutoff = threshold[[setnum]], or.tied = TRUE, na.rm = na.rm)
   }
   
   
-  #i=i+1
-  #rowfuname[i]=''
-  #rowfun[[i]]=function(x, ...) {
-  #  f( x, na.rm = na.rm)
+  #i = i+1
+  #rowfuname[i] = ''
+  #rowfun[[i]] = function(x, ...) {
+  #  f( x, na.rm  =  na.rm)
   #}
   
   
@@ -118,14 +108,14 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   #ratios.to.pop.state.avg (1 col per relevant variable)
   #ratios.to.pop.county.avg?? (1 col per relevant variable)
   
-  #i=i+1
-  # rowfunames[i]='Ratio of indicator X at average site to US pop avg'  
-  # rowfun[i]=function(x, usavgvalues, na.rm=TRUE) { x / usavgvalues } # that is not how the math will work - just a placeholder
+  #i = i+1
+  # rowfunames[i] = 'Ratio of indicator X at average site to US pop avg'  
+  # rowfun[i] = function(x, usavgvalues, na.rm = TRUE) { x / usavgvalues } # that is not how the math will work - just a placeholder
   # need to identify those usavgvalues columns either here or when that is called
   
-  #i=i+1
-  #rowfunames[i]='Ratio to State pop avg'
-  #rowfun[i]=function(x, stateavgvalues, na.rm=TRUE) { x / stateavgvalues } # that is not how the math will work - just a placeholder
+  #i = i+1
+  #rowfunames[i] = 'Ratio to State pop avg'
+  #rowfun[i] = function(x, stateavgvalues, na.rm = TRUE) { x / stateavgvalues } # that is not how the math will work - just a placeholder
   
   #'###########################################
   # SUMMARY ROWS (a summary of each column): #####
@@ -137,24 +127,24 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   colfun <- list()
   bywhat <- vector() # specify if this function gets applied across people or across sites
   # n specifies the order in which summary stat rows will appear
-  n=0
+  n = 0
   
   # avg site ####
-  n=n+1
-  colfuname[n]='Average site'
-  colfun[[n]]=function(x, ...) {colMeans(x, na.rm=na.rm)}
+  n = n + 1
+  colfuname[n] = 'Average site'
+  colfun[[n]] = function(x, ...) {colMeans(x, na.rm = na.rm)}
   bywhat[n] <- 'site'
   
   # avg person ####
-  n=n+1
-  colfuname[n]='Average person'
+  n = n + 1
+  colfuname[n] = 'Average person'
   # *** above specified wts as popstats[ , wtscolname] since wts is not passed to this function later
-  colfun[[n]]=function(x, ...) {wtd.colMeans(x, wts=wts, na.rm=na.rm)} # function is defined in this package
+  colfun[[n]] = function(x, ...) {wtd.colMeans(x, wts = wts, na.rm = na.rm)} # function is defined in this package
   bywhat[n] <- 'pop'
   
   # median site ####
-  n=n+1
-  colfuname[n]='Median site'
+  n = n + 1
+  colfuname[n] = 'Median site'
   colfun[[n]] = function(x, ...) {
     sapply(x, FUN = function(y) {median(y, na.rm = na.rm)})
   }
@@ -191,23 +181,23 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   }
   bywhat[n] <- 'site'
   
-  #   n=n+1
+  #   n = n + 1
   #   colfuname[n]='Sum'
-  #   colfun[[n]]=function(x, ...) {colSums(x, na.rm=na.rm)}
+  #   colfun[[n]] = function(x, ...) {colSums(x, na.rm=na.rm)}
   #   bywhat[n] <- 'pop'
   
-  #   n=n+1
+  #   n = n + 1
   #   colfuname[n]='Count of sites'
   #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
   #   bywhat[n] <- 'site'
   
   # manually removed this stat because colfun.picked is hard to use as currently written
-  #n=n+1
+  #n = n + 1
   #   colfuname[n]='Number of unique values'
   #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(unique(y)))}
   # bywhat[n] <- 'site'
   
-  #n=n+1
+  #n = n + 1
   #  colfuname[n]='Standard Deviation'
   #  colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) {sd(y, na.rm=na.rm)}) }
   # bywhat[n] <- 'site'
@@ -228,11 +218,11 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
       myfunlist <- list()
       for (z in 1:length(probs)) {
         myfunlist[[z]] <- function(x, ...) {  }
-        f <- (parse( " function (x) ", as.symbol("{"), paste('quantile(x,probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
+        f <- (parse( " function (x) ", as.symbol("{"), paste('quantile(x,probs = probs[',z,'], na.rm = na.rm)'), '}' )) 
         body(myfunlist[[z]]) <- f
       }
-      colfuname[n:(n-1+length(probs))]    <- paste('Percentile of sites', 100*probs)
-      colfun[[  n:(n-1+length(probs))  ]] <- myfunlist
+      colfuname[n:(n - 1 + length(probs))]    <- paste('Percentile of sites', 100 * probs)
+      colfun[[  n:(n - 1 + length(probs))  ]] <- myfunlist
       
       myfunlist <- list()
       for (z in 1:length(probs)) {
@@ -240,14 +230,14 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
         
         # *** may need to specify wts here as popstats[ , wtscolname]
         
-        f <- (parse( " function (x) ", as.symbol("{"), paste('wtd.quantile(x, weights=wts, probs=probs[',z,'], na.rm=na.rm)'), '}' )) 
+        f <- (parse( " function (x) ", as.symbol("{"), paste('wtd.quantile(x, weights = wts, probs = probs[',z,'], na.rm = na.rm)'), '}' )) 
         body(myfunlist[[z]]) <- f
       }
       
-      colfuname[(n+length(probs)):((n-1)+2*length(probs))]  <- paste('Percentile of people', 100*probs)
-      colfun[[  (n+length(probs)):((n-1)+2*length(probs))]] <- myfunlist
+      colfuname[(n + length(probs)):((n - 1) + 2 * length(probs))]  <- paste('Percentile of people', 100 * probs)
+      colfun[[  (n + length(probs)):((n - 1) + 2 * length(probs))]] <- myfunlist
       
-      nextcol <- 1+((n-1)+2*length(probs))
+      nextcol <- 1 + ((n - 1) + 2 * length(probs))
     } 
   } else {
     just.rbind.quantiles <- TRUE  
@@ -352,12 +342,12 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   #'###########################################
   
   if (just.rbind.quantiles) {
-    quantile.rows     <- matrix(NA, nrow=length(probs), ncol=NCOL(sitestats)); rownames(quantile.rows)     <- paste('Percentile of sites', 100*probs)
-    wtd.quantile.rows <- matrix(NA, nrow=length(probs), ncol=NCOL(popstats)); rownames(wtd.quantile.rows) <- paste('Percentile of people', 100*probs)
+    quantile.rows     <- matrix(NA, nrow = length(probs), ncol = NCOL(sitestats)); rownames(quantile.rows)     <- paste('Percentile of sites', 100 * probs)
+    wtd.quantile.rows <- matrix(NA, nrow = length(probs), ncol = NCOL(popstats)); rownames(wtd.quantile.rows) <- paste('Percentile of people', 100 * probs)
     colnames(quantile.rows) <- colnames(sitestats) # should be same as cols variable
     colnames(wtd.quantile.rows) <- colnames(sitestats) # ditto
-    quantile.rows[     , !charcol] <- sapply(sitestats[ , !charcol], function(y) quantile(y,     probs=probs, na.rm=na.rm) )
-    wtd.quantile.rows[ , !charcol] <- sapply( popstats[ , !charcol], function(y) Hmisc::wtd.quantile(y, probs=probs, na.rm=na.rm,  weights=wts) )
+    quantile.rows[     , !charcol] <- sapply(sitestats[ , !charcol], function(y) quantile(y,     probs = probs, na.rm = na.rm) )
+    wtd.quantile.rows[ , !charcol] <- sapply( popstats[ , !charcol], function(y) Hmisc::wtd.quantile(y, probs = probs, na.rm = na.rm,  weights = wts) )
     summary.rows <- rbind(summary.rows, quantile.rows, wtd.quantile.rows)
   }
   # summary.cols ###########################################
@@ -371,6 +361,8 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
 }
 
 #'###########################################  ############################################
+# NOTES
+#
 # str(fulltable)
 # 'data.frame':  42 obs. of  179 variables:
 # $ OBJECTID                                     : int  1 2 3 4 5 6 7 8 9 10 ...

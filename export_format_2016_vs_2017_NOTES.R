@@ -58,7 +58,7 @@ setdiff(cols2, cols1)
 # [7] "ACSTOTHH"   "ACSEDUCBAS" "PRE1960"   
 # > 
 
-namemap <- read.csv("map batch to friendly fieldnames 2016.csv", stringsAsFactors = FALSE, as.is = TRUE)
+namemap <- read.csv("map_batch_to_friendly_fieldnames_2016.csv", stringsAsFactors = FALSE, as.is = TRUE)
 # > names(namemap)
 # [1] "oldnames"     "newnames"     "gdbfieldname" "vartype"      "varcategory" 
 # [6] "longname"     "example"      "order0"       "order1"       "order2"      

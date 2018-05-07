@@ -3,6 +3,7 @@ if (testing) {  cat('Starting server\n') }
 
 shinyServer(function(input, output, session) {#SERVER####
   
+# require(batch.summarizer)
   #   # seems to need this to calculate anything like tables or exec sum or barplot at start
   #updateTabsetPanel(session, "tabset1", selected = "Details") # momentartarily selects this one
   updateTabsetPanel(session, "tabset1", selected = default.tab) # then selects this one as first displayed. Not sure how this competes with selected = default.tab in ui.R
