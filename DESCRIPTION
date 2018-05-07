@@ -11,7 +11,7 @@ Description: This is a shiny app that will be turned into an R package. The
     this demo. Uses R's shinyapps tools to demonstrate an interactive web-based app.
 Depends:
     R (>= 3.2.1)
-License: Artistic-2.0 + file LICENSE
+License: Artistic-2.0
 LazyData: true
 Suggests:
     matrixStats,
