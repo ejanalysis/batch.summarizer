@@ -10,7 +10,9 @@ shinyServer(function(input, output, session) {#SERVER####
   
   # User-defined name for this dataset / analysis
   
-  mybatchname  <-  renderText(input$batchname)
+  # mybatchname  <-  renderText(input$batchname)
+  my_batch_name  <-  renderText(gsub(' ', '_', input$batchname)) # with underscores not spaces, to use in filenames of saved outputs
+  
   output$name1 <-  renderText(input$batchname)
   output$name2 <-  renderText(input$batchname)
   output$name3 <-  renderText(input$batchname)
@@ -20,26 +22,26 @@ shinyServer(function(input, output, session) {#SERVER####
   output$titletext <- renderText(input$batchname)
   output$titletext2 <- renderText(input$batchname)
   
-  
-  
   # DOWNLOAD HANDLERS for tables or charts ####
   # Code enabling Download of tables and charts
   
   output$download.rowsout <- downloadHandler(
-    filename = function() {paste(mybatchname(), 'summary stats on each indicator -plus site data.csv')},
+    filename = function() {
+      paste(my_batch_name(), 'summary_stats_on_each_Indicator-and_site_data.csv', sep = '_')
+      },
     contentType = 'text/csv',
     content = function(file) {write.csv( make.colnames.friendly.complete( rbind( outlist()$rows, fulltabler() )  ), file)}
   )
   
   output$download.rowsout.only <- downloadHandler(
-    filename = function() {paste(mybatchname(), 'summary stats on each indicator -not site data.csv')},
+    filename = function() {paste(my_batch_name(), 'summary_stats_on_each_Indicator.csv', sep = '_')},
     contentType = 'text/csv',
     content = function(file) {write.csv( make.colnames.friendly.complete(  outlist()$rows ), file)}
   )
   
   output$download.colsout <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'summary stats on each site -plus site data.csv')
+      paste(my_batch_name(), 'summary_stats_on_each_Site-and_site_data.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -49,7 +51,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.colsout.only <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'summary stats on each site -not site data.csv')
+      paste(my_batch_name(), 'summary_stats_on_each_Site.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -59,7 +61,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.table1 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table 1 Demographic Summary.csv')
+      paste(my_batch_name(), 'Table_Demographic_Summary_1.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -69,7 +71,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.table1e <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table 1e Envt Summary.csv')
+      paste(my_batch_name(), 'Table_Envt_Summary_1e.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -79,7 +81,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.table2 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table 2 Demographic Summary.csv')
+      paste(my_batch_name(), 'Table_Demographic_Summary_2.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -89,7 +91,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.table2e <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table 2e Envt Summary.csv')
+      paste(my_batch_name(), 'Table_Envt_Summary_2e.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -99,7 +101,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.table3 <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table 3 Demographic Summary.csv')
+      paste(my_batch_name(), 'Table_Demographic_Summary_3.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -109,7 +111,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.table3e <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Table 3e Envt Summary.csv')
+      paste(my_batch_name(), 'Table_Envt_Summary_3e.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -119,7 +121,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.states <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Site Count by State.csv')
+      paste(my_batch_name(), 'Table_Site_Count_by_State.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -129,7 +131,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.regions <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), 'Site Count by Region.csv')
+      paste(my_batch_name(), 'Table_Site_Count_by_Region.csv', sep = '_')
     },
     contentType = 'text/csv',
     content = function(file) {
@@ -139,14 +141,14 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.barplot <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), barplotkind(), 'barplot comparing sites to US.png')
+      paste(my_batch_name(), 'Barplot', barplotkind(), 'here_vs_US_overall.png', sep = '_')
     },
     contentType = 'image/png',
     content = function(file) {
       #ggsave(file, plot=barplots(), device=png, width = 1200, height = 768, units = "px", pointsize = 12)
       png(filename = file, width = 1400, height = 768, units = "px", pointsize = 12)
       #print(barplots.react())
-      # THIS WORKAROUND DOES WORK :
+      # THIS WORKAROUND DOES WORK : # but does it only download the version as of the one time that function ever runs? no updates when inputs change because not a reactive? or yes since function uses reactive inputs in the function?
       barplots.NONreact()
       dev.off()
     }
@@ -154,7 +156,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   output$download.histogram <- downloadHandler(
     filename = function() { 
-      paste(mybatchname(), histogramkind(), 'histogram across sites or people.png')
+      paste(my_batch_name(), 'Histogram', histogramkind(), 'across_sites_or_people.png', sep = '_')
     },
     contentType = 'image/png',
     content = function(file) {
@@ -1042,6 +1044,8 @@ shinyServer(function(input, output, session) {#SERVER####
   
   barplots.react <- reactive({
     
+    # barplots.NONreact()  # *** THAT CODE IS AN EXACT COPY OF THIS CODE, EXCEPT IT IS NOT INSIDE A REACTIVE, WHICH SEEMS NEEDED TO USE IN DOWNLOADING PLOT AS PNG
+    
     # One set of bars per each of the myvars
     # *** possibly allow these to be set by user instead of hard-coded names:
     mybarvars <- switch(input$bartype,
@@ -1131,7 +1135,7 @@ shinyServer(function(input, output, session) {#SERVER####
     # as.character(input$barplot.title)  # was a way to just let user specify title
     
     barplot( plotdata, beside = TRUE, ylim = myylims, cex.axis = bar.cex, cex.names = mycex, 
-             main = paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep = ' ' ) ,
+             main = paste(gsub('_', ' ', my_batch_name()), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep = ' ' ) ,
              col = c('yellow', 'green', 'blue'),
              names.arg = mybarvars.friendly, 
              ylab = ifelse( (input$barvartype == 'pctile' | input$bartype == 'EJ'), 'US Percentile','Raw Indicator Value') )
@@ -1142,7 +1146,7 @@ shinyServer(function(input, output, session) {#SERVER####
     #       geom_barplot(fill='white', colour='darkgreen') +
     #       #geom_hline(aes_string(yintercept= )) +
     #       xlab( mybarvars.friendly ) + ylab(ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value')) + 
-    #       ggtitle( paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
+    #       ggtitle( paste(gsub('_', ' ', my_batch_name()), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
     
     # barplot() has side effect of printing, but it just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
   })
@@ -1242,7 +1246,7 @@ shinyServer(function(input, output, session) {#SERVER####
     # as.character(input$barplot.title)  # was a way to just let user specify title
     
     barplot( plotdata, beside = TRUE, ylim = myylims, cex.axis = bar.cex, cex.names = mycex, 
-             main = paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep = ' ' ) ,
+             main = paste(gsub('_', ' ', my_batch_name()), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep = ' ' ) ,
              col = c('yellow', 'green', 'blue'),
              names.arg = mybarvars.friendly, 
              ylab = ifelse( (input$barvartype == 'pctile' | input$bartype == 'EJ'), 'US Percentile','Raw Indicator Value') )
@@ -1253,7 +1257,7 @@ shinyServer(function(input, output, session) {#SERVER####
     #       geom_barplot(fill='white', colour='darkgreen') +
     #       #geom_hline(aes_string(yintercept= )) +
     #       xlab( mybarvars.friendly ) + ylab(ifelse( (input$barvartype=='pctile' | input$bartype=='EJ'), 'US Percentile','Raw Indicator Value')) + 
-    #       ggtitle( paste(mybatchname(), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
+    #       ggtitle( paste(gsub('_', ' ', my_batch_name()), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep=' ' ))
     
     # barplot() has side effect of printing, but it just returns the barplot's midpoints of all data. not like ggplot that returns a plot object.
   }
@@ -1328,12 +1332,12 @@ shinyServer(function(input, output, session) {#SERVER####
     
     if (input$sites.or.people == 'Sites') {
       # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
-      
+      warning('NOT WORKING RIGHT NOW')
       myplot <- ggplot( fulltabler(), aes_string( myvar.full) ) + 
         geom_histogram(fill = 'white', colour = 'darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm = TRUE))/mybincount) +
         geom_hline(aes_string(yintercept = expected.sites.per.bin)) +
         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-        ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''))
+        ggtitle( paste(gsub('_', ' ', my_batch_name()), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''))
       
       ### plotly() was Deprecated: see signup for credentials/configuration storage details. See ggplotly for the new ggplot2 interface.
       #py <- plotly()
@@ -1360,7 +1364,7 @@ shinyServer(function(input, output, session) {#SERVER####
         w = wts.hist,
         # breaks = seq(0, 100, 100 / mybincount),  # nice if demog raw, or any pctiles, are being plotted
         breaks = mybincount,  # needed if raw E being plotted
-        main = paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''),
+        main = paste(gsub('_', ' ', my_batch_name()), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''),
         # names.arg=myvar.friendly.full,
         ylab = input$sites.or.people
       )
@@ -1372,7 +1376,7 @@ shinyServer(function(input, output, session) {#SERVER####
       #         geom_histogram(fill='white', colour='darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm=TRUE))/mybincount) +
       #         #geom_hline(aes_string(yintercept=expected.pop.per.bin)) +
       #         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
-      #         ggtitle( paste(mybatchname(), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''))
+      #         ggtitle( paste(gsub('_', ' ', my_batch_name()), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''))
       #      return(myplot)
       
     }
