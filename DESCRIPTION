@@ -1,25 +1,31 @@
 Package: batch.summarizer
-Type: Package
-Title: Summarize Multiple EJSCREEN Buffer Reports
-Version: 0.1.0
-Author: info@ejanalysis.com
-Maintainer: ejanalysis.com<info@ejanalysis.com>
-Description: This is a shiny app that will be turned into an R package. The
+Title: Summarize Multiple Buffer Reports from the (nonpublic) Batch Tool for EJSCREEN 
+Description: This is a shiny app, developed as an R package. The
     app displays summary stats and graphics for an uploaded file of raw results of
-    EJ buffer analysis (from batch tool or from several manually saved csv buffer
-    reports). The only relevant public tool or dataset is the example built into
-    this demo. Uses R's shinyapps tools to demonstrate an interactive web-based app.
-Depends:
-    R (>= 3.2.1)
-License: Artistic-2.0
-LazyData: true
-Suggests:
+    EJ (environmental justice) buffer analysis (from the EJSCREEN batch tool 
+    or from several manually saved csv buffer reports). EJSCREEN is public but the batch 
+    tool is not. The only relevant public tool or dataset is the example built into this 
+    demo. Uses R's shinyapps tools to demonstrate an interactive web-based app. 
+    For any imported/suggested packages not on CRAN, see http://ejanalysis.github.io
+Version: 0.1.1
+Imports:
+    shiny,
     matrixStats,
-    UScensus2010blocks,
-    sp,
     data.table,
     analyze.stuff,
     Hmisc
-URL: http://ejanalysis.github.io
-    http://www.ejanalysis.com/
-RoxygenNote: 6.0.1
+Suggests: 
+    sp, 
+    UScensus2010blocks
+URL: http://ejanalysis.github.io, https://github.com/ejanalysis/batch.summarizer, http://www.ejanalysis.com/
+BugReports: https://github.com/ejanalysis/batch.summarizer/issues
+Date: 2018-09-01
+Depends: R (>= 3.1.0)
+RoxygenNote: 6.1.0
+License: MIT + file LICENSE
+Repository: GitHub
+Author: info@ejanalysis.com
+Maintainer: info@ejanalysis.com <info@ejanalysis.com>
+NeedsCompilation: no
+LazyData: true
+Encoding: UTF-8
