@@ -27,9 +27,9 @@ if (1 == 0) {
   
   options(stringsAsFactors = FALSE)
   
-  ##########################
+  ######################### #
   # define the functions
-  ##########################
+  ######################### #
 
   readclean <- function(file, namesfile) {
     lookup    <- read.csv(namesfile)
@@ -54,9 +54,9 @@ if (1 == 0) {
     #     return(test.outlist)
   }
   
-  ##########################
+  ######################### #
   # use the functions
-  ##########################
+  ######################### #
   sitedata <- readclean("R/sample_ejscreen_batch_output.csv", 'map_batch_to_friendly_fieldnames_2016.csv')  
   sitedata1 <- readclean("Export_Output_Example2.csv", 'map batch to friendly fieldnames v1.csv')  
   popdata  <-  readclean("R/sample_ejscreen_batch_output.csv", 'map_batch_to_friendly_fieldnames_2016.csv')  
@@ -79,9 +79,9 @@ if (1 == 0) {
   #   namesfile = 'map_batch_to_friendly_fieldnames_2016.csv'
   # )
   # FAILS AS OF 8/27/16
-  ##########################
+  ######################### #
   # View results  
-  ##########################
+  ######################### #
   
   test.outlist$cols  # one row per site, one col per summary stat
   # cbind(sitedata, test.outlist$cols)[ 1:7, c(1:7, 178:181)]
@@ -90,7 +90,7 @@ if (1 == 0) {
   #test.outlist$rows[1:4, 1:20 ]  # one row per summary stat before t(), one col per indicator before t()
   round( t(test.outlist$rows[1:4, 1:20 ]), 1) 
   
-  ##########################
+  ######################### #
   
   #   > test.fulltable$cols
   #   Max of variables Number of variables at/above threshold of 80
@@ -160,7 +160,7 @@ if (1 == 0) {
   
   
   
-  ###############
+  ############## #
   # As script instead of function:
   # 
   #   test.mydemofile <- "Export_Output_Example2.csv"
@@ -175,7 +175,7 @@ if (1 == 0) {
   # test.fulltable <- batch.summarize(test.sitestats, test.popstats)
   # rm(test.lookup,test.mydemofile,test.mydemofile.pop,test.mynamesfile.default,test.sitestats,test.popstats)
   # rm(test.fulltable)
-  ########################
+  ####################### #
   
   
   

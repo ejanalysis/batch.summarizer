@@ -25,9 +25,9 @@ tab.parsed <- function(myfile, folder=getwd(), skip=2,
   
   # This is based on old code in parsed.rows.R
 
-  ######################
+  ##################### #
   # FORMAT OF EJSCREEN TABULAR REPORT SAVED AS CSV:
-  ######################
+  ##################### #
   #
   # OLD example of format of first line in tabular report txt file saved for each location
   # Center: -75.662 39.656, Buffer: 3 mile(s), Delaware, Region 3 (Population: 83869)

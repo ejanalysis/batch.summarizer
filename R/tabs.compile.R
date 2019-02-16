@@ -39,9 +39,9 @@ tabs.compile <- function(files, folder=getwd(), ...) {
   # and took <10 seconds for 983 files on MacBookPro
   #logwrite(paste("Miles radius for buffering:",radius.miles)); logwrite("")
   
-  ##################################
+  ################################# #
   # NOW CLEAN UP AND ENHANCE THE fulltable DATAFRAME WHICH HAS ALL THE RESULTS IN ONE LONG TABLE
-  ##################################
+  ################################# #
   
   # Remove .txt from the filename stored in fulltable, leaving just the filename as the unique ID for the buffer/zone
   fulltable$ID <- gsub(".csv", "", fulltable$ID)
@@ -112,12 +112,12 @@ tabs.compile <- function(files, folder=getwd(), ...) {
   fulltable$category <- gsub('Demographic', 'Demog', fulltable$category)
   names(fulltable) <- gsub('category', 'fieldgroup', names(fulltable))
 
-  ####################################################
+  ################################################### #
   # CHANGE THE ORDER OF THESE ROWS TO HAVE A MORE USEFUL ORGANIZATION TO THEM:
   # 1. Sort on ID first, keeping 31 (or varcount.typical) rows together for a point/buffer/place
   #  2. within a buffer/place, sort on nchar(fieldgroup) puts EJ first, env second, demog third
   #   3. within each cluster of fieldnames, sort on fieldname is alpha (that seems fine)
-  ####################################################
+  ################################################### #
   
   fulltable <- fulltable[order(fulltable$ID, nchar(fulltable$fieldgroup), fulltable$fieldname), ]
   
@@ -142,9 +142,9 @@ tabs.compile <- function(files, folder=getwd(), ...) {
   
   return(fulltable)
   
-  ####################################################
+  ################################################### #
   #  COULD SAVE JUST IN CASE A LONG FORMAT FILE COMPILATION
-  ####################################################
+  ################################################### #
   
   # write.csv(fulltable, paste(as.numeric(fulltable$miles[1])," mile buffer EJSCREEN batch ", varcount.typical, " rows per ID.csv", sep=""), row.names=FALSE)
   #logwrite(" ")
