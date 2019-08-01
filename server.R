@@ -179,8 +179,8 @@ shinyServer(function(input, output, session) {#SERVER####
     # THIS IS USED ALSO BY vartype() and varcategory() to classify the indicators in useful ways for filtering tables.
     inFile2 <- input$file2
     if (is.null(inFile2)) {
-      myfile <- mynamesfile.default
-      # e.g.,  "map batch to friendly fieldnames v1.csv"
+      myfile <- mynamesfile.default # defined in global.R
+      # e.g.,  "map batch to friendly fieldnames v1.csv"  
     } else {
       myfile <- inFile2$datapath
     }

@@ -1,4 +1,18 @@
 stop()
+
+
+if ( 1 == 0) {
+
+  
+  
+  # all below might be obsolete since I in 2019-05-28 got arcgis batch processor working and 
+  # saved output file exported as csv 
+  # and read those field names (and also the long format gdb names from the xml file)
+  # and saved that cleaned up info in a new file called 
+  # "map_batch_to_friendly_fieldnames_2018.csv"
+  # and changed global.R to use that now as default? or if specified? 
+  
+
 # clean up what I exported from arcgis:
 x <- read.csv('Export_Output_3points_2018-04.txt', stringsAsFactors = FALSE)
 # Warning message: 
@@ -67,3 +81,4 @@ namemap <- read.csv("map_batch_to_friendly_fieldnames_2016.csv", stringsAsFactor
 
 
 
+}

@@ -57,9 +57,9 @@ if (1 == 0) {
   ######################### #
   # use the functions
   ######################### #
-  sitedata <- readclean("R/sample_ejscreen_batch_output.csv", 'map_batch_to_friendly_fieldnames_2016.csv')  
-  sitedata1 <- readclean("Export_Output_Example2.csv", 'map batch to friendly fieldnames v1.csv')  
-  popdata  <-  readclean("R/sample_ejscreen_batch_output.csv", 'map_batch_to_friendly_fieldnames_2016.csv')  
+  sitedata <- readclean("R/sample_ejscreen_batch_output.csv", 'map_batch_to_friendly_fieldnames_2016.csv')   # or "map_batch_to_friendly_fieldnames_2018.csv"
+  sitedata1 <- readclean("Export_Output_Example2.csv", 'map batch to friendly fieldnames v1.csv')               # or "map_batch_to_friendly_fieldnames_2018.csv"
+  popdata  <-  readclean("R/sample_ejscreen_batch_output.csv", 'map_batch_to_friendly_fieldnames_2016.csv')  # or "map_batch_to_friendly_fieldnames_2018.csv"
   
   #names(sitedata)
 
@@ -76,7 +76,7 @@ if (1 == 0) {
   # test.outlist <- batch.all(
   #   sitefile = "R/sample_ejscreen_batch_output.csv",
   #   popfile  = "R/sample_ejscreen_batch_output.csv",
-  #   namesfile = 'map_batch_to_friendly_fieldnames_2016.csv'
+  #   namesfile = 'map_batch_to_friendly_fieldnames_2016.csv' # or "map_batch_to_friendly_fieldnames_2018.csv"
   # )
   # FAILS AS OF 8/27/16
   ######################### #

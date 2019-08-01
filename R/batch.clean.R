@@ -3,14 +3,15 @@
 #'   to make it ready for batch.summarize function
 #' @param x Required. The output of the batch processor that runs EJSCREEN buffer report once per site.
 #' @param namesfile Must specify either namesfile, or both oldcolnames and newcolnames. A csv filename, of file that maps fieldnames from those found in raw output of batch processor 
-#'   to more useful and friendly names that make more sense to me. Default was 'map_batch_to_friendly_fieldnames_2016.csv'
+#'   to more useful and friendly names that make more sense to me. Default had been 'map_batch_to_friendly_fieldnames_2016.csv'
+#'   But may use 'map_batch_to_friendly_fieldnames_2018.csv' now.
 #'   If function is called with the special value namesfile='keepnames' then the names are unchanged from those in x.
 #' @param oldcolnames Optional. The names to be found in x, ignored if namesfile specified.
 #' @param newcolnames Optional. The corresponding names to change them to, ignored if namesfile specified.
 #' @author ejanalyst info@ejanalysis.com
 #' @return the output is the output
 #' @export
-batch.clean <- function(x, namesfile='map_batch_to_friendly_fieldnames_2016.csv', oldcolnames, newcolnames) {
+batch.clean <- function(x, namesfile='map_batch_to_friendly_fieldnames_2018.csv', oldcolnames, newcolnames) {
 
   x[x == 'NA'] <- NA  # it also fixes 'N/A' later 
   
