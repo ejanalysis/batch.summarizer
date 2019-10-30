@@ -3,21 +3,25 @@
 #'   to make it ready for batch.summarize function
 #' @param x Required. The output of the batch processor that runs EJSCREEN buffer report once per site.
 #' @param namesfile Must specify either namesfile, or both oldcolnames and newcolnames. A csv filename, of file that maps fieldnames from those found in raw output of batch processor 
-#'   to more useful and friendly names that make more sense to me. Default had been 'map_batch_to_friendly_fieldnames_2016.csv'
-#'   But may use 'map_batch_to_friendly_fieldnames_2018.csv' now.
+#'   to more useful and friendly names that make more sense to me. Default had been included but now left out - used to use 'map_batch_to_friendly_fieldnames_2018.csv'
 #'   If function is called with the special value namesfile='keepnames' then the names are unchanged from those in x.
 #' @param oldcolnames Optional. The names to be found in x, ignored if namesfile specified.
 #' @param newcolnames Optional. The corresponding names to change them to, ignored if namesfile specified.
 #' @author ejanalyst info@ejanalysis.com
 #' @return the output is the output
 #' @export
-batch.clean <- function(x, namesfile='map_batch_to_friendly_fieldnames_2018.csv', oldcolnames, newcolnames) {
-
+batch.clean <- function(x, namesfile, oldcolnames, newcolnames) {
+# namesfile='map_batch_to_friendly_fieldnames_2019.csv' # was the default but 
   x[x == 'NA'] <- NA  # it also fixes 'N/A' later 
   
   # namesfile='keepnames' is one way to specify user wants to keep same names.
 
   if (colnames(x)[1] == '') {colnames(x)[1] <- "hadnocolnameinheader"}
+  
+  # might need to FIX THE PROBLEM WHERE ARCGIS IS EXPORTING TO TXT FILE WITH 
+  # COLUMN NAMES THAT HAVE AN UNDERSCORE AS THE FIRST CHARACTER
+  # but actually the map_batch_to_friendly_fieldnames_2019.csv should handle that just fine.
+  # colnames(x) <- gsub(pattern = '^_', replacement = '', x = colnames(x))
   
   if (missing(namesfile) & 1 == sum(missing(oldcolnames) + missing(newcolnames) )) {
     stop('must specify either namesfile, or both oldcolnames and newcolnames')
