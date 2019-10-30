@@ -250,7 +250,7 @@ shinyServer(function(input, output, session) {#SERVER####
     
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
-    fulltable <- batch.clean(fulltable, oldcolnames = lookup.fieldnames()$oldnames, newcolnames = lookup.fieldnames()$newnames )
+    fulltable <- batch.clean(fulltable, oldcolnames = lookup.fieldnames()$oldnames, newcolnames = lookup.fieldnames()$newnames)
     if ('name' %in% colnames(fulltable) ) { rownames(fulltable) <- fulltable[ , 'name'] } # become colnames when transposed for viewing? no.
     fulltable
   })

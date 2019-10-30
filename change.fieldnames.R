@@ -55,9 +55,9 @@ change.fieldnames <- function(allnames, oldnames, newnames, file=NA, sort=FALSE)
 	if (!sort) { if (length(allnames)==0 | length(oldnames)==0 | length(newnames)==0  ) {stop('no input can be length zero\n')} }
 
 	# if (length(allnames) < length(oldnames)) {cat('Warning: length(allnames) generally should be >= length(oldnames)\n')}
-  
+  # This warning appears too often and does not really indicate a problem anyway
   # Done with error-checking or file-creation/editing.
-	################
+	############### #
 	
 	# Just replace the ones that match up, so 
 	#   if allnames has something not in the oldnames, newnames entries, that is just left unchanged in allnames.
@@ -74,20 +74,5 @@ change.fieldnames <- function(allnames, oldnames, newnames, file=NA, sort=FALSE)
     oldnames <- oldnames[oldnames %in% allnames]
     newposition <- match(oldnames, allnames)
     return(newposition)
-  }
-  
-  if (1==0) {
-    ################
-    # Usage example
-    oldnames <- c('PCTILE', 'REGION')
-    newnames <- c('percentile', 'usregion')
-    df <- data.frame(REGION=301:310, ID=1:10, PCTILE=101:110, OTHER=1:10)
-    # examples:
-    names(df) <- change.fieldnames(names(df), oldnames, newnames)
-    names(df) <- change.fieldnames(names(df), "ID", "identification")
-    # names(df) <- change.fieldnames(names(df))  # does not work on MacOSX (unless possibly have xwindows or something?)
-    names(df) <- change.fieldnames(names(df), 'saved fieldnames.csv')
-    df[ change.fieldnames(names(df), c('ID', 'OTHER', 'REGION', 'PCTILE'), sort=TRUE)]
-    # much like df[ , c('ID', 'OTHER', 'REGION', 'PCTILE') ] #  change.fieldnames is more useful when file specified 
   }
 }
