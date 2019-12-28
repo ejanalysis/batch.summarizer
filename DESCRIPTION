@@ -7,7 +7,8 @@ Description: This is a shiny app, developed as an R package. The
     tool is not. The only relevant public tool or dataset is the example built into this 
     demo. Uses R's shinyapps tools to demonstrate an interactive web-based app. 
     For any imported/suggested packages not on CRAN, see http://ejanalysis.github.io
-Version: 0.1.1
+Version: 1.0.0
+Date: 2020-01-01
 Imports:
     shiny,
     matrixStats,
@@ -19,7 +20,6 @@ Suggests:
     UScensus2010blocks
 URL: http://ejanalysis.github.io, https://github.com/ejanalysis/batch.summarizer, http://www.ejanalysis.com/
 BugReports: https://github.com/ejanalysis/batch.summarizer/issues
-Date: 2018-09-01
 Depends: R (>= 3.1.0)
 RoxygenNote: 6.1.0
 License: MIT + file LICENSE
