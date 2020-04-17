@@ -3,7 +3,7 @@ if (testing) {  cat('Starting server\n') }
 
 shinyServer(function(input, output, session) {#SERVER####
   
-# require(batch.summarizer)
+  # require(batch.summarizer)
   #   # seems to need this to calculate anything like tables or exec sum or barplot at start
   #updateTabsetPanel(session, "tabset1", selected = "Details") # momentartarily selects this one
   updateTabsetPanel(session, "tabset1", selected = default.tab) # then selects this one as first displayed. Not sure how this competes with selected = default.tab in ui.R
@@ -28,19 +28,23 @@ shinyServer(function(input, output, session) {#SERVER####
   output$download.rowsout <- downloadHandler(
     filename = function() {
       paste(my_batch_name(), 'summary_stats_on_each_Indicator-and_site_data.csv', sep = '_')
-      },
+    },
     contentType = 'text/csv',
-    content = function(file) {write.csv( make.colnames.friendly.complete( rbind( outlist()$rows, fulltabler() )  ), file)}
+    content = function(file) {
+      write.csv( make.colnames.friendly.complete( rbind( outlist()$rows, fulltabler() )  ), file)
+    }
   )
-  
   output$download.rowsout.only <- downloadHandler(
-    filename = function() {paste(my_batch_name(), 'summary_stats_on_each_Indicator.csv', sep = '_')},
+    filename = function() {
+      paste(my_batch_name(), 'summary_stats_on_each_Indicator.csv', sep = '_')
+    },
     contentType = 'text/csv',
-    content = function(file) {write.csv( make.colnames.friendly.complete(  outlist()$rows ), file)}
+    content = function(file) {
+      write.csv( make.colnames.friendly.complete(outlist()$rows), file)
+    }
   )
-  
   output$download.colsout <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'summary_stats_on_each_Site-and_site_data.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -48,29 +52,20 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( cbind( outlist()$cols,  make.colnames.friendly.complete( fulltabler() ) ), file)
     }
   )
-  
   output$download.colsout.only <- downloadHandler(
-    filename = function() { 
-      paste(my_batch_name(), 'summary_stats_on_each_Site.csv', sep = '_')
-    },
+    filename = function() {paste(my_batch_name(), 'summary_stats_on_each_Site.csv', sep = '_')},
     contentType = 'text/csv',
     content = function(file) {
-      write.csv( cbind( outlist()$cols ), file)
-    }
+      write.csv( cbind( outlist()$cols ), file)}
   )
-  
   output$download.table1 <- downloadHandler(
-    filename = function() { 
-      paste(my_batch_name(), 'Table_Demographic_Summary_1.csv', sep = '_')
-    },
+    filename = function() {paste(my_batch_name(), 'Table_Demographic_Summary_1.csv', sep = '_')},
     contentType = 'text/csv',
     content = function(file) {
-      write.csv( table1(), file)
-    }
+      write.csv( table1(), file)}
   )
-  
   output$download.table1e <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Table_Envt_Summary_1e.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -78,9 +73,8 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( table1e(), file)
     }
   )
-  
   output$download.table2 <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Table_Demographic_Summary_2.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -88,9 +82,8 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( table2(), file)
     }
   )
-  
   output$download.table2e <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Table_Envt_Summary_2e.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -98,9 +91,8 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( table2e(), file)
     }
   )
-  
   output$download.table3 <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Table_Demographic_Summary_3.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -108,9 +100,8 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( table3(), file)
     }
   )
-  
   output$download.table3e <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Table_Envt_Summary_3e.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -118,9 +109,8 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( table3e(), file)
     }
   )
-  
   output$download.states <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Table_Site_Count_by_State.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -128,9 +118,8 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( counts.by.state(), file)
     }
   )
-  
   output$download.regions <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Table_Site_Count_by_Region.csv', sep = '_')
     },
     contentType = 'text/csv',
@@ -138,9 +127,8 @@ shinyServer(function(input, output, session) {#SERVER####
       write.csv( counts.by.region(), file)
     }
   )
-  
   output$download.barplot <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Barplot', barplotkind(), 'here_vs_US_overall.png', sep = '_')
     },
     contentType = 'image/png',
@@ -153,9 +141,8 @@ shinyServer(function(input, output, session) {#SERVER####
       dev.off()
     }
   )
-  
   output$download.histogram <- downloadHandler(
-    filename = function() { 
+    filename = function() {
       paste(my_batch_name(), 'Histogram', histogramkind(), 'across_sites_or_people.png', sep = '_')
     },
     contentType = 'image/png',
@@ -166,9 +153,10 @@ shinyServer(function(input, output, session) {#SERVER####
       dev.off()
     }
   )
-
+  
+  
   # OLD VS NEW VS FRIENDLIER FIELDNAMES#####
-  lookup.fieldnames <- reactive({#lookup.fieldnames ############################
+  lookup.fieldnames <- reactive({# lookup.fieldnames (friendlier colnames)############################
     
     # THIS LETS USER UPLOAD A CUSTOM LOOKUP TABLE/MAPPING OF OLD TO NEW FIELDNAMES TO RENAME THEM AND CATEGORIZE THEM, 
     # BUT I BELIEVE THE UPLOADED BATCH DATA WILL NOT BE RENAMED UNLESS/UNTIL IT IS UPLOADED AGAIN.
@@ -186,6 +174,15 @@ shinyServer(function(input, output, session) {#SERVER####
     }
     output$infilename2 <- renderText(inFile2$name)
     fieldnamesmap <- read.csv(myfile, stringsAsFactors = FALSE)
+    
+    # REPLACE THAT NOW WITH NAMES SPECIFIED IN LATEST ejscreen package? 
+    # But batch output uses different field names than even the geodatabase on the FTP site. The fieldnamesmap file has the right ones for the batch output.
+    # if (myfile == mynamesfile.default) {
+    #   # user did not specify a mapping file, so use the names from ejscreen package
+    # fieldnamesmap <- data.frame(oldnames = ejscreenformulas$batchoutname, newnames = ejscreenformulas$Rfieldname, stringsAsFactors = FALSE)
+    # # need to create ejscreenformulas$batchoutname in the ejscreen pkg
+    #     }
+    
     if (testing) {
       cat('\n'); print('fieldnamesmap name is'); print(myfile) 
       # print('fieldnamesmap is'); print(fieldnamesmap)
@@ -194,7 +191,8 @@ shinyServer(function(input, output, session) {#SERVER####
     fieldnamesmap
   })
   
-  vartype <- reactive({#vartype ############################
+  vartype <- reactive({#vartype (e.g., demog vs envt?) ############################
+    # e.g., pctile, state, statepctile, etc. for the Type column 
     if ('vartype' %in% colnames(lookup.fieldnames())) {
       # for each of the mycolnames(), find the corresponding vartype by looking in the lookup.fieldnames() table
       lookup.fieldnames()$vartype[match(mycolnames(), lookup.fieldnames()$newnames)]
@@ -203,7 +201,8 @@ shinyServer(function(input, output, session) {#SERVER####
     }
   })
   
-  varcategory <- reactive({#varcategory ############################
+  varcategory <- reactive({#varcategory (e.g., raw vs percentile?) ############################
+    # e.g., Demog, EJ, Env for Category column
     if ('varcategory' %in% colnames(lookup.fieldnames())) {
       lookup.fieldnames()$varcategory[match(mycolnames(), lookup.fieldnames()$newnames)]
     } else {
@@ -216,7 +215,8 @@ shinyServer(function(input, output, session) {#SERVER####
   # This (the reactive expression called fulltabler) is the uploaded dataset that 
   # is the output of the batch processing and input to the batch summarizer:
   
-  fulltabler <- reactive({#fulltabler ############################
+  fulltabler <- reactive({
+    #fulltabler ############################
     
     # input$file1 will be NULL initially, or can use the example file and preload it?
     # After the user selects and uploads a file, it will be a data frame with 
@@ -250,13 +250,24 @@ shinyServer(function(input, output, session) {#SERVER####
     
     # Clean the uploaded batch results. Check & rename columns to friendly names specified in namesfile map, reorder columns, etc.
     # fulltable <- batch.clean(fulltable, namesfile=mynamesfile)
+    # Note this drops rows with no pop data - assumes those lack EJSCREEN batch results since they are in VI/Guam/etc.
+    rowsbefore <- NROW(fulltable)
     fulltable <- batch.clean(fulltable, oldcolnames = lookup.fieldnames()$oldnames, newcolnames = lookup.fieldnames()$newnames)
+    rowsafter <- NROW(fulltable)
+    rowsdropped <- rowsbefore - rowsafter
+    if (rowsdropped > 0) {
+      print(paste(rowsdropped, 'rows were dropped from uploaded data, points the EJSCREEN dataset does not cover, such as in Guam, American Samoa, Mariana Islands, VI'))
+    }
     if ('name' %in% colnames(fulltable) ) { rownames(fulltable) <- fulltable[ , 'name'] } # become colnames when transposed for viewing? no.
     fulltable
   })
   
   #'###################################################################################
+  
   # now same for popstats input that does not double count people
+  # which should somehow count each block group only once even if it is near 2+ analyzed points (buffers).
+  # Unclear which point (buffer) you should assign the block group to if it is near 2+.
+  # But the batch tool does not provide this data as of 2020... 
   
   fulltabler.pop <- reactive({#fulltabler.pop ############################
     
@@ -380,7 +391,7 @@ shinyServer(function(input, output, session) {#SERVER####
   
   #'####################
   
-  #  mycolnames etc ####################
+  #  FRIENDLY COLUMN NAMES mycolnames etc ####################
   # *** SPECIFY MORE PARAMETERS HERE THAT RELY ON fulltable 
   
   mycolnames <- reactive({colnames(fulltabler()) })
@@ -498,7 +509,7 @@ shinyServer(function(input, output, session) {#SERVER####
   output$mythreshnames.toprint <- renderPrint( mythreshnames() )
   
   #'####################  #####################
-  #  namecolpixels etc####################  #####################
+  # MISC- width of a column, namecolpixels etc####################  #####################
   
   namecolpixels <- reactive({
     namecolchars <- min(max.allowed, max(nchar(fulltabler()$name)) )
@@ -520,14 +531,20 @@ shinyServer(function(input, output, session) {#SERVER####
   
   outlist <- reactive({# outlist (has summary rows and cols) #####
     # cat('\n\n'); print('RUNNING OUTLIST CODE');cat('\n\n')
+    sitestats <- fulltabler()
+    popstats <- fulltabler.pop()
+    cols <- mycolnames()
+    inputprobs <- input$probs
+    threshnames <- mythreshnames(); threshold = mythresholds(); threshgroup = mythreshgroups()
+    junk <- 0; cat(junk)
     x <- batch.summarize(
-      sitestats = fulltabler(), popstats = fulltabler.pop(),
+      sitestats = sitestats, popstats = popstats,
       wtscolname = mywtsname, 
       #wts = fulltabler()[ , mywtsname],  
-      cols = mycolnames(), 
-      threshnames = mythreshnames(), threshold = mythresholds(), threshgroup = mythreshgroups(),
+      cols = cols, 
+      threshnames = threshnames, threshold = threshold, threshgroup = threshgroup,
       colfun.picked = colfun.picked, rowfun.picked = rowfun.picked,
-      probs = as.numeric( input$probs ), na.rm = na.rm
+      probs = as.numeric(inputprobs), na.rm = na.rm
     )
     
     # cat('\n'); print('FULLTABLER:')
@@ -556,11 +573,13 @@ shinyServer(function(input, output, session) {#SERVER####
     # ******** don't set anything to NA for plotting or downloading or mapping! only for onscreen display/sort/filter!
     
     # FOR DOWNLOAD, ONLY FORMAT SOME KEY STATS BETTER - but want to round only for web display not download
-    vars.NA <- c('OBJECTID',	'FACID',	'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
+    vars.NA <- c('OBJECTID',	'FACID',	'id', 'name',	'lat',	'lon',	'radius.miles',	'ST',	'statename',	'REGION')
+    vars.NA <- intersect(vars.NA, colnames(x$rows))
     x$rows[ , vars.NA] <- NA
     vars.round0 <- 'pop'
     x$rows[ , vars.round0] <- round(x$rows[ , vars.round0], 0)
     x$rows <- as.data.frame(x$rows, stringsAsFactors = FALSE)
+    if (testing) save(x, file = 'x temp outlist.rdata')
     x
     
     #     stats.round2 <- c('Average site', 'Average person')
@@ -583,159 +602,160 @@ shinyServer(function(input, output, session) {#SERVER####
   ###### one summary stat per site  # RENDER THE SUMMARY *COLS* AS AN INTERACTIVE DATA TABLE FOR WEB
   
   output$colsout <- renderDataTable(# colsout: one summary stat per site ##########################
-    {
-      z <- cbind( outlist()$cols, make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors = FALSE)
-      z
-    }, 
-    options = list(
-      dom = 'rtip',
-      lengthMenu = list(c(10, 100, -1), c('10', '100', 'All')),
-      pageLength = 100,  # -1 loads all the rows into page 1, which might be too slow if huge # of sites is uploaded
-      scrollX = TRUE,
-      scrollY = "340px", # 440px is enough for 12 rows on my browser but headers wrap to use up lots of space
-      scrollCollapse = TRUE,
-      
-      # FREEZE FIRST COLUMN AND HEADER:
-      #       initComplete = I("function(settings, json){
-      #         new $.fn.dataTable.FixedHeader(this, {
-      #           left:   true
-      #         } );
-      #       }"),
-      
-      # THIS WORKS TO FIX COLUMNS FOR SCROLLING TO RIGHT, BUT IT BREAKS THE FILTER OPTION for the frozen column, AT THE BOTTOM OF THE TABLE ?!
-      # so you can't filter on site name in this case *** but that isn't essential for now, espec since can filter on duplicate column that also has site name.
-      initComplete = I("function(settings, json){
+                                    {
+                                      z <- cbind( outlist()$cols, make.colnames.friendly.complete( fulltabler()  ) , stringsAsFactors = FALSE)
+                                      if (testing) save(z, file = 'z temp.rdata')
+                                      z
+                                    }, 
+                                    options = list(
+                                      dom = 'rtip',
+                                      lengthMenu = list(c(10, 100, -1), c('10', '100', 'All')),
+                                      pageLength = 100,  # -1 loads all the rows into page 1, which might be too slow if huge # of sites is uploaded
+                                      scrollX = TRUE,
+                                      scrollY = "340px", # 440px is enough for 12 rows on my browser but headers wrap to use up lots of space
+                                      scrollCollapse = TRUE,
+                                      
+                                      # FREEZE FIRST COLUMN AND HEADER:
+                                      #       initComplete = I("function(settings, json){
+                                      #         new $.fn.dataTable.FixedHeader(this, {
+                                      #           left:   true
+                                      #         } );
+                                      #       }"),
+                                      
+                                      # THIS WORKS TO FIX COLUMNS FOR SCROLLING TO RIGHT, BUT IT BREAKS THE FILTER OPTION for the frozen column, AT THE BOTTOM OF THE TABLE ?!
+                                      # so you can't filter on site name in this case *** but that isn't essential for now, espec since can filter on duplicate column that also has site name.
+                                      initComplete = I("function(settings, json){
                 new $.fn.dataTable.FixedColumns(this, {
                   leftColumns: 1
                 } );
       }"),
-      
-      columnDefs = list(list(width = "420px", 
-                             # targets=list(0,1,2)
-                             targets = list(0, length(outlist()$cols[1, ]) + 
-                                              which(mycolnames() == 'name')
-                                            - 1))
-      ) # makes the 1st column wide & the one called name
-    )
+                                      
+                                      columnDefs = list(list(width = "420px", 
+                                                             # targets=list(0,1,2)
+                                                             targets = list(0, length(outlist()$cols[1, ]) + 
+                                                                              which(mycolnames() == 'name')
+                                                                            - 1))
+                                      ) # makes the 1st column wide & the one called name
+                                    )
   )
   
   output$rowsout <- renderDataTable(# rowsout: one summary stat per indicator #######  
-    {
-      
-      #'##########################  ###########################  ###########################
-      #'##########################
-      # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
-      #'##########################  ###########################  ###########################
-      
-      # prepare to display table of summary stats which is outlist()$rows, 
-      # ideally along with the full table of facility-specific batch results, but it slows display if long list and it isn't useful without fixed cols/ freeze panes, which are hard to do while maintaining filtering.
-      # but still will provide full site list for download with these summary stats even if not displayed in onscreen table.
-      
-      x <- outlist()$rows
-      
-      #'#############################################
-      # PUT SUMMARY STATS AND INDIVIDUAL SITES DATA TOGETHER
-      # one row per indicator, one col per stat or site
-      #'#############################################
-      
-      charcols <- c("FACID", "name", "ST", "statename", 'lat', 'lon' )  #  "pop", "radius.miles", are ok. 'FACID' would be nice to sort on as # if it is that, but will need to assume it is character just in case.
-      sites.data <- fulltabler()
-      sites.data[ , charcols] <- NA  # MUST REMOVE CHARACTER FIELD INFO LIKE NAME/FACID/ST/STATENAME TO BE ABLE TO TRANSPOSE THIS INTO A DATA.FRAME AND SORT ONE FACILITY BY ALL ITS INDICATORS FOR EXAMPLE
-      
-      z = data.frame(
-        n = lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
-        Category = varcategory(),
-        Type = vartype(),
-        Indicator = mycolnames.friendly(),
-        # data.frame(  t(x), t(sites.data ), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
-        # without sites data for onscreen display:
-        data.frame(  t(x), stringsAsFactors = FALSE, check.rows = FALSE, check.names = FALSE),
-        stringsAsFactors = FALSE, check.rows = FALSE, check.names = FALSE
-      )
-      # , check.rows=FALSE, check.names=FALSE   # is to avoid replacing spaces in colnames with a period . but there is some chance user will use invalid names for sites and that it might create a problem?
-      
-      #'#############################################
-      # QUICK FIXES TO FORMATTING AND SORTING *** NOW THAT SUMSTATS AND SITES ARE TOGETHER
-      # REPLACED THE STRING CHARACTER CELLS WITH NA SO THAT SORTING BY NUMBER WILL WORK CORRECTLY
-      #'#############################################
-      
-      entirely.string.fields <- c('n' , 'Category', 'Type', 'Indicator') # can't just say sapply(mydf, class) I think
-      # indicators to round to zero decimal places, but not for the string fields of those indicators:
-      vars.round0 <- unique( c( 'pop', names.d.batch, grep('VSI.eo', mycolnames(), value = TRUE), grep('pct', mycolnames(), value = TRUE) ) ) # intended to find pctile and pct and VSI.eo to get the ones that are integer 0-100 
-      fields.to.round <- colnames(z)[!(colnames(z) %in% entirely.string.fields)]
-      # round all to 2 decimals, then just some to zero decimals
-      z[             , fields.to.round ] <- round( z[             , fields.to.round ] , 2)
-      z[  vars.round0, fields.to.round ] <- round( z[  vars.round0, fields.to.round ] , 0)
-      
-      z
-      
-    }, 
-    options = list(
-      scrollX = TRUE,
-      scrollY = "440px", # 440px is enough for 12 rows on my browser
-      scrollCollapse = TRUE,
-      lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
-      pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window
-      dom = 'rtip',
-      # *** ??? this doesn't seem to get applied until after filter is used!? 
-      columnDefs = list(list(width = "280px", targets = list(3))) #,  
-      #columns = ???
-      
-      ## Try FixedHeader approach to FREEZE HEADER AND LEFT COLUMN: - but this as written doesn't freeze 1st 4 cols which is needed and makes it harder to set colwidths and scroll down within a window
-      #     initComplete = I("function(settings, json){
-      #       new $.fn.dataTable.FixedHeader(this, {
-      #         left:   true
-      #       } );
-      #     }"),
-      
-      ## Try FixedColumns approach -- THIS WORKS TO FIX 4 COLUMNS FOR SCROLLING TO RIGHT, BUT 
-      ## IT BREAKS THE FILTER OPTION in frozen cols AT THE BOTTOM OF THE TABLE !?
-      #     initComplete = I("function(settings, json){
-      #         new $.fn.dataTable.FixedColumns(this, {
-      #           leftColumns: 4 ,
-      #           serverSide: true
-      #         } );
-      #     }"),
-      
-      # Try to get fixedcolumns and filtering at same time: 
-      # *** It still won't filter on the fixed columns using shiny's renderDataTable() here, but does in their pure JS example...
-      # see http://datatables.net/release-datatables/extensions/FixedColumns/examples/col_filter.html
-      #
-      #     initComplete = I("function(settings, json){
-      # // Setup - add a text input to each footer cell
-      # $('#example tfoot th').each( function () { 
-      #   var title = $('#example thead th').eq( $(this).index() ).text();
-      #   $(this).html( '<input type=\"text\" placeholder=\"Search '+title+'\" />' );
-      # } );
-      # 
-      # // DataTable
-      # var table = $('#example').DataTable( {
-      #   scrollY:        \"440px\",
-      #   scrollX:        true,
-      #   scrollCollapse: true,
-      #   paging:         false
-      # } );
-      # 
-      # // Apply the filter
-      # table.columns().indexes().each( function (idx) {
-      # $( 'input', table.column( idx ).footer() ).on( 'keyup change', function () {
-      #   table
-      #   .column( idx )
-      #   .search( this.value )
-      #   .draw();
-      #   } );
-      # } );
-      # 
-      # new $.fn.dataTable.FixedColumns(this, {
-      #   leftColumns: 4 ,
-      #   serverSide: true
-      # } );
-      # 
-      # table.fnUpdate();
-      # }")
-      #
-      
-    )
+                                    {
+                                      
+                                      #'##########################  ###########################  ###########################
+                                      #'##########################
+                                      # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
+                                      #'##########################  ###########################  ###########################
+                                      
+                                      # prepare to display table of summary stats which is outlist()$rows, 
+                                      # ideally along with the full table of facility-specific batch results, but it slows display if long list and it isn't useful without fixed cols/ freeze panes, which are hard to do while maintaining filtering.
+                                      # but still will provide full site list for download with these summary stats even if not displayed in onscreen table.
+                                      
+                                      x <- outlist()$rows
+                                      
+                                      #'#############################################
+                                      # PUT SUMMARY STATS AND INDIVIDUAL SITES DATA TOGETHER
+                                      # one row per indicator, one col per stat or site
+                                      #'#############################################
+                                      
+                                      charcols <- c("FACID", "name", "ST", "statename", 'lat', 'lon' )  #  "pop", "radius.miles", are ok. 'FACID' would be nice to sort on as # if it is that, but will need to assume it is character just in case.
+                                      sites.data <- fulltabler()
+                                      sites.data[ , charcols] <- NA  # MUST REMOVE CHARACTER FIELD INFO LIKE NAME/FACID/ST/STATENAME TO BE ABLE TO TRANSPOSE THIS INTO A DATA.FRAME AND SORT ONE FACILITY BY ALL ITS INDICATORS FOR EXAMPLE
+                                      
+                                      z = data.frame(
+                                        n = lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
+                                        Category = varcategory(),
+                                        Type = vartype(),
+                                        Indicator = mycolnames.friendly(),
+                                        # data.frame(  t(x), t(sites.data ), stringsAsFactors=FALSE, check.rows=FALSE, check.names=FALSE),
+                                        # without sites data for onscreen display:
+                                        data.frame(  t(x), stringsAsFactors = FALSE, check.rows = FALSE, check.names = FALSE),
+                                        stringsAsFactors = FALSE, check.rows = FALSE, check.names = FALSE
+                                      )
+                                      # , check.rows=FALSE, check.names=FALSE   # is to avoid replacing spaces in colnames with a period . but there is some chance user will use invalid names for sites and that it might create a problem?
+                                      
+                                      #'#############################################
+                                      # QUICK FIXES TO FORMATTING AND SORTING *** NOW THAT SUMSTATS AND SITES ARE TOGETHER
+                                      # REPLACED THE STRING CHARACTER CELLS WITH NA SO THAT SORTING BY NUMBER WILL WORK CORRECTLY
+                                      #'#############################################
+                                      
+                                      entirely.string.fields <- c('n' , 'Category', 'Type', 'Indicator') # can't just say sapply(mydf, class) I think
+                                      # indicators to round to zero decimal places, but not for the string fields of those indicators:
+                                      vars.round0 <- unique( c( 'pop', names.d.batch, grep('VSI.eo', mycolnames(), value = TRUE), grep('pct', mycolnames(), value = TRUE) ) ) # intended to find pctile and pct and VSI.eo to get the ones that are integer 0-100 
+                                      fields.to.round <- colnames(z)[!(colnames(z) %in% entirely.string.fields)]
+                                      # round all to 2 decimals, then just some to zero decimals
+                                      z[             , fields.to.round ] <- round( z[             , fields.to.round ] , 2)
+                                      z[  vars.round0, fields.to.round ] <- round( z[  vars.round0, fields.to.round ] , 0)
+                                      
+                                      z
+                                      
+                                    }, 
+                                    options = list(
+                                      scrollX = TRUE,
+                                      scrollY = "440px", # 440px is enough for 12 rows on my browser
+                                      scrollCollapse = TRUE,
+                                      lengthMenu = list(c(10, 200, -1), c('10', '200', 'All')),
+                                      pageLength = 200,  # -1 would mean all of the rows of summary stats are in the window
+                                      dom = 'rtip',
+                                      # *** ??? this doesn't seem to get applied until after filter is used!? 
+                                      columnDefs = list(list(width = "280px", targets = list(3))) #,  
+                                      #columns = ???
+                                      
+                                      ## Try FixedHeader approach to FREEZE HEADER AND LEFT COLUMN: - but this as written doesn't freeze 1st 4 cols which is needed and makes it harder to set colwidths and scroll down within a window
+                                      #     initComplete = I("function(settings, json){
+                                      #       new $.fn.dataTable.FixedHeader(this, {
+                                      #         left:   true
+                                      #       } );
+                                      #     }"),
+                                      
+                                      ## Try FixedColumns approach -- THIS WORKS TO FIX 4 COLUMNS FOR SCROLLING TO RIGHT, BUT 
+                                      ## IT BREAKS THE FILTER OPTION in frozen cols AT THE BOTTOM OF THE TABLE !?
+                                      #     initComplete = I("function(settings, json){
+                                      #         new $.fn.dataTable.FixedColumns(this, {
+                                      #           leftColumns: 4 ,
+                                      #           serverSide: true
+                                      #         } );
+                                      #     }"),
+                                      
+                                      # Try to get fixedcolumns and filtering at same time: 
+                                      # *** It still won't filter on the fixed columns using shiny's renderDataTable() here, but does in their pure JS example...
+                                      # see http://datatables.net/release-datatables/extensions/FixedColumns/examples/col_filter.html
+                                      #
+                                      #     initComplete = I("function(settings, json){
+                                      # // Setup - add a text input to each footer cell
+                                      # $('#example tfoot th').each( function () { 
+                                      #   var title = $('#example thead th').eq( $(this).index() ).text();
+                                      #   $(this).html( '<input type=\"text\" placeholder=\"Search '+title+'\" />' );
+                                      # } );
+                                      # 
+                                      # // DataTable
+                                      # var table = $('#example').DataTable( {
+                                      #   scrollY:        \"440px\",
+                                      #   scrollX:        true,
+                                      #   scrollCollapse: true,
+                                      #   paging:         false
+                                      # } );
+                                      # 
+                                      # // Apply the filter
+                                      # table.columns().indexes().each( function (idx) {
+                                      # $( 'input', table.column( idx ).footer() ).on( 'keyup change', function () {
+                                      #   table
+                                      #   .column( idx )
+                                      #   .search( this.value )
+                                      #   .draw();
+                                      #   } );
+                                      # } );
+                                      # 
+                                      # new $.fn.dataTable.FixedColumns(this, {
+                                      #   leftColumns: 4 ,
+                                      #   serverSide: true
+                                      # } );
+                                      # 
+                                      # table.fnUpdate();
+                                      # }")
+                                      #
+                                      
+                                    )
   )
   
   #  radius.miles ##########################################  ###########################################
@@ -1324,26 +1344,29 @@ shinyServer(function(input, output, session) {#SERVER####
       # should be same as getting it from summing within fulltabler.pop()?
     }
     
-    mybincount <- input$bincount # e.g. default (0:10)*10 # assumes you want to see sites in 10 bins, 0-10th percentile, 10-20, etc.
-    expected.sites.per.bin = sitecount / mybincount # assumes you want to see sites in 10 bins  # but for popwtd hist, use popcount.hist?!
+    mybincount <- input$bincount # e.g. default (0:10)*10 # default is to see sites in 10 bins, 0-10th percentile, 10-20, etc.
+    expected.sites.per.bin = sitecount / mybincount # default is to see sites in 10 bins  # but for popwtd hist, use popcount.hist?!
     expected.pop.per.bin =   popcount.hist  / mybincount  # but the horizontal line from this doesn't look right so don't graph it for now ****** 
     
     # HISTOGRAM plotted here
     
     if (input$sites.or.people == 'Sites') {
       # see for formatting nicely:  http://docs.ggplot2.org/0.9.3.1/geom_bar.html
-      warning('NOT WORKING RIGHT NOW')
-      myplot <- ggplot( fulltabler(), aes_string( myvar.full) ) + 
-        geom_histogram(fill = 'white', colour = 'darkgreen', binwidth = diff(range( fulltabler()[ , myvar.full] ,na.rm = TRUE))/mybincount) +
+      # warning('NOT WORKING RIGHT NOW') # ****
+      #myplot <- 
+        ggplot( fulltabler(), aes_string( myvar.full) ) + 
+        geom_histogram(fill = 'white', colour = 'darkgreen', binwidth = diff(range(fulltabler()[ , myvar.full], na.rm = TRUE)) / mybincount) +
         geom_hline(aes_string(yintercept = expected.sites.per.bin)) +
         xlab(myvar.friendly.full) + ylab(input$sites.or.people) + 
         ggtitle( paste(gsub('_', ' ', my_batch_name()), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''))
+      
+      #abline(h = expected.sites.per.bin)
       
       ### plotly() was Deprecated: see signup for credentials/configuration storage details. See ggplotly for the new ggplot2 interface.
       #py <- plotly()
       #myplot2 <- py$ggplotly()
       #return(myplot)
-      return(NULL)  # NOT WORKING RIGHT NOW
+      #return(NULL)  # NOT WORKING RIGHT NOW
       
     } else {
       
@@ -1363,13 +1386,16 @@ shinyServer(function(input, output, session) {#SERVER####
         x = h,
         w = wts.hist,
         # breaks = seq(0, 100, 100 / mybincount),  # nice if demog raw, or any pctiles, are being plotted
-        breaks = mybincount,  # needed if raw E being plotted
+        breaks = mybincount,  # needed if raw E being plotted # 
+        #breaks = wtd.quantile(h, wts.hist, probs = (seq(0, 100, 100 / mybincount)) / 100),
         main = paste(gsub('_', ' ', my_batch_name()), ', ', myvar.friendly.full,': Distribution across ', input$sites.or.people, sep = ''),
         # names.arg=myvar.friendly.full,
         ylab = input$sites.or.people
       )
       
       abline(h = expected.pop.per.bin)
+      
+      # it wont draw this:?? why???
       curve(dnorm(x, mean = Hmisc::wtd.mean(h, wts.hist), sd = sqrt(Hmisc::wtd.var(h, wts.hist))), add = TRUE, col = "darkblue", lwd = 2)
       
       #       myplot <- ggplot( fulltabler(), aes_string( myvar.full, weight=fulltabler()[ , mywtsname] ) ) + 
