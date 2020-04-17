@@ -139,7 +139,7 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   n = n + 1
   colfuname[n] = 'Average person'
   # *** above specified wts as popstats[ , wtscolname] since wts is not passed to this function later
-  colfun[[n]] = function(x, ...) {wtd.colMeans(x, wts = wts, na.rm = na.rm)} # function is defined in this package
+  colfun[[n]] = function(x, ...) {wtd.colMeans(x, wts = wts, na.rm = na.rm)} # function was defined in this package and in analyze.stuff
   bywhat[n] <- 'pop'
   
   # median site ####
@@ -181,11 +181,12 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
   }
   bywhat[n] <- 'site'
   
-  #   n = n + 1
-  #   colfuname[n]='Sum'
-  #   colfun[[n]] = function(x, ...) {colSums(x, na.rm=na.rm)}
-  #   bywhat[n] <- 'pop'
-  
+  # sum ####
+     n = n + 1
+    colfuname[n] = 'Sum'
+     colfun[[n]] = function(x, ...) {colSums(x, na.rm = na.rm)}
+     bywhat[n] <- 'pop'
+
   #   n = n + 1
   #   colfuname[n]='Count of sites'
   #   colfun[[n]]=function(x, ...) {apply(x, 2, FUN=function(y) length(y))}
@@ -237,7 +238,8 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
       colfuname[(n + length(probs)):((n - 1) + 2 * length(probs))]  <- paste('Percentile of people', 100 * probs)
       colfun[[  (n + length(probs)):((n - 1) + 2 * length(probs))]] <- myfunlist
       
-      nextcol <- 1 + ((n - 1) + 2 * length(probs))
+      nextcol <- 1 + ((n - 1) + 2 * length(probs)) 
+      # *** nextcol is defined but not used anywhere in this draft code
     } 
   } else {
     just.rbind.quantiles <- TRUE  
@@ -366,7 +368,7 @@ batch.summarize <- function(sitestats, popstats, cols = 'all', wtscolname = 'pop
 # str(fulltable)
 # 'data.frame':  42 obs. of  179 variables:
 # $ OBJECTID                                     : int  1 2 3 4 5 6 7 8 9 10 ...
-# $ FACID                                        : chr  "999" ...
+# $ id                                        : chr  "999" ...
 # $ name                                         : chr  "xyz facil" ...
 # $ lat                                          : num  32.3 ...
 # $ lon                                          : num  -94.5 ...
