@@ -1,6 +1,6 @@
 oldnames,newnames,gdbfieldname,vartype,varcategory,longname,gdblongname,example,order0,order1,order2
 OBJECTID,OBJECTID,OBJECTID,geo,geo,OBJECTID,OBJECTID,1,0,0,1
-facid,FACID,facid,geo,geo,Facility ID,Facility ID,NEI99999,0,0,2
+id,id,id,geo,geo,Point ID,Point ID,NEI99999,0,0,2
 name,name,name,geo,geo,Name,Name,xyz facility,0,0,3
 lat,lat,lat,geo,geo,Latitude,Latitude,21.2,0,0,4
 lon,lon,lon,geo,geo,Longitude,Longitude,-158.2,0,0,5

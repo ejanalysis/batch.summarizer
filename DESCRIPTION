@@ -14,7 +14,9 @@ Imports:
     matrixStats,
     data.table,
     analyze.stuff,
-    Hmisc
+    Hmisc,
+    leaflet,
+    mapproj
 Suggests: 
     sp, 
     UScensus2010blocks
