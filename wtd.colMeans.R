@@ -2,8 +2,9 @@ wtd.colMeans <- function(x, wts, by, na.rm = TRUE, dims = 1) {
   #  version of this function for batch.summarizer originally had these defaults:
   #   wts=1, na.rm=FALSE 
   # and is just this function:
-  return( colMeans(x * t(wts), na.rm=na.rm) * colSums(!is.na(x)) / sum(wts, na.rm=na.rm) )
-  # which is the same as analyze.stuff::wtd.colMeans2()
+  return( colMeans(x * t(wts), na.rm = na.rm) * colSums(!is.na(x)) / sum(wts, na.rm = na.rm) )
+  # which is the same as analyze.stuff::wtd.colMeans() I think 
+  
   # and doesn't need data.table package which makes it a bit easier for a hosted app.
   # suppressWarnings( ) might be useful.
   
