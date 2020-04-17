@@ -379,7 +379,7 @@ h5(' "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER
         
         #h4(textOutput("name3", container = span)),
         br(),
-        h4('Table 1. Does the population near these sites as a whole have demographics above the US average?'),
+        h4('Table 1. Does the average person at these sites (nearby population as a whole) have demographics above the US average?'),
         tableOutput("table1"),
         downloadButton('download.table1', 'Download Table 1'),
         tags$hr(),
@@ -387,7 +387,7 @@ h5(' "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER
         tableOutput("table2"),
         downloadButton('download.table2', 'Download Table 2'),
         tags$hr(),
-        h4('Table 3. Do most of these sites have demographics above the US average?'),
+        h4('Table 3. Do most of these sites have demographics above the US average (not median)?'),
         tableOutput("table3"),
         downloadButton('download.table3', 'Download Table 3')
       ), 
@@ -399,7 +399,7 @@ h5(' "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER
         
         #h4(textOutput("name3", container = span)),
         br(),
-        h4('Table 1e. Does the population near these sites as a whole have environmental indicators above the US average?'),
+        h4('Table 1e. Does the average person at these sites (nearby population as a whole) have environmental indicators above the US average?'),
         tableOutput("table1e"),
         downloadButton('download.table1e', 'Download Table 1e'),
         tags$hr(),
@@ -407,7 +407,7 @@ h5(' "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER
         tableOutput("table2e"),
         downloadButton('download.table2e', 'Download Table 2e'),
         tags$hr(),
-        h4('Table 3e. Do most of these sites have environmental indicators above the US average?'),
+        h4('Table 3e. Do most of these sites have environmental indicators above the US average (not median)?'),
         tableOutput("table3e"),
         downloadButton('download.table3e', 'Download Table 3e')
       ), 
@@ -447,7 +447,7 @@ h5(' "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER
             3,
             selectInput('myvar.friendly.base', h5('Indicator'), 
                         c(names.d.friendly, names.e.friendly, names.ej.friendly),
-                        selected=1)
+                        selected = 1)
           ),
           column(9, plotOutput('histograms') )
         ),
@@ -460,19 +460,19 @@ h5(' "S_D_MINOR_PER","S_D_INCOME_PER","S_D_LESSHS_PER","S_D_LING_PER","S_D_UNDER
           h4("Histogram settings"),
           column(
             2,
-            radioButtons('sites.or.people', label=h5('Distribution across sites or people (pop.wtd.)'), list('Sites'='Sites','People'='People') )
+            radioButtons('sites.or.people', label = h5('Distribution across sites or people (pop.wtd.)'), list('Sites' = 'Sites','People' = 'People'), selected = 'People' )
           ),
           column(
             2,
-            radioButtons('refzone', label=h5('Percentile Zone'), list('US'='us', 'Region'='region', 'State'='state'), selected = 'us')
+            radioButtons('refzone', label = h5('Percentile Zone'), list('US' = 'us', 'Region' = 'region', 'State' = 'state'), selected = 'us')
           ),
           column(
             2, 
-            radioButtons('refstat', label=h5('Data type'), list('Percentile of population'='pctile', 'Raw data'='raw'))
+            radioButtons('refstat', label = h5('Data type'), list('Percentile of population' = 'pctile', 'Raw data' = 'raw'))
           ),
           column(
             2,
-            sliderInput('bincount', label=h5('Bins'), 5, 100, step=5, value=10)
+            sliderInput('bincount', label = h5('Bins'), 5, 100, step = 5, value = 10)
           )
         )
       ),
