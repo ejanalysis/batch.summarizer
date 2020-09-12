@@ -16,12 +16,41 @@
 message("*** Note: MUST UPDATE ACS DATA IN CODE, WHEN SWITCHING TO NEW ACS DATASET")
 browseURL('https://www.census.gov/programs-surveys/acs/news/data-releases.html')
 
-# US AVERAGES
+# US & REGION & STATE **MEDIANS** are available from ejscreen package:
+# library(ejscreen)
+# > round(  lookupUSA19[lookupUSA19$PCTILE == '50', names.d]  ,3)
+#    VSI.eo VSI.svi6 pctmin pctlowinc pctlths pctlingiso pctunder5 pctover64
+# 51  0.299    0.159  0.298     0.294   0.094      0.012     0.057     0.134
+# > round(  lookupUSA19[lookupUSA19$PCTILE == '50', names.e]  ,1)
+#     pm   o3 cancer resp dpm pctpre1960 traffic.score proximity.npl proximity.rmp proximity.tsdf proximity.npdes
+# 51 8.3 43.8   31.4  0.4 0.4        0.2         214.1           0.1           0.3            0.4               0
+
+
+# US & REGION & STATE **AVERAGES** are available from ejscreen package:
 # 
+# > round( lookupUSA19[lookupUSA19$PCTILE == 'mean', names.d]  ,3)
+# VSI.eo VSI.svi6 pctmin pctlowinc pctlths pctlingiso pctunder5 pctover64
+# 102  0.356    0.182  0.385     0.328   0.127      0.045     0.062     0.149
+# > round( lookupUSA19[lookupUSA19$PCTILE == 'mean', names.e]  ,1)
+# pm o3 cancer resp dpm pctpre1960 traffic.score proximity.npl proximity.rmp proximity.tsdf proximity.npdes
+# 102 8.3 43   31.9  0.4 0.5        0.3         753.7           0.1           0.7              4            13.6
+# > 
+
+# for one state:
+# 
+# > lookupStates19[lookupStates19$PCTILE == 'mean' & lookupStates19$REGION == 'NY', 'pm']
+# [1] 7.6138
+# > lookupStates19[lookupStates19$PCTILE == 'mean' & lookupStates19$REGION == 'NY', names.e]
+# pm       o3   cancer      resp     dpm pctpre1960 traffic.score proximity.npl proximity.rmp
+# 3570 7.6138 43.97403 32.06106 0.4904412 1.05207  0.5555662      1684.205     0.2245075     0.5028817
+# proximity.tsdf proximity.npdes
+# 3570       41.54222        1.222635
+
+
 # THESE nationwide percents (us.avg) 
-# ARE ALREADY IN THE OUTPUT OF THE BATCH TOOL:
+# also ARE IN THE OUTPUT OF THE BATCH TOOL:
 #
-# us.avg.VSI.eo
+# us.avg.VSI.eo  # name not used in package
 # us.avg.pctlowinc
 # us.avg.pctmin
 # us.avg.pctlingiso
