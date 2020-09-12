@@ -1,0 +1,25 @@
+to do 
+
+******- fix tables that don't display - full 2 big tables of details and also states sum counts
+
+- ensure using latest pop totals/ ACS data - is any needed now other than what ejscreen dataset already has from package ejscreen?? just median and mean were the issue, not counts??
+
+***- clarify if can correctly report those stats using EPA batch tool since it double counts peope near >1 sit.
+(R batch fast tool fixed that but needs repair)
+
+
+- fix Table 3. Do most of these sites have demographics above the US average (not median)?
+  to compare to median not avg
+
+- maybe clarify / calc raw value for US median person? 
+is avg of percentiles the same as percentile of the avg person's raw score? probably not 
+... in barplots, summary tables, and/or detail tables?
+
+
+- exec sum could show ranked E by ratio to US mean? (as in table)
+
+- add a barplot of RATIO local to US avg (as in table) *** would be nice to have. sorted.
+
+- exec sum could show barplot on same page?? or pick a standard key plot or two?
+
+- could use markdown etc. to create formatted report with graphics?

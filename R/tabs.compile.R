@@ -36,7 +36,7 @@ tabs.compile <- function(files, folder=getwd(), ...) {
   
   #print(Sys.time())  
   # Rewrote it 3/27/2014 or so, to use preallocated data frame and replacing subsets with <-, 
-  # and took <10 seconds for 983 files on MacBookPro
+  # and took <10 seconds for 983 files on MacBookPro2012 or so?
   #logwrite(paste("Miles radius for buffering:",radius.miles)); logwrite("")
   
   ################################# #
