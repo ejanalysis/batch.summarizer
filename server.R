@@ -578,8 +578,22 @@ shinyServer(function(input, output, session) {#SERVER####
     x$rows[ , vars.NA] <- NA
     vars.round0 <- 'pop'
     x$rows[ , vars.round0] <- round(x$rows[ , vars.round0], 0)
+    
+    ################################### #
+    # add us medians to the summary rows
+    us.med.names <- paste('us.med.', c(names.e, names.d, names.ej), sep = '')
+    us.med.names <- us.med.names[!grepl('svi6', us.med.names)]
+    us.med.values <- lookupUSA19[lookupUSA19$PCTILE == '50', c(names.e, names.d, names.ej)]
+    us.med.values[names(us.med.values) %in% names.d] <- 100 * us.med.values[names(us.med.values) %in% names.d]
+    us.med.values <- us.med.values[!grepl('svi6', names(us.med.values))]
+    names(us.med.values) <- us.med.names
+    
+    x$rows <- cbind(x$rows,us.med.values)
+    ################################### #
+
     x$rows <- as.data.frame(x$rows, stringsAsFactors = FALSE)
-    if (testing) save(x, file = 'x temp outlist.rdata')
+    save(x, file = 'x temp outlist.rdata')
+    # if (testing) save(x, file = 'x temp outlist.rdata')
     x
     
     #     stats.round2 <- c('Average site', 'Average person')
@@ -773,38 +787,52 @@ shinyServer(function(input, output, session) {#SERVER####
     # table summarizing demog stats nearby and in US overall
     popnear = popcount()
     mytable <- cbind(
-      Location = c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall', 'Avg person nearby, ratio to avg person in US'), 
-      Pop = c(format( c(popnear, popus, popnear, popus), big.mark = ','), round(popnear / popus,4))
+      Location = c(
+        'Total near these sites', 
+        'US total', 
+        'Overall near these sites (avg. person)',  
+        'US overall', 
+        'Avg person nearby, ratio to avg person in US'
+      ), 
+      Pop = c(format( c(
+        popnear,   # how many people are nearby
+        popus,     # US population total 
+        popnear,    
+        popus
+      ), big.mark = ','), 
+      round(popnear / popus, 4))   #  what % of US pop is nearby
     )
-    othercols <- rbind( format( popnear * 0.01 * outlist()$rows['Average person', names.d.batch  ] , big.mark = ',', digits = 0, scientific = FALSE), 
-                        format(us.counts[names.d.batch ] / 100, big.mark = ',', digits = 0, scientific = FALSE),
-                        paste( round(row3 <- outlist()$rows['Average person' , names.d.batch ], 0), '%', sep = ''),
-                        paste( round(row4 <- us.percents[names.d.batch ], 0), '%',sep = ''),
-                        format( round(row3 / row4,2)))
+    othercols <- rbind( 
+      format(popnear * 0.01 * outlist()$rows['Average person', names.d.batch], big.mark = ',', digits = 0, scientific = FALSE), 
+      format(us.counts[names.d.batch] / 100, big.mark = ',', digits = 0, scientific = FALSE),
+      paste( round(row3 <- outlist()$rows['Average person' , names.d.batch], 0), '%', sep = ''),
+      paste( round(row4 <- us.percents[names.d.batch], 0), '%', sep = ''),
+      format(round(row3 / row4, 2))
+      )
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
     rownames(mytable) <- NULL
     mytable
   })
-  
+  # outlist()$rows['Average person' , names.e.batch ] 
   table1e <- reactive({#table1e ##########################################
     # table summarizing ENVT stats nearby and in US overall
     popnear = popcount()
     mytable <- cbind(
       #Location=c('Total near these sites', 'US total', 'Overall near these sites (avg. person)',  'US overall', 'Avg person nearby, ratio to avg person in US'), 
-      Location = c(          'Overall near these sites (avg. person)',  'US overall', 'Avg person nearby, ratio to avg person in US'), 
+      Location = c('Overall near these sites (avg. person)',  'US overall', 'Avg person nearby, ratio to avg person in US'), 
       #Pop= c(format( c(popnear, popus, popnear, popus), big.mark=','), round(popnear/popus,4))
-      Pop = c(format(                  c(popnear, popus), big.mark = ','), round(popnear / popus,4))
+      Pop = c(format( c(popnear, popus), big.mark = ','), round(popnear / popus, 4))
     )
-    othercols <- rbind( 
+    othercols <- rbind(
       #       format( popnear * 0.01 * outlist()$rows['Average person', names.e.batch  ] , big.mark = ',', digits=0, scientific=FALSE), 
       #       #format(us.counts[names.e.batch ] / 100, big.mark=',', digits=0, scientific=FALSE),
       paste( round(row3 <- outlist()$rows['Average person' , names.e.batch ], 1), ' ',sep = ''),
       #       #paste( round(row4 <- us.percents[names.e.batch ], 0), 'xxx',sep=''),
       #paste( round(row4 <- outlist()$rows['US overall' , names.e.batch ], 0), ' ',sep = ''), #us.envavg[names.e.batch ], 0), ' ',sep=''),
       paste( round(row4 <- fulltabler()[ 1, paste('us.avg.', names.e.batch , sep = '')], 1), ' ',sep = ''),
-      
-      format( round(row3 / row4, 2)))
+      format( round(row3 / row4, 2))
+      )
     colnames(othercols) <- names.e.friendly
     mytable <- cbind(mytable, othercols)
     rownames(mytable) <- NULL
@@ -841,6 +869,9 @@ shinyServer(function(input, output, session) {#SERVER####
   
   table3 <- reactive({#table3 ##########################################
     # table of significance tests for # of sites with D above US avg
+    # THIS *** COULD BE FIXED TO COMPARE TO US MEDIAN NOT AVG, AND WOULD MAKE MORE SENSE THEN
+    # Table 3. Do most of these sites have demographics above the US average (not median)?
+      
     pct.above.usavg <-     pct.above(fulltabler()[ , names.d.batch  ], benchmarks = us.percents[names.d.batch ], benchnames = 'cutoff', na.rm = TRUE, or.tied = FALSE, below = FALSE, wts = 1, of.what = 'all')
     count.above.usavg <- count.above(fulltabler()[ , names.d.batch  ], benchmarks = us.percents[names.d.batch ], benchnames = 'cutoff', or.tied = FALSE, below = FALSE, wts = 1)
     # sum( fulltabler()[ , names.d.batch  ] > us.percents[names.d.batch ]) / length(fulltablr()[,1]
@@ -898,6 +929,22 @@ shinyServer(function(input, output, session) {#SERVER####
   max.ratio.to.us.e <- reactive({
     max( ratio.to.us.e(), na.rm = TRUE)
   })
+  # max2.ratio.to.us.e <- reactive({
+  #   sort(ratio.to.us.e(), decreasing = TRUE, na.last = TRUE)[2]
+  # })
+  
+  # NOTE: this might pick the wrong one if there is a tie! *** to be fixed ***
+  max.ratio.to.us.d.name <- reactive({
+    names.d.batch[ which(ratio.to.us.d() == max.ratio.to.us.d() ) ]
+  })
+  # NOTE: this might pick the wrong one if there is a tie!  *** to be fixed ***
+  max.ratio.to.us.e.name <- reactive({
+    names.e.batch[ which(ratio.to.us.e() == max.ratio.to.us.e() ) ]
+  })
+  # max2.ratio.to.us.e.name <- reactive({
+  #   # NOT TESTED
+  #   names.e.batch[order(sort(ratio.to.us.e(), decreasing = TRUE, na.last = TRUE), decreasing = TRUE)][2]
+  # })
   
   # user-specified E
   my.ratio.to.us.e.name.friendly <-  reactive({
@@ -909,16 +956,6 @@ shinyServer(function(input, output, session) {#SERVER####
   #  my.ratio.to.us.e <- 999
   my.ratio.to.us.e <- reactive({
     ratio.to.us.e()[ which(names.e.batch  == my.ratio.to.us.e.name() ) ]
-  })
-  
-  # NOTE: this might pick the wrong one if there is a tie??
-  max.ratio.to.us.d.name <- reactive({
-    names.d.batch[ which(ratio.to.us.d() == max.ratio.to.us.d() ) ]
-  })
-  
-  # NOTE: this might pick the wrong one if there is a tie??
-  max.ratio.to.us.e.name <- reactive({
-    names.e.batch[ which(ratio.to.us.e() == max.ratio.to.us.e() ) ]
   })
   
   
@@ -937,7 +974,8 @@ shinyServer(function(input, output, session) {#SERVER####
           tolower( mycolnames.friendly()[match( max.ratio.to.us.d.name(), mycolnames() )] ) ,
           ' as the average person in the US (', 
           round(outlist()$rows['Average person', max.ratio.to.us.d.name()], 0)   ,'% vs. ', 
-          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.d.name(), sep = '')], 0), '%). The other demographic indicators have lower ratios.', sep = '')
+          round(fulltabler()[ 1, paste('us.avg.', max.ratio.to.us.d.name(), sep = '')], 0), 
+          '%). The other demographic indicators have lower ratios.', sep = '')
   })
   
   # DEMOGRAPHICS VS STATE
@@ -1021,7 +1059,18 @@ shinyServer(function(input, output, session) {#SERVER####
   
   # COULD ADD MORE, ON ALL E HERE
   
-  
+  # 
+  # execsum5c.txt <- reactive({
+  #   paste('People who live near (within ', radius.miles(), ' miles of any of) these ', sitecount(),
+  #         ' sites have, on average, ', 
+  #         round(my.ratio.to.us.e(), 1), ' times as high indicator values for ', 
+  #         (mycolnames.friendly()[match( my.ratio.to.us.e.name(), mycolnames() )] ) ,
+  #         ' as the average person in the US (', 
+  #         round(outlist()$rows['Average person', my.ratio.to.us.e.name()], 2)   ,' vs. ', 
+  #         round(fulltabler()[ 1, paste('us.avg.', my.ratio.to.us.e.name(), sep = '')], 2),
+  #         ').', sep = '')
+  # })
+  # 
   
   
   
@@ -1103,13 +1152,22 @@ shinyServer(function(input, output, session) {#SERVER####
         # AVERAGE PCTILE IS SELECTED
         mybarvars.sumstat <- c( 'Average site','Average person')
         mybarvars.refzone.row <- 'Average person' 
+        mybarvars.refzone <- gsub('us.avg', 'us.avg.pctile', mybarvars.refzone) # new
+        # AVERAGE PERSON'S PCTILE at first was NOT AVAILABLE IN THIS DATASET  ******  just showed median of 50 ...but now...******
+        ########################################### #
+        # US & REGION & STATE **AVERAGES** are available from ejscreen package
+        # and so are percentile lookup tables, 
+        # so we can see what percentile those averages are at.
+        # > sapply(names.e, FUN = function(x) lookup.pctile(lookupUSA19[lookupUSA19$PCTILE == 'mean', x], varname.in.lookup.table = x, lookup = lookupUSA19))
+        # pm              o3          cancer            resp             dpm      pctpre1960 
+        # 48              45              52              52              61              61 
+        # traffic.score   proximity.npl   proximity.rmp  proximity.tsdf proximity.npdes 
+        # 76              75              69              87              98 
         
-        # AVERAGE PERSON'S PCTILE IS NOT AVAILABLE IN THIS DATASET CURRENTLY ******  just shows median of 50 for now ***
-        # 
-        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY
-        #mybarvars.refzone <- gsub('us.avg','us.avg.pctile', mybarvars.refzone) 
-        mylegend <- c(  'Average site here', 'Average person here', 'Median person in US (not avg.)')
+        # percentiles of avg person for E  <- sapply(names.e, FUN = function(x) lookup.pctile(lookupUSA19[lookupUSA19$PCTILE == 'mean', x], varname.in.lookup.table = x, lookup = lookupUSA19))
         
+        mylegend <- c(  'Average site here', 'Average person here', 'Average person in US')
+        # mylegend <- c(  'Average site here', 'Average person here', 'Median person in US (not avg.)')
       }
     } else {
       
@@ -1119,11 +1177,20 @@ shinyServer(function(input, output, session) {#SERVER####
         # MEDIAN RAW IS SELECTED
         mybarvars.sumstat <- c( 'Median site','Median person')
         mybarvars.refzone.row <- 'Median person'  
+        ########################################### #
+        # MEDIAN PERSON'S RAW VALUE was NOT IN THIS DATASET  ******** just showed avg person's raw ...but now...***
+        # US & REGION & STATE **MEDIANS** are available from ejscreen package:
+        # library(ejscreen)
+        #> round(  lookupUSA19[lookupUSA19$PCTILE == '50', names.d]  ,3)
+        #    VSI.eo VSI.svi6 pctmin pctlowinc pctlths pctlingiso pctunder5 pctover64
+        # 51  0.299    0.159  0.298     0.294   0.094      0.012     0.057     0.134
+        # > round(  lookupUSA19[lookupUSA19$PCTILE == '50', names.e]  ,1)
+        #     pm   o3 cancer resp dpm pctpre1960 traffic.score proximity.npl proximity.rmp proximity.tsdf proximity.npdes
+        # 51 8.3 43.8   31.4  0.4 0.4        0.2         214.1           0.1           0.3            0.4               0
         
-        # MEDIAN PERSON'S RAW VALUE IS NOT IN THIS DATASET CURRENTLY ******** just shows avg person's raw for now ***
-        mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US (not median)')
-        
-        # IF IT WERE AVAILABLE HERE, THIS WOULD SAY mybarvars.refzone <- gsub('us.avg', 'us.med', mybarvars.refzone)
+        # mylegend <- c(  'Median site here', 'Median person here', 'Avg. person in US (not median)')
+        mylegend <- c(  'Median site here', 'Median person here', 'Median person in US')
+        mybarvars.refzone <- gsub('us.avg', 'us.med', mybarvars.refzone)
       } else {
         # AVG RAW IS SELECTED      
         mybarvars.sumstat <- c( 'Average site', 'Average person')
@@ -1131,6 +1198,31 @@ shinyServer(function(input, output, session) {#SERVER####
         mylegend <- c(  'Average site here', 'Average person here', 'Avg. person in US')
         
         # AVERAGE PERSON'S RAW SCORE IS us.avg...  already defined mybarvars.refzone as that to start with.
+
+        # *** BUT, slighly problem here where detailed table of site's summary rows 
+        # show slighly different number for US avg in Average person vs other rows:
+        # in x <- outlist$rows        
+        # > t(head(x[ , grepl( 'us.avg', colnames(x))]))
+        # Average site Average person Median site Median person     Min     Max
+        # us.avg.VSI.eo                36.000     35.4365950      36.000        36.000  36.000  36.000
+        # us.avg.pctlowinc             33.000     32.4835454      33.000        33.000  33.000  33.000
+        # us.avg.pctmin                39.000     38.3896445      39.000        39.000  39.000  39.000
+        # us.avg.pctlingiso             4.000      3.9373994       4.000         4.000   4.000   4.000
+        # us.avg.pctlths               13.000     12.7965482      13.000        13.000  13.000  13.000
+        # us.avg.pctunder5              6.000      5.9060992       6.000         6.000   6.000   6.000
+        # us.avg.pctover64             15.000     14.7652479      15.000        15.000  15.000  15.000
+        # us.avg.traffic.score        750.000    738.2623948     750.000       750.000 750.000 750.000
+        # us.avg.pctpre1960             0.280      0.2756180       0.280         0.280   0.280   0.280
+        # us.avg.pm                     8.300      8.1701038       8.300         8.300   8.300   8.300
+        # us.avg.o3                    43.000     42.3270440      43.000        43.000  43.000  43.000
+        # us.avg.cancer                32.000     31.4991955      32.000        32.000  32.000  32.000
+        # us.avg.dpm                    0.479      0.4715036       0.479         0.479   0.479   0.479
+        # us.avg.resp                   0.440      0.4331139       0.440         0.440   0.440   0.440
+        # us.avg.proximity.tsdf         4.000      3.9373994       4.000         4.000   4.000   4.000
+        # us.avg.proximity.rmp          0.740      0.7284189       0.740         0.740   0.740   0.740
+        # us.avg.proximity.npl          0.130      0.1279655       0.130         0.130   0.130   0.130
+        # us.avg.proximity.npdes       14.000     13.7808980      14.000        14.000  14.000  14.000
+        # 
       }
     } 
     
@@ -1142,8 +1234,8 @@ shinyServer(function(input, output, session) {#SERVER####
                          rep(50, length(mybarvars.refzone)) ) 
     } else {
       # Raw values for demog or envt indicators.
-      # use actual US avg person's indicator score as US overall benchmark, even if medians are plotted
-      #  we don't store US median raw score here so can't display it, but we could get/store that info in a lookup table.
+      # no longer should have to use actual US avg person's indicator score as US overall benchmark, even if medians are plotted
+      #  we didn't but now do  store US median raw score here 
       plotdata <- rbind( as.matrix( outlist()$rows[ mybarvars.sumstat, mybarvars ] ), 
                          as.matrix( outlist()$rows[ mybarvars.refzone.row, mybarvars.refzone] ) )
     }
@@ -1158,7 +1250,7 @@ shinyServer(function(input, output, session) {#SERVER####
              main = paste(gsub('_', ' ', my_batch_name()), '-', input$bartype, input$barvartype, 'values for', paste(mylegend, collapse = ', ') , sep = ' ' ) ,
              col = c('yellow', 'green', 'blue'),
              names.arg = mybarvars.friendly, 
-             ylab = ifelse( (input$barvartype == 'pctile' | input$bartype == 'EJ'), 'US Percentile','Raw Indicator Value') )
+             ylab = ifelse( (input$barvartype == 'pctile' | input$bartype == 'EJ'), 'US Percentile', 'Raw Indicator Value') )
     legend(x = 'topright', legend = mylegend, fill = c('yellow', 'green', 'blue'), 
            cex = bar.cex)
     
