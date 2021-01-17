@@ -4,7 +4,10 @@
 #########################################################################################
 
   # Note the 2019 version of EJSCREEN (released late 2019)
-  #   actually uses ACS2017, which is from 2013-2017 (released late 2018).
+  #   actually uses ACS2017, which is from 2013-2017 (released late 2018 by Census).
+
+  # The 2020 version of EJSCREEN to be released late 2020
+  #  will use ACS 2014-2018 (released late 2019 by Census) 
 
 # see the help file for bg19 ************* and
 # see  ACS_US_TOTALS_2014-2018.R

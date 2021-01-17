@@ -268,6 +268,7 @@ shinyServer(function(input, output, session) {#SERVER####
   # which should somehow count each block group only once even if it is near 2+ analyzed points (buffers).
   # Unclear which point (buffer) you should assign the block group to if it is near 2+.
   # But the batch tool does not provide this data as of 2020... 
+  # Contractor draft batch tool DID provide that, at least for an earlier version of dataset
   
   fulltabler.pop <- reactive({#fulltabler.pop ############################
     
@@ -521,13 +522,24 @@ shinyServer(function(input, output, session) {#SERVER####
   rowfun.picked <- rowfun.picked.default # 'all' 
   # later can be a logical vector but length must equal count of such funcs defined as options in batch.summarize 
   
+  
   #'#################################################################################################
   # CREATE SUMMARY ROWS AND COLS #################################################################################################
   #'#################################################################################################  
-  # Create the reactive expression providing summary rows and cols, the key output of the batch summarizer:
+  # Create the reactive expression providing SUMMARY ROWS and COLUMNS,
+  # the key output of the batch summarizer:
   # Create summary stats from uploaded batch results. 
+  # 
   # outlist() is a list of 2 elements: 
-  #   rows (rows of summary stats), & cols (columns of summary stats)
+  #
+  #   rows (rows of many summary stats across all people or sites, for every variable like % low-income or envt indicator,
+  #       across all sites or people at location of avg or median site or person nearby), & 
+  #       and now also holds US median values (full USA not just at analyzed sites), to facilitate comparisons.
+  #       outlist()$rows
+  # 
+  #   cols (columns of a few summary stats across all indexes, 
+  #       like max of EJ percentiles or number of those above 50, ie above median)
+  #       outlist()$cols
   
   outlist <- reactive({# outlist (has summary rows and cols) #####
     # cat('\n\n'); print('RUNNING OUTLIST CODE');cat('\n\n')
@@ -546,27 +558,12 @@ shinyServer(function(input, output, session) {#SERVER####
       colfun.picked = colfun.picked, rowfun.picked = rowfun.picked,
       probs = as.numeric(inputprobs), na.rm = na.rm
     )
-    
-    # cat('\n'); print('FULLTABLER:')
-    # print(colnames(fulltabler()))
-    # cat('\n')
-    # print(dim(fulltabler()))
-    # cat('\n')
-    # 
-    # cat('\n'); print('FULLTABLER.pop:')
-    # print(colnames(fulltabler.pop()))
-    # cat('\n')
-    # print(dim(fulltabler.pop()))
-    # cat('\n')
-    # 
-    # cat('\n'); print('OUTLIST so far, maybe needs name field:')
-    # print(colnames(x[[1]]))
-    # cat('\n')
-    # print(colnames(x[[2]]))
-    # cat('\n')
-    # print(dim(x[[1]]))
-    # print(dim(x[[2]]))
-    # cat('\n')
+    if (testing) {
+      cat('\n'); print('FULLTABLER:'); print(colnames(fulltabler())); cat('\n'); print(dim(fulltabler())); cat('\n')
+      cat('\n'); print('FULLTABLER.pop:'); print(colnames(fulltabler.pop())); cat('\n'); print(dim(fulltabler.pop())); cat('\n')
+      cat('\n'); print('OUTLIST so far, maybe needs name field:'); print(colnames(x[[1]])); cat('\n'); print(colnames(x[[2]])); cat('\n')
+      print(dim(x[[1]])); print(dim(x[[2]])); cat('\n')
+    }
     
     # For summary cols, put a duplicate column of user's site names field first if it exists, so can freeze it when seeing summary stat columns view
     if ('name' %in% colnames(fulltabler())) {x$cols <- cbind(Sitename = fulltabler()$name, x$cols, stringsAsFactors = FALSE) }
@@ -579,8 +576,9 @@ shinyServer(function(input, output, session) {#SERVER####
     vars.round0 <- 'pop'
     x$rows[ , vars.round0] <- round(x$rows[ , vars.round0], 0)
     
-    ################################### #
-    # add us medians to the summary rows
+    ################################### #  MAYBE THIS NEEDS TO BE DONE WITHIN batch.summarize() ??? 
+    # add US medians to the summary rows (to compare to avg or median site or person nearby)
+    # but note this is in summary rows (outlist) but (unlike other summary stats?) is NOT in the fulltable 
     us.med.names <- paste('us.med.', c(names.e, names.d, names.ej), sep = '')
     us.med.names <- us.med.names[!grepl('svi6', us.med.names)]
     us.med.values <- lookupUSA19[lookupUSA19$PCTILE == '50', c(names.e, names.d, names.ej)]
@@ -588,21 +586,16 @@ shinyServer(function(input, output, session) {#SERVER####
     us.med.values <- us.med.values[!grepl('svi6', names(us.med.values))]
     names(us.med.values) <- us.med.names
     
-    x$rows <- cbind(x$rows,us.med.values)
+    x$rows <- cbind(x$rows, us.med.values)
     ################################### #
 
     x$rows <- as.data.frame(x$rows, stringsAsFactors = FALSE)
-    save(x, file = 'x temp outlist.rdata')
-    # if (testing) save(x, file = 'x temp outlist.rdata')
+    if (testing) save(x, file = 'x temp outlist.rdata')
     x
     
-    #     stats.round2 <- c('Average site', 'Average person')
-    #     numeric.cols <- apply(x$rows, 2, class)=='numeric' # all should be now
-    #     x$rows[ stats.round2, numeric.cols] <- round( x$rows[ stats.round2, numeric.cols] , 1)
-    #    vars.comma  <- 'pop'
-    #    x$rows[ , vars.comma]  <- format( x$rows[ , vars.comma], big.mark=',')
   })
   #'#################################################################################################
+  
   
   #'##########################
   # Render comprehensive output/result rows & cols of the batch summarizer as an interactive datatable for the webpage:
@@ -659,6 +652,7 @@ shinyServer(function(input, output, session) {#SERVER####
                                       #'##########################  ###########################  ###########################
                                       #'##########################
                                       # RENDER THE SUMMARY *ROWS* AS AN INTERACTIVE DATA TABLE FOR WEB 
+                                      #  FOR A TAB CALLED  "BATCH DETAILS" 
                                       #'##########################  ###########################  ###########################
                                       
                                       # prepare to display table of summary stats which is outlist()$rows, 
@@ -675,6 +669,24 @@ shinyServer(function(input, output, session) {#SERVER####
                                       charcols <- c("FACID", "name", "ST", "statename", 'lat', 'lon' )  #  "pop", "radius.miles", are ok. 'FACID' would be nice to sort on as # if it is that, but will need to assume it is character just in case.
                                       sites.data <- fulltabler()
                                       sites.data[ , charcols] <- NA  # MUST REMOVE CHARACTER FIELD INFO LIKE NAME/FACID/ST/STATENAME TO BE ABLE TO TRANSPOSE THIS INTO A DATA.FRAME AND SORT ONE FACILITY BY ALL ITS INDICATORS FOR EXAMPLE
+                                      
+                                      mediancolnames <- c("us.med.pm", "us.med.o3", "us.med.cancer", "us.med.resp", "us.med.dpm", 
+                                        "us.med.pctpre1960", "us.med.traffic.score", "us.med.proximity.npl", 
+                                        "us.med.proximity.rmp", "us.med.proximity.tsdf", "us.med.proximity.npdes", 
+                                        "us.med.VSI.eo", "us.med.pctmin", "us.med.pctlowinc", "us.med.pctlths", 
+                                        "us.med.pctlingiso", "us.med.pctunder5", "us.med.pctover64", 
+                                        "us.med.EJ.DISPARITY.pm.eo", "us.med.EJ.DISPARITY.o3.eo", "us.med.EJ.DISPARITY.cancer.eo", 
+                                        "us.med.EJ.DISPARITY.resp.eo", "us.med.EJ.DISPARITY.dpm.eo", 
+                                        "us.med.EJ.DISPARITY.pctpre1960.eo", "us.med.EJ.DISPARITY.traffic.score.eo", 
+                                        "us.med.EJ.DISPARITY.proximity.npl.eo", "us.med.EJ.DISPARITY.proximity.rmp.eo", 
+                                        "us.med.EJ.DISPARITY.proximity.tsdf.eo", "us.med.EJ.DISPARITY.proximity.npdes.eo"
+                                      )
+                                      b1 <- mycolnames(); b2 <- varcategory(); b3 <- vartype(); b4 <- mycolnames.friendly()
+                                      b1 <- c(b1, mediancolnames); b2 <- c(b2, mediancolnames); b3 <- c(b3, mediancolnames); b4 <- c(b4, mediancolnames)
+                                      # PROBLEM: x from outlist()$rows has 202 rows here due to new median stats for USA.
+                                      ## BUT,  b1-4 have 173 elements -- lacking the median values for USA.
+                                      # and sites.data has 174 cols, 
+                                      #   BUG: sites.data[,174] is FACID **** not in other vectors of column info here ***
                                       
                                       z = data.frame(
                                         n = lead.zeroes(1:length(mycolnames()), nchar(max(length(mycolnames())))),
@@ -778,6 +790,7 @@ shinyServer(function(input, output, session) {#SERVER####
     fulltabler()$radius.miles[1]
   })
   
+  
   #'##########################################  ###########################################
   
   # SUMMARY TABLES OF STATS #########
@@ -815,6 +828,7 @@ shinyServer(function(input, output, session) {#SERVER####
     mytable
   })
   # outlist()$rows['Average person' , names.e.batch ] 
+  
   table1e <- reactive({#table1e ##########################################
     # table summarizing ENVT stats nearby and in US overall
     popnear = popcount()
@@ -841,11 +855,13 @@ shinyServer(function(input, output, session) {#SERVER####
   
   table2 <- reactive({#table2 ##########################################
     # table of significance tests for avg site's D being above US avg
-    mytable <- cbind(Statistic = c('At the average site', 'standard deviation', 't-statistic',  'p-value from Wilcoxon test', 'Avg site, ratio to avg person in US'))
+    mytable <- cbind(Statistic = c('At the average site', 
+                                   'standard deviation', 't-statistic',  'p-value from Wilcoxon test', 
+                                   'Avg site, ratio to avg person in US'))
     othercols <- rbind( paste( round(row1 <- outlist()$rows['Average site', names.d.batch  ], 0), '%',sep = ''), 
                         round(sapply(fulltabler()[ , names.d.batch ], FUN = function(x) sd(x, na.rm = TRUE)), 2),
-                        0, # t stat ***
-                        0, #  wilcoxon.test(x= , n=length(fulltabler()[,1]) ) , # p value ***
+                        0, # t stat # *** NOT IMPLEMENTED RIGHT NOW
+                        0, #  wilcoxon.test(x= , n=length(fulltabler()[,1]) ) , # p value ***# *** NOT IMPLEMENTED RIGHT NOW
                         round( row1 / us.percents[names.d.batch ],2))
     colnames(othercols) <- names.d.friendly
     mytable <- cbind(mytable, othercols)
