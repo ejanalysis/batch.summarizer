@@ -2,7 +2,7 @@
 #'
 #' Uses \code{\link[maps]{map}} function from maps package, to draw a map of US counties.
 #'  
-#'  PROBABLY WILL REPLACE THIS WITH \code{\link[choroplethr]county_choropleth}} county_choropleth {choroplethr}
+#'  PROBABLY WILL REPLACE THIS WITH \code{\link[choroplethr]{county_choropleth}} county_choropleth {choroplethr}
 #'   or countypointmap in proxistat package
 #'   
 #' Note: percent map is designed to work with the counties data set
@@ -11,7 +11,7 @@
 #' It is hardcodedd to show quartiles as specific percentile bins, cutpoints in the legend.
 #' 
 #' @param var vector of numbers to use for county map
-#' @param color Default is 'black' - Color like 'blue' for \code{\link[grDevices]{colorRampPalette}} from white to color to generate a vector of gradations of fill colors for the map
+#' @param color Default is 'black' - Color like 'blue' for \code{\link[grDevices]{colorRamp}} from white to color to generate a vector of gradations of fill colors for the map
 #' @param legend.title text for legend
 #' @param min Default is 0
 #' @param max Default is 100

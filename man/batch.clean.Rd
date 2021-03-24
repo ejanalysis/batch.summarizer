@@ -4,14 +4,13 @@
 \alias{batch.clean}
 \title{Function that cleans up raw output of EJSCREEN batch processor}
 \usage{
-batch.clean(x, namesfile = "map_batch_to_friendly_fieldnames_2016.csv",
-  oldcolnames, newcolnames)
+batch.clean(x, namesfile, oldcolnames, newcolnames)
 }
 \arguments{
 \item{x}{Required. The output of the batch processor that runs EJSCREEN buffer report once per site.}
 
 \item{namesfile}{Must specify either namesfile, or both oldcolnames and newcolnames. A csv filename, of file that maps fieldnames from those found in raw output of batch processor 
-to more useful and friendly names that make more sense to me. Default was 'map_batch_to_friendly_fieldnames_2016.csv'
+to more useful and friendly names that make more sense to me. Default had been included but now left out - used to use 'map_batch_to_friendly_fieldnames_2018.csv'
 If function is called with the special value namesfile='keepnames' then the names are unchanged from those in x.}
 
 \item{oldcolnames}{Optional. The names to be found in x, ignored if namesfile specified.}
@@ -24,6 +23,7 @@ the output is the output
 \description{
 Takes the raw output version of batch buffer results and cleans it up
   to make it ready for batch.summarize function
+  Note this drops rows with no pop data - assumes those lack EJSCREEN batch results since they are in VI/Guam/etc.
 }
 \author{
 ejanalyst info@ejanalysis.com

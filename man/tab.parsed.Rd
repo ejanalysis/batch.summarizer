@@ -4,13 +4,23 @@
 \alias{tab.parsed}
 \title{tab.parsed is OBSOLETE}
 \usage{
-tab.parsed(myfile, folder = getwd(), skip = 2, wordsbeforefips.bg = 2,
-  wordsbeforestate.bg = 3, wordsafterstate.bg = 5,
-  wordsafterregion.bg = 2, wordsafterpop.bg = 0,
-  wordsbeforemiles.ring = 0, wordsbeforestate.ring = 7,
-  wordsafterstate.ring = 5, wordsafterregion.ring = 2,
-  wordsafterpop.ring = 0, wordsbeforelon.ring = 6,
-  wordsbeforelat.ring = 5)
+tab.parsed(
+  myfile,
+  folder = getwd(),
+  skip = 2,
+  wordsbeforefips.bg = 2,
+  wordsbeforestate.bg = 3,
+  wordsafterstate.bg = 5,
+  wordsafterregion.bg = 2,
+  wordsafterpop.bg = 0,
+  wordsbeforemiles.ring = 0,
+  wordsbeforestate.ring = 7,
+  wordsafterstate.ring = 5,
+  wordsafterregion.ring = 2,
+  wordsafterpop.ring = 0,
+  wordsbeforelon.ring = 6,
+  wordsbeforelat.ring = 5
+)
 }
 \arguments{
 \item{myfile}{name of file. a csv of saved tabular data from a buffer standard report in EJSCREEN 
